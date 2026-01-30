@@ -1,0 +1,90 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+
+	"zero-trust-control-plane/backend/internal/user/domain"
+	"zero-trust-control-plane/backend/internal/db/sqlc/gen"
+)
+
+type PostgresRepository struct {
+	queries *gen.Queries
+}
+
+// NewPostgresRepository returns a user repository that uses the given db for persistence.
+func NewPostgresRepository(db *sql.DB) *PostgresRepository {
+	return &PostgresRepository{queries: gen.New(db)}
+}
+
+// GetByID returns the user for id, or nil if not found.
+// It returns an error only for database failures, not for missing rows.
+func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
+	u, err := r.queries.GetUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return genUserToDomain(&u), nil
+}
+
+// GetByEmail returns the user with the given email, or nil if not found.
+// It returns an error only for database failures, not for missing rows.
+func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	u, err := r.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return genUserToDomain(&u), nil
+}
+
+// Save persists the user to the database. The user must have ID set; it is not assigned by this method.
+func (r *PostgresRepository) Save(ctx context.Context, u *domain.User) error {
+	name := sql.NullString{String: u.Name, Valid: u.Name != ""}
+	_, err := r.queries.CreateUser(ctx, gen.CreateUserParams{
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      name,
+		Status:    gen.UserStatus(u.Status),
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	})
+	return err
+}
+
+// Update updates the existing user record in the database. Returns an error if the update fails.
+func (r *PostgresRepository) Update(ctx context.Context, u *domain.User) error {
+	name := sql.NullString{String: u.Name, Valid: u.Name != ""}
+	_, err := r.queries.UpdateUser(ctx, gen.UpdateUserParams{
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      name,
+		Status:    gen.UserStatus(u.Status),
+		UpdatedAt: u.UpdatedAt,
+	})
+	return err
+}
+
+func genUserToDomain(u *gen.User) *domain.User {
+	if u == nil {
+		return nil
+	}
+	name := ""
+	if u.Name.Valid {
+		name = u.Name.String
+	}
+	return &domain.User{
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      name,
+		Status:    domain.UserStatus(u.Status),
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}
+}

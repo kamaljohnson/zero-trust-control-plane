@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS telemetry;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS policies;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS devices;
+DROP TABLE IF EXISTS memberships;
+DROP TABLE IF EXISTS organizations;
+DROP TABLE IF EXISTS identities;
+DROP TABLE IF EXISTS users;
+
+DROP TYPE IF EXISTS role;
+DROP TYPE IF EXISTS org_status;
+DROP TYPE IF EXISTS identity_provider;
+DROP TYPE IF EXISTS user_status;
