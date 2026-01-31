@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package ztcp.policy.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/policy/v1;policyv1";
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Policy represents an org-level policy.
+message Policy {
+  string id = 1;
+  string org_id = 2;
+  string rules = 3;
+  bool enabled = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// CreatePolicyRequest creates a new policy.
+message CreatePolicyRequest {
+  string org_id = 1;
+  string rules = 2;
+  bool enabled = 3;
+}
+
+// CreatePolicyResponse returns the created policy.
+message CreatePolicyResponse {
+  Policy policy = 1;
+}
+
+// UpdatePolicyRequest updates an existing policy.
+message UpdatePolicyRequest {
+  string policy_id = 1;
+  string rules = 2;
+  bool enabled = 3;
+}
+
+// UpdatePolicyResponse returns the updated policy.
+message UpdatePolicyResponse {
+  Policy policy = 1;
+}
+
+// DeletePolicyRequest identifies the policy to delete.
+message DeletePolicyRequest {
+  string policy_id = 1;
+}
+
+// DeletePolicyResponse is empty on success.
+message DeletePolicyResponse {}
+
+// ListPoliciesRequest lists policies for an org with pagination.
+message ListPoliciesRequest {
+  string org_id = 1;
+  ztcp.common.v1.Pagination pagination = 2;
+}
+
+// ListPoliciesResponse returns a page of policies.
+message ListPoliciesResponse {
+  repeated Policy policies = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// PolicyService handles policy configuration. OPA integration lives behind this.
+service PolicyService {
+  rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
+  rpc UpdatePolicy(UpdatePolicyRequest) returns (UpdatePolicyResponse);
+  rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+}

@@ -45,8 +45,8 @@ func (r *PostgresRepository) ListByUserAndOrg(ctx context.Context, userID, orgID
 	return out, nil
 }
 
-// Save persists the session to the database. The session must have ID set.
-func (r *PostgresRepository) Save(ctx context.Context, s *domain.Session) error {
+// Create persists the session to the database. The session must have ID set.
+func (r *PostgresRepository) Create(ctx context.Context, s *domain.Session) error {
 	_, err := r.queries.CreateSession(ctx, gen.CreateSessionParams{
 		ID:         s.ID,
 		UserID:     s.UserID,

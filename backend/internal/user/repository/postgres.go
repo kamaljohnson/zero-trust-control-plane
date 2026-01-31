@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"zero-trust-control-plane/backend/internal/user/domain"
 	"zero-trust-control-plane/backend/internal/db/sqlc/gen"
+	"zero-trust-control-plane/backend/internal/user/domain"
 )
 
 type PostgresRepository struct {
@@ -44,8 +44,8 @@ func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (*dom
 	return genUserToDomain(&u), nil
 }
 
-// Save persists the user to the database. The user must have ID set; it is not assigned by this method.
-func (r *PostgresRepository) Save(ctx context.Context, u *domain.User) error {
+// Create persists the user to the database. The user must have ID set; it is not assigned by this method.
+func (r *PostgresRepository) Create(ctx context.Context, u *domain.User) error {
 	name := sql.NullString{String: u.Name, Valid: u.Name != ""}
 	_, err := r.queries.CreateUser(ctx, gen.CreateUserParams{
 		ID:        u.ID,

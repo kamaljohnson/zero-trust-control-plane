@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package ztcp.membership.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/membership/v1;membershipv1";
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Role is the member's role in the org.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_OWNER = 1;
+  ROLE_ADMIN = 2;
+  ROLE_MEMBER = 3;
+}
+
+// Member represents a user's membership in an org with a role.
+message Member {
+  string id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  Role role = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// AddMemberRequest adds a user to an org with a role.
+message AddMemberRequest {
+  string org_id = 1;
+  string user_id = 2;
+  Role role = 3;
+}
+
+// AddMemberResponse returns the created membership.
+message AddMemberResponse {
+  Member member = 1;
+}
+
+// RemoveMemberRequest removes a user from an org.
+message RemoveMemberRequest {
+  string org_id = 1;
+  string user_id = 2;
+}
+
+// RemoveMemberResponse is empty on success.
+message RemoveMemberResponse {}
+
+// UpdateRoleRequest changes a member's role.
+message UpdateRoleRequest {
+  string org_id = 1;
+  string user_id = 2;
+  Role role = 3;
+}
+
+// UpdateRoleResponse returns the updated member.
+message UpdateRoleResponse {
+  Member member = 1;
+}
+
+// ListMembersRequest lists members of an org with pagination.
+message ListMembersRequest {
+  string org_id = 1;
+  ztcp.common.v1.Pagination pagination = 2;
+}
+
+// ListMembersResponse returns a page of members.
+message ListMembersResponse {
+  repeated Member members = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// MembershipService manages user–org relationship and RBAC.
+service MembershipService {
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+}

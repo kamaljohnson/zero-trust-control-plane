@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ztcp.common.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/common/v1;commonv1";
+
+// Pagination request for list RPCs.
+message Pagination {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+// PaginationResult returns the next page token from a list response.
+message PaginationResult {
+  string next_page_token = 1;
+}

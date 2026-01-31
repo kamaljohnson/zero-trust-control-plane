@@ -7,7 +7,6 @@ package gen
 import (
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -245,18 +244,6 @@ type Session struct {
 	LastSeenAt sql.NullTime
 	IpAddress  sql.NullString
 	CreatedAt  time.Time
-}
-
-type Telemetry struct {
-	ID        int64
-	OrgID     string
-	UserID    sql.NullString
-	DeviceID  sql.NullString
-	SessionID sql.NullString
-	EventType string
-	Source    string
-	Metadata  json.RawMessage
-	CreatedAt time.Time
 }
 
 type User struct {

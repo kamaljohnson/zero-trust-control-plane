@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package ztcp.session.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/session/v1;sessionv1";
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Session represents a user session tied to a device.
+message Session {
+  string id = 1;
+  string user_id = 2;
+  string org_id = 3;
+  string device_id = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  google.protobuf.Timestamp revoked_at = 6;
+  google.protobuf.Timestamp last_seen_at = 7;
+  string ip_address = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+// RevokeSessionRequest identifies the session to revoke.
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+// RevokeSessionResponse is empty on success.
+message RevokeSessionResponse {}
+
+// GetSessionRequest identifies the session by ID.
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+// GetSessionResponse returns the session.
+message GetSessionResponse {
+  Session session = 1;
+}
+
+// ListSessionsRequest lists sessions (org- or user-scoped) with pagination.
+message ListSessionsRequest {
+  string org_id = 1;
+  string user_id = 2;  // optional
+  ztcp.common.v1.Pagination pagination = 3;
+}
+
+// ListSessionsResponse returns a page of sessions.
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// SessionService manages session lifecycle. Critical for zero-trust enforcement.
+service SessionService {
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+}

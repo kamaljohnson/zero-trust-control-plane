@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package ztcp.health.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/health/v1;healthv1";
+
+// HealthCheck request; empty for a simple readiness probe.
+message HealthCheckRequest {}
+
+// HealthCheckResponse returns service health status.
+message HealthCheckResponse {
+  ServingStatus status = 1;
+}
+
+// ServingStatus indicates whether the service is serving traffic.
+enum ServingStatus {
+  SERVING_STATUS_UNSPECIFIED = 0;
+  SERVING_STATUS_SERVING = 1;
+  SERVING_STATUS_NOT_SERVING = 2;
+}
+
+// HealthService is used by Kubernetes, load balancers, and CI for readiness.
+service HealthService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}

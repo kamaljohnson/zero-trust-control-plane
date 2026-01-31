@@ -4,9 +4,9 @@ This document describes the current PostgreSQL schema for the zero-trust control
 
 ## Overview
 
-The schema is organized around **users**, **organizations** (tenants), and **identity**. Users belong to organizations through **memberships**; they authenticate via **identities** (local, OIDC, or SAML). **Devices** and **sessions** are scoped to a user and org. **Policies** are org-scoped. **Audit logs** and **telemetry** record org-level activity.
+The schema is organized around **users**, **organizations** (tenants), and **identity**. Users belong to organizations through **memberships**; they authenticate via **identities** (local, OIDC, or SAML). **Devices** and **sessions** are scoped to a user and org. **Policies** are org-scoped. **Audit logs** record org-level activity.
 
-All timestamps use `TIMESTAMPTZ`. Primary keys for core entities are `VARCHAR` (e.g. UUIDs); **telemetry** uses `BIGSERIAL` for high-volume append-only data.
+All timestamps use `TIMESTAMPTZ`. Primary keys for core entities are `VARCHAR` (e.g. UUIDs).
 
 ---
 
@@ -55,7 +55,7 @@ Links a user to an authentication provider (local password, OIDC, or SAML). One 
 
 ### organizations
 
-Tenant/organization. Referenced by memberships, devices, sessions, policies, audit_logs, and telemetry.
+Tenant/organization. Referenced by memberships, devices, sessions, policies, and audit_logs.
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -145,24 +145,6 @@ Immutable log of actions per org. `user_id` may be null for system actions.
 
 ---
 
-### telemetry
-
-Append-only events per org. Optional link to user, device, and session. Uses `BIGSERIAL` for id; no FK constraints on optional refs to allow flexible ingestion.
-
-| Column | Type | Constraints |
-|--------|------|-------------|
-| `id` | BIGSERIAL | PRIMARY KEY |
-| `org_id` | VARCHAR | NOT NULL |
-| `user_id` | VARCHAR | nullable |
-| `device_id` | VARCHAR | nullable |
-| `session_id` | VARCHAR | nullable |
-| `event_type` | VARCHAR | NOT NULL |
-| `source` | VARCHAR | NOT NULL |
-| `metadata` | JSONB | NOT NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-
----
-
 ## Entity Relationships
 
 ```mermaid
@@ -178,7 +160,6 @@ erDiagram
     organizations ||--o{ sessions : "scoped"
     organizations ||--o{ policies : "has"
     organizations ||--o{ audit_logs : "scoped"
-    organizations ||--o{ telemetry : "scoped"
 
     devices ||--o{ sessions : "has"
 
@@ -236,14 +217,6 @@ erDiagram
         varchar user_id FK
         varchar action
         varchar resource
-    }
-
-    telemetry {
-        bigserial id PK
-        varchar org_id
-        varchar user_id
-        varchar event_type
-        jsonb metadata
     }
 ```
 

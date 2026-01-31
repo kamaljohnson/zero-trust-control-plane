@@ -59,8 +59,8 @@ func (r *PostgresRepository) GetByUserAndProviderID(ctx context.Context, userID 
 	return genIdentityToDomain(&i), nil
 }
 
-// Save persists the identity to the database. The identity must have ID set.
-func (r *PostgresRepository) Save(ctx context.Context, i *domain.Identity) error {
+// Create persists the identity to the database. The identity must have ID set.
+func (r *PostgresRepository) Create(ctx context.Context, i *domain.Identity) error {
 	ph := sql.NullString{String: i.PasswordHash, Valid: i.PasswordHash != ""}
 	_, err := r.queries.CreateIdentity(ctx, gen.CreateIdentityParams{
 		ID:           i.ID,

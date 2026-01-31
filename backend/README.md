@@ -6,8 +6,8 @@ gRPC API server and async worker for the zero-trust control plane.
 
 - **cmd/server** — gRPC API server
 - **cmd/worker** — async jobs (audit, cleanup)
-- **proto/** — Protocol Buffer definitions (identity, user, organization, membership, session, device, policy, audit)
-- **api/generated/** — protoc output
+- **proto/** — Protocol Buffer definitions: common, auth, user, org, membership, device, session, policy, audit, telemetry, admin, health
+- **api/generated/** — generated Go and gRPC code from proto (buf or protoc)
 - **internal/** — server; one folder per table: user, identity, organization, membership, device, session, policy, audit; platform (tenancy, RBAC, plans); db; security; config
   - **internal/db/sqlc/** — single sqlc project: `schema/`, `queries/`, `gen/` (generated), `sqlc.yaml`. All repositories import `internal/db/sqlc/gen`.
   - **internal/<context>/repository/** — `repository.go` (interface), `postgres.go` (impl using internal/db/sqlc/gen)
@@ -34,6 +34,34 @@ The repository layer uses [sqlc](https://docs.sqlc.dev/en/stable/tutorials/getti
    ./scripts/generate_sqlc.sh
    ```
    Or: `cd internal/db/sqlc && sqlc generate`
+
+3. **Build** (after generation):
+   ```bash
+   go build ./...
+   ```
+
+## Generating proto code
+
+The gRPC API is defined in `proto/`. Generated Go and gRPC stubs go to `api/generated/`; do not edit files there.
+
+1. **Option A — buf** (recommended):
+   ```bash
+   brew install bufbuild/buf/buf
+   ./scripts/generate_proto.sh
+   ```
+   (script runs `buf generate` from `proto/`; output under `api/generated/`)
+
+2. **Option B — protoc**:
+   Install [protoc](https://protobuf.dev/downloads) and the Go plugins:
+   ```bash
+   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   ```
+   Ensure `$GOPATH/bin` or `$HOME/go/bin` is on your PATH, then:
+   ```bash
+   ./scripts/generate_proto.sh
+   ```
+   (script runs `protoc` with `-I proto` and writes under `api/generated/`)
 
 3. **Build** (after generation):
    ```bash

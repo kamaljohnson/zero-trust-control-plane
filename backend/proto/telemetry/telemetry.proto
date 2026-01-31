@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package ztcp.telemetry.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/telemetry/v1;telemetryv1";
+
+import "google/protobuf/timestamp.proto";
+
+// TelemetryEvent represents a single telemetry event (org-scoped, optional user/device/session).
+message TelemetryEvent {
+  string org_id = 1;
+  string user_id = 2;    // optional
+  string device_id = 3;  // optional
+  string session_id = 4; // optional
+  string event_type = 5;
+  string source = 6;
+  bytes metadata = 7;    // JSONB
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// EmitTelemetryEventRequest records a single telemetry event. High-volume, best-effort.
+message EmitTelemetryEventRequest {
+  string org_id = 1;
+  string user_id = 2;
+  string device_id = 3;
+  string session_id = 4;
+  string event_type = 5;
+  string source = 6;
+  bytes metadata = 7;
+}
+
+// EmitTelemetryEventResponse is empty on success (best-effort).
+message EmitTelemetryEventResponse {}
+
+// BatchEmitTelemetryRequest records multiple telemetry events.
+message BatchEmitTelemetryRequest {
+  repeated EmitTelemetryEventRequest events = 1;
+}
+
+// BatchEmitTelemetryResponse is empty on success (best-effort).
+message BatchEmitTelemetryResponse {}
+
+// TelemetryService handles observability and analytics. High-volume, async, best-effort.
+service TelemetryService {
+  rpc EmitTelemetryEvent(EmitTelemetryEventRequest) returns (EmitTelemetryEventResponse);
+  rpc BatchEmitTelemetry(BatchEmitTelemetryRequest) returns (BatchEmitTelemetryResponse);
+}

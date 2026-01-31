@@ -45,8 +45,8 @@ func (r *PostgresRepository) ListByOrg(ctx context.Context, orgID string, limit,
 	return out, nil
 }
 
-// Save persists the audit log to the database. The audit log must have ID set.
-func (r *PostgresRepository) Save(ctx context.Context, a *domain.AuditLog) error {
+// Create persists the audit log to the database. The audit log must have ID set.
+func (r *PostgresRepository) Create(ctx context.Context, a *domain.AuditLog) error {
 	uid := sql.NullString{String: a.UserID, Valid: a.UserID != ""}
 	meta := sql.NullString{String: a.Metadata, Valid: a.Metadata != ""}
 	_, err := r.queries.CreateAuditLog(ctx, gen.CreateAuditLogParams{

@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"zero-trust-control-plane/backend/internal/policy/domain"
 	"zero-trust-control-plane/backend/internal/db/sqlc/gen"
+	"zero-trust-control-plane/backend/internal/policy/domain"
 )
 
 type PostgresRepository struct {
@@ -44,8 +44,8 @@ func (r *PostgresRepository) ListByOrg(ctx context.Context, orgID string) ([]*do
 	return out, nil
 }
 
-// Save persists the policy to the database. The policy must have ID set.
-func (r *PostgresRepository) Save(ctx context.Context, p *domain.Policy) error {
+// Create persists the policy to the database. The policy must have ID set.
+func (r *PostgresRepository) Create(ctx context.Context, p *domain.Policy) error {
 	_, err := r.queries.CreatePolicy(ctx, gen.CreatePolicyParams{
 		ID: p.ID, OrgID: p.OrgID, Rules: p.Rules, Enabled: p.Enabled, CreatedAt: p.CreatedAt,
 	})
