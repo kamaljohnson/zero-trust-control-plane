@@ -120,3 +120,62 @@ func (q *Queries) ListAuditLogsByOrg(ctx context.Context, arg ListAuditLogsByOrg
 	}
 	return items, nil
 }
+
+const listAuditLogsByOrgFiltered = `-- name: ListAuditLogsByOrgFiltered :many
+SELECT id, org_id, user_id, action, resource, ip, metadata, created_at
+FROM audit_logs
+WHERE org_id = $1
+  AND ($4::text IS NULL OR user_id = $4)
+  AND ($5::text IS NULL OR action = $5)
+  AND ($6::text IS NULL OR resource = $6)
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListAuditLogsByOrgFilteredParams struct {
+	OrgID          string
+	Limit          int32
+	Offset         int32
+	FilterUserID   sql.NullString
+	FilterAction   sql.NullString
+	FilterResource sql.NullString
+}
+
+func (q *Queries) ListAuditLogsByOrgFiltered(ctx context.Context, arg ListAuditLogsByOrgFilteredParams) ([]AuditLog, error) {
+	rows, err := q.db.QueryContext(ctx, listAuditLogsByOrgFiltered,
+		arg.OrgID,
+		arg.Limit,
+		arg.Offset,
+		arg.FilterUserID,
+		arg.FilterAction,
+		arg.FilterResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditLog
+	for rows.Next() {
+		var i AuditLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.UserID,
+			&i.Action,
+			&i.Resource,
+			&i.Ip,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

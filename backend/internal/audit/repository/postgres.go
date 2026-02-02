@@ -45,6 +45,35 @@ func (r *PostgresRepository) ListByOrg(ctx context.Context, orgID string, limit,
 	return out, nil
 }
 
+// ListByOrgFiltered returns audit logs for the given org with optional filters, paginated by limit and offset.
+// userID, action, resource may be nil to omit that filter. Returns (nil, error) only on database errors.
+func (r *PostgresRepository) ListByOrgFiltered(ctx context.Context, orgID string, limit, offset int32, userID, action, resource *string) ([]*domain.AuditLog, error) {
+	arg := gen.ListAuditLogsByOrgFilteredParams{
+		OrgID:          orgID,
+		Limit:          limit,
+		Offset:         offset,
+		FilterUserID:   toNullString(userID),
+		FilterAction:   toNullString(action),
+		FilterResource: toNullString(resource),
+	}
+	list, err := r.queries.ListAuditLogsByOrgFiltered(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*domain.AuditLog, len(list))
+	for i := range list {
+		out[i] = genAuditLogToDomain(&list[i])
+	}
+	return out, nil
+}
+
+func toNullString(s *string) sql.NullString {
+	if s == nil || *s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
 // Create persists the audit log to the database. The audit log must have ID set.
 func (r *PostgresRepository) Create(ctx context.Context, a *domain.AuditLog) error {
 	uid := sql.NullString{String: a.UserID, Valid: a.UserID != ""}

@@ -13,6 +13,7 @@ import (
 	authv1 "zero-trust-control-plane/backend/api/generated/auth/v1"
 	devv1 "zero-trust-control-plane/backend/api/generated/dev/v1"
 	healthv1 "zero-trust-control-plane/backend/api/generated/health/v1"
+	auditrepo "zero-trust-control-plane/backend/internal/audit/repository"
 	"zero-trust-control-plane/backend/internal/config"
 	"zero-trust-control-plane/backend/internal/db"
 	devicerepo "zero-trust-control-plane/backend/internal/device/repository"
@@ -119,6 +120,8 @@ func main() {
 		deps.Auth = authService
 		deps.DeviceRepo = deviceRepo
 		deps.PolicyRepo = policyRepo
+		auditRepo := auditrepo.NewPostgresRepository(database)
+		deps.AuditRepo = auditRepo
 	}
 
 	if authEnabled {
@@ -133,8 +136,14 @@ func main() {
 		if deps.DevOTPHandler != nil {
 			publicMethods[devv1.DevService_GetOTP_FullMethodName] = true
 		}
-		// tokens is in scope from authEnabled block
-		s = grpc.NewServer(grpc.UnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods)))
+		auditSkipMethods := map[string]bool{
+			healthv1.HealthService_HealthCheck_FullMethodName: true,
+		}
+		// tokens and deps.AuditRepo are in scope from authEnabled block
+		s = grpc.NewServer(grpc.ChainUnaryInterceptor(
+			interceptors.AuthUnary(tokens, publicMethods),
+			interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods),
+		))
 	} else {
 		s = grpc.NewServer()
 	}
