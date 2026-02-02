@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package ztcp.auth.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  string org_id = 3;
+  string device_fingerprint = 4;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  string user_id = 4;
+  string org_id = 5;
+}
+
+message LinkIdentityRequest {
+  string user_id = 1;
+  string provider = 2;
+  string provider_id = 3;
+  string id_token = 4;
+}
+
+message LinkIdentityResponse {
+  string identity_id = 1;
+}
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc Refresh(RefreshRequest) returns (AuthResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+  rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);
+}
