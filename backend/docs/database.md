@@ -245,6 +245,8 @@ Migrations are applied in order from [internal/db/migrations/](../internal/db/mi
 
 The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti` and `refresh_token_hash` (and does not include telemetry). Migrations 003 and 004 are for databases that were created from migration 001 before those columns were added to the canonical schema. New deployments run all ups; existing DBs may need 003 and 004 when adding auth.
 
+To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scripts/migrate.sh down` to roll back). The script reads `DATABASE_URL` from `.env` or the environment. You can install the [golang-migrate](https://github.com/golang-migrate/migrate) CLI (e.g. `brew install golang-migrate`) or use the built-in Go runner (`go run ./cmd/migrate`).
+
 ---
 
 ## Schema and Codegen

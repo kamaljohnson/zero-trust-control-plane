@@ -15,6 +15,7 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 
 - **cmd/server** — gRPC API server
 - **cmd/worker** — async jobs (audit, cleanup)
+- **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
 - **docs/** — auth and database documentation (`auth.md`, `database.md`)
 - **proto/** — Protocol Buffer definitions: common, auth, user, org, membership, device, session, policy, audit, telemetry, admin, health
 - **api/generated/** — generated Go and gRPC code from proto (buf or protoc)
@@ -93,6 +94,17 @@ go run ./cmd/server
 # Worker
 go run ./cmd/worker
 ```
+
+## Database migrations
+
+Run migrations with `./scripts/migrate.sh` from the backend root. By default it applies pending migrations (up); pass `down` to roll back one version:
+
+```bash
+./scripts/migrate.sh          # apply pending migrations (up)
+./scripts/migrate.sh down     # roll back one migration
+```
+
+The script reads `DATABASE_URL` from `.env` or the environment; create a `.env` from [.env.example](.env.example) if needed. If the [golang-migrate](https://github.com/golang-migrate/migrate) CLI is in PATH (e.g. `brew install golang-migrate`), the script uses it; otherwise it runs `go run ./cmd/migrate`.
 
 ## Scripts
 
