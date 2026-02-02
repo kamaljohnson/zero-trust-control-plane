@@ -4,42 +4,41 @@ package ztcp.auth.v1;
 
 option go_package = "zero-trust-control-plane/backend/api/generated/auth/v1;authv1";
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+
+// RegisterRequest carries email, password, and optional name for new user registration.
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string name = 3;  // optional
+}
 
 // LoginRequest carries credentials for authentication.
 message LoginRequest {
   string email = 1;
   string password = 2;
-  string org_id = 3;  // optional; for org-scoped login
+  string org_id = 3;  // required; org-scoped login
+  string device_fingerprint = 4;  // optional; used to get-or-create device for session
 }
 
-// LoginResponse returns session tokens and user/org context.
-message LoginResponse {
+// RefreshRequest carries the refresh token to obtain new access (and optionally refresh) tokens.
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+// LogoutRequest identifies the session to terminate.
+message LogoutRequest {
+  string refresh_token = 1;  // optional; if empty, rely on context when auth interceptor is implemented
+}
+
+// AuthResponse returns session tokens and user/org context. Used by Register, Login, and Refresh.
+message AuthResponse {
   string access_token = 1;
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
   string user_id = 4;
   string org_id = 5;
-}
-
-// LogoutRequest identifies the session to terminate.
-message LogoutRequest {
-  string refresh_token = 1;  // optional; if empty, invalidate current session from context
-}
-
-// LogoutResponse is empty on success.
-message LogoutResponse {}
-
-// ValidateSessionRequest carries the access token to validate.
-message ValidateSessionRequest {
-  string access_token = 1;
-}
-
-// ValidateSessionResponse returns user/org context if valid.
-message ValidateSessionResponse {
-  string user_id = 1;
-  string org_id = 2;
-  google.protobuf.Timestamp expires_at = 3;
 }
 
 // LinkIdentityRequest links an external identity (OIDC/SAML) to a user.
@@ -57,8 +56,9 @@ message LinkIdentityResponse {
 
 // AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
 service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse);
-  rpc Logout(LogoutRequest) returns (LogoutResponse);
-  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc Refresh(RefreshRequest) returns (AuthResponse);
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);
 }

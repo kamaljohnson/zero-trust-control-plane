@@ -2,11 +2,17 @@
 
 This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) and applied via [internal/db/migrations/](../internal/db/migrations/).
 
+**Audience**: Developers working on schema, migrations, repos, or features that persist data.
+
 ## Overview
 
 The schema is organized around **users**, **organizations** (tenants), and **identity**. Users belong to organizations through **memberships**; they authenticate via **identities** (local, OIDC, or SAML). **Devices** and **sessions** are scoped to a user and org. **Policies** are org-scoped. **Audit logs** record org-level activity.
 
 All timestamps use `TIMESTAMPTZ`. Primary keys for core entities are `VARCHAR` (e.g. UUIDs).
+
+### When the database is used
+
+The database is opened only when auth is enabled: `DATABASE_URL` and both `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` must be set ([cmd/server/main.go](../cmd/server/main.go)). When auth is disabled, no database connection is opened; all persistence (auth, memberships, etc.) is unavailable and auth RPCs return Unimplemented. The connection is opened via [internal/db/postgres.go](../internal/db/postgres.go) `Open(dsn)` (pgx driver; caller must call `Close`).
 
 ---
 
@@ -98,7 +104,7 @@ Device registered to a user within an org (e.g. for device trust and session bin
 
 ### sessions
 
-Active or revoked session for a user in an org on a device.
+Active or revoked session for a user in an org on a device. The columns `refresh_jti` and `refresh_token_hash` are required for auth refresh rotation and reuse detection; for existing databases created before they existed, apply migrations 003 and 004 (see [Migrations](#migrations)).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -110,6 +116,8 @@ Active or revoked session for a user in an org on a device.
 | `revoked_at` | TIMESTAMPTZ | nullable |
 | `last_seen_at` | TIMESTAMPTZ | nullable |
 | `ip_address` | VARCHAR | nullable |
+| `refresh_jti` | VARCHAR | nullable; current refresh token JTI for rotation; updated on each Refresh |
+| `refresh_token_hash` | VARCHAR | nullable; SHA-256 hash of current refresh token; used to validate refresh tokens without storing the token (see [auth.md](auth.md)) |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 
 ---
@@ -220,13 +228,52 @@ erDiagram
     }
 ```
 
+Session columns used for auth (e.g. `refresh_jti`, `refresh_token_hash`) are documented in the sessions table above.
+
+---
+
+## Migrations
+
+Migrations are applied in order from [internal/db/migrations/](../internal/db/migrations/). Each migration has an up and a down script.
+
+| Migration | Description |
+|-----------|-------------|
+| **001_schema** | Creates enums and tables: users, identities, organizations, memberships, devices, sessions, policies, audit_logs, telemetry. Baseline schema. |
+| **002_drop_telemetry** | Drops the `telemetry` table if present. |
+| **003_refresh_jti** | Adds `sessions.refresh_jti` (VARCHAR, nullable). For existing DBs created before this column. |
+| **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |
+
+The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti` and `refresh_token_hash` (and does not include telemetry). Migrations 003 and 004 are for databases that were created from migration 001 before those columns were added to the canonical schema. New deployments run all ups; existing DBs may need 003 and 004 when adding auth.
+
 ---
 
 ## Schema and Codegen
 
-- **SQL**: [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)
-- **Migrations**: [internal/db/migrations/](../internal/db/migrations/) (up/down)
-- **Generated Go**: [internal/db/sqlc/gen/](../internal/db/sqlc/gen/) (sqlc output; do not edit)
-- **Queries**: [internal/db/sqlc/queries/](../internal/db/sqlc/queries/)
+### Canonical schema
 
-After changing the schema, run the project’s sqlc and migration scripts to regenerate code and apply migrations.
+[internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) is the single source for table and enum definitions used by sqlc. Do not edit generated Go in `gen/`.
+
+### Migrations (applied to database)
+
+Migrations are applied in order (001, 002, 003, 004). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
+
+### Connection
+
+[internal/db/postgres.go](../internal/db/postgres.go) `Open(dsn)` opens a Postgres connection using the pgx driver. It is used in [cmd/server/main.go](../cmd/server/main.go) when auth is enabled. The caller must call `Close` when done.
+
+### Queries and codegen
+
+SQL queries live in [internal/db/sqlc/queries/](../internal/db/sqlc/queries/) (one file per domain: user, identity, organization, membership, device, session, policy, audit_log). [internal/db/sqlc/sqlc.yaml](../internal/db/sqlc/sqlc.yaml) configures the schema path, queries path, and Go output to `gen/`. Generated Go is in [internal/db/sqlc/gen/](../internal/db/sqlc/gen/); do not edit.
+
+### Repositories
+
+Domain repos (user, identity, session, device, membership, organization, policy, audit) use the generated queries and map results to domain types. See `internal/*/repository/postgres.go`. Auth uses the user, identity, session, device, and membership repos.
+
+### Workflow
+
+After changing schema or queries, run sqlc generate to regenerate `gen/`. After changing schema, add or update migrations (up/down) and apply them to the database.
+
+### Cross-reference to auth
+
+For how each table is used by the auth flows (Register, Login, Refresh, Logout), see [auth.md](auth.md) "Database and Schema" / "Table roles (auth)".
+

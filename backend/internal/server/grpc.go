@@ -26,7 +26,14 @@ import (
 	sessionhandler "zero-trust-control-plane/backend/internal/session/handler"
 	telemetryhandler "zero-trust-control-plane/backend/internal/telemetry/handler"
 	userhandler "zero-trust-control-plane/backend/internal/user/handler"
+	identityservice "zero-trust-control-plane/backend/internal/identity/service"
 )
+
+// Deps holds optional service dependencies for gRPC handlers.
+type Deps struct {
+	// Auth is the auth service for Register/Login/Refresh/Logout. If nil, auth RPCs return Unimplemented.
+	Auth *identityservice.AuthService
+}
 
 // RegisterServices registers all proto gRPC services with the given server.
 //
@@ -42,9 +49,13 @@ import (
 //   - TelemetryService   → internal/telemetry/handler
 //   - AuditService       → internal/audit/handler
 //   - HealthService      → internal/health/handler
-func RegisterServices(s grpc.ServiceRegistrar) {
+func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	adminv1.RegisterAdminServiceServer(s, adminhandler.NewServer())
-	authv1.RegisterAuthServiceServer(s, identityhandler.NewAuthServer())
+	var authSvc *identityservice.AuthService
+	if deps.Auth != nil {
+		authSvc = deps.Auth
+	}
+	authv1.RegisterAuthServiceServer(s, identityhandler.NewAuthServer(authSvc))
 	userv1.RegisterUserServiceServer(s, userhandler.NewServer())
 	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer())
 	devicev1.RegisterDeviceServiceServer(s, devicehandler.NewServer())

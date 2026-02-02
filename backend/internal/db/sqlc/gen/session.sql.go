@@ -12,21 +12,23 @@ import (
 )
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+INSERT INTO sessions (id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 `
 
 type CreateSessionParams struct {
-	ID         string
-	UserID     string
-	OrgID      string
-	DeviceID   string
-	ExpiresAt  time.Time
-	RevokedAt  sql.NullTime
-	LastSeenAt sql.NullTime
-	IpAddress  sql.NullString
-	CreatedAt  time.Time
+	ID               string
+	UserID           string
+	OrgID            string
+	DeviceID         string
+	ExpiresAt        time.Time
+	RevokedAt        sql.NullTime
+	LastSeenAt       sql.NullTime
+	IpAddress        sql.NullString
+	RefreshJti       sql.NullString
+	RefreshTokenHash sql.NullString
+	CreatedAt        time.Time
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
@@ -39,6 +41,8 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		arg.RevokedAt,
 		arg.LastSeenAt,
 		arg.IpAddress,
+		arg.RefreshJti,
+		arg.RefreshTokenHash,
 		arg.CreatedAt,
 	)
 	var i Session
@@ -51,13 +55,15 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.IpAddress,
+		&i.RefreshJti,
+		&i.RefreshTokenHash,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 FROM sessions
 WHERE id = $1
 `
@@ -74,13 +80,15 @@ func (q *Queries) GetSession(ctx context.Context, id string) (Session, error) {
 		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.IpAddress,
+		&i.RefreshJti,
+		&i.RefreshTokenHash,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listSessionsByUserAndOrg = `-- name: ListSessionsByUserAndOrg :many
-SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 FROM sessions
 WHERE user_id = $1 AND org_id = $2 AND revoked_at IS NULL
 ORDER BY created_at
@@ -109,6 +117,8 @@ func (q *Queries) ListSessionsByUserAndOrg(ctx context.Context, arg ListSessions
 			&i.RevokedAt,
 			&i.LastSeenAt,
 			&i.IpAddress,
+			&i.RefreshJti,
+			&i.RefreshTokenHash,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -124,11 +134,27 @@ func (q *Queries) ListSessionsByUserAndOrg(ctx context.Context, arg ListSessions
 	return items, nil
 }
 
+const revokeAllSessionsByUser = `-- name: RevokeAllSessionsByUser :exec
+UPDATE sessions
+SET revoked_at = $2
+WHERE user_id = $1
+`
+
+type RevokeAllSessionsByUserParams struct {
+	UserID    string
+	RevokedAt sql.NullTime
+}
+
+func (q *Queries) RevokeAllSessionsByUser(ctx context.Context, arg RevokeAllSessionsByUserParams) error {
+	_, err := q.db.ExecContext(ctx, revokeAllSessionsByUser, arg.UserID, arg.RevokedAt)
+	return err
+}
+
 const revokeSession = `-- name: RevokeSession :one
 UPDATE sessions
 SET revoked_at = $2
 WHERE id = $1
-RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 `
 
 type RevokeSessionParams struct {
@@ -148,6 +174,8 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (S
 		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.IpAddress,
+		&i.RefreshJti,
+		&i.RefreshTokenHash,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -157,7 +185,7 @@ const updateSessionLastSeen = `-- name: UpdateSessionLastSeen :one
 UPDATE sessions
 SET last_seen_at = $2
 WHERE id = $1
-RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 `
 
 type UpdateSessionLastSeenParams struct {
@@ -177,6 +205,40 @@ func (q *Queries) UpdateSessionLastSeen(ctx context.Context, arg UpdateSessionLa
 		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.IpAddress,
+		&i.RefreshJti,
+		&i.RefreshTokenHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateSessionRefreshToken = `-- name: UpdateSessionRefreshToken :one
+UPDATE sessions
+SET refresh_jti = $2, refresh_token_hash = $3
+WHERE id = $1
+RETURNING id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
+`
+
+type UpdateSessionRefreshTokenParams struct {
+	ID               string
+	RefreshJti       sql.NullString
+	RefreshTokenHash sql.NullString
+}
+
+func (q *Queries) UpdateSessionRefreshToken(ctx context.Context, arg UpdateSessionRefreshTokenParams) (Session, error) {
+	row := q.db.QueryRowContext(ctx, updateSessionRefreshToken, arg.ID, arg.RefreshJti, arg.RefreshTokenHash)
+	var i Session
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OrgID,
+		&i.DeviceID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+		&i.LastSeenAt,
+		&i.IpAddress,
+		&i.RefreshJti,
+		&i.RefreshTokenHash,
 		&i.CreatedAt,
 	)
 	return i, err

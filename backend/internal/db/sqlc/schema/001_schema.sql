@@ -54,15 +54,17 @@ CREATE TABLE devices (
 
 -- Sessions (ref users, organizations, devices)
 CREATE TABLE sessions (
-    id           VARCHAR PRIMARY KEY,
-    user_id      VARCHAR NOT NULL REFERENCES users(id),
-    org_id       VARCHAR NOT NULL REFERENCES organizations(id),
-    device_id    VARCHAR NOT NULL REFERENCES devices(id),
-    expires_at   TIMESTAMPTZ NOT NULL,
-    revoked_at   TIMESTAMPTZ,
-    last_seen_at TIMESTAMPTZ,
-    ip_address   VARCHAR,
-    created_at   TIMESTAMPTZ NOT NULL
+    id                 VARCHAR PRIMARY KEY,
+    user_id            VARCHAR NOT NULL REFERENCES users(id),
+    org_id             VARCHAR NOT NULL REFERENCES organizations(id),
+    device_id          VARCHAR NOT NULL REFERENCES devices(id),
+    expires_at         TIMESTAMPTZ NOT NULL,
+    revoked_at         TIMESTAMPTZ,
+    last_seen_at       TIMESTAMPTZ,
+    ip_address         VARCHAR,
+    refresh_jti         VARCHAR,
+    refresh_token_hash VARCHAR,
+    created_at         TIMESTAMPTZ NOT NULL
 );
 
 -- Policies (ref organizations)

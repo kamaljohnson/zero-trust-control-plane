@@ -48,15 +48,17 @@ func (r *PostgresRepository) ListByUserAndOrg(ctx context.Context, userID, orgID
 // Create persists the session to the database. The session must have ID set.
 func (r *PostgresRepository) Create(ctx context.Context, s *domain.Session) error {
 	_, err := r.queries.CreateSession(ctx, gen.CreateSessionParams{
-		ID:         s.ID,
-		UserID:     s.UserID,
-		OrgID:      s.OrgID,
-		DeviceID:   s.DeviceID,
-		ExpiresAt:  s.ExpiresAt,
-		RevokedAt:  timeToNullTime(s.RevokedAt),
-		LastSeenAt: timeToNullTime(s.LastSeenAt),
-		IpAddress:  sql.NullString{String: s.IPAddress, Valid: s.IPAddress != ""},
-		CreatedAt:  s.CreatedAt,
+		ID:               s.ID,
+		UserID:           s.UserID,
+		OrgID:            s.OrgID,
+		DeviceID:         s.DeviceID,
+		ExpiresAt:        s.ExpiresAt,
+		RevokedAt:        timeToNullTime(s.RevokedAt),
+		LastSeenAt:       timeToNullTime(s.LastSeenAt),
+		IpAddress:        sql.NullString{String: s.IPAddress, Valid: s.IPAddress != ""},
+		RefreshJti:       sql.NullString{String: s.RefreshJti, Valid: s.RefreshJti != ""},
+		RefreshTokenHash: sql.NullString{String: s.RefreshTokenHash, Valid: s.RefreshTokenHash != ""},
+		CreatedAt:        s.CreatedAt,
 	})
 	return err
 }
@@ -70,11 +72,29 @@ func (r *PostgresRepository) Revoke(ctx context.Context, id string) error {
 	return err
 }
 
+// RevokeAllSessionsByUser revokes all sessions for the given user. Returns an error if the update fails.
+func (r *PostgresRepository) RevokeAllSessionsByUser(ctx context.Context, userID string) error {
+	return r.queries.RevokeAllSessionsByUser(ctx, gen.RevokeAllSessionsByUserParams{
+		UserID:    userID,
+		RevokedAt: sql.NullTime{Time: time.Now(), Valid: true},
+	})
+}
+
 // UpdateLastSeen sets the session's last-seen timestamp for the given id. Returns an error if the update fails.
 func (r *PostgresRepository) UpdateLastSeen(ctx context.Context, id string, at time.Time) error {
 	_, err := r.queries.UpdateSessionLastSeen(ctx, gen.UpdateSessionLastSeenParams{
 		ID:         id,
 		LastSeenAt: sql.NullTime{Time: at, Valid: true},
+	})
+	return err
+}
+
+// UpdateRefreshToken sets the session's current refresh token jti and hash for rotation. Returns an error if the update fails.
+func (r *PostgresRepository) UpdateRefreshToken(ctx context.Context, sessionID, jti, refreshTokenHash string) error {
+	_, err := r.queries.UpdateSessionRefreshToken(ctx, gen.UpdateSessionRefreshTokenParams{
+		ID:               sessionID,
+		RefreshJti:       sql.NullString{String: jti, Valid: jti != ""},
+		RefreshTokenHash: sql.NullString{String: refreshTokenHash, Valid: refreshTokenHash != ""},
 	})
 	return err
 }
@@ -101,15 +121,25 @@ func genSessionToDomain(s *gen.Session) *domain.Session {
 	if s.IpAddress.Valid {
 		ip = s.IpAddress.String
 	}
+	refreshJti := ""
+	if s.RefreshJti.Valid {
+		refreshJti = s.RefreshJti.String
+	}
+	refreshTokenHash := ""
+	if s.RefreshTokenHash.Valid {
+		refreshTokenHash = s.RefreshTokenHash.String
+	}
 	return &domain.Session{
-		ID:         s.ID,
-		UserID:     s.UserID,
-		OrgID:      s.OrgID,
-		DeviceID:   s.DeviceID,
-		ExpiresAt:  s.ExpiresAt,
-		RevokedAt:  nullTimeToPtr(s.RevokedAt),
-		LastSeenAt: nullTimeToPtr(s.LastSeenAt),
-		IPAddress:  ip,
-		CreatedAt:  s.CreatedAt,
+		ID:               s.ID,
+		UserID:           s.UserID,
+		OrgID:            s.OrgID,
+		DeviceID:         s.DeviceID,
+		ExpiresAt:        s.ExpiresAt,
+		RevokedAt:        nullTimeToPtr(s.RevokedAt),
+		LastSeenAt:       nullTimeToPtr(s.LastSeenAt),
+		IPAddress:        ip,
+		RefreshJti:       refreshJti,
+		RefreshTokenHash: refreshTokenHash,
+		CreatedAt:        s.CreatedAt,
 	}
 }

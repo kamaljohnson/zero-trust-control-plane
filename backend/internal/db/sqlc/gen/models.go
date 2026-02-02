@@ -235,15 +235,17 @@ type Policy struct {
 }
 
 type Session struct {
-	ID         string
-	UserID     string
-	OrgID      string
-	DeviceID   string
-	ExpiresAt  time.Time
-	RevokedAt  sql.NullTime
-	LastSeenAt sql.NullTime
-	IpAddress  sql.NullString
-	CreatedAt  time.Time
+	ID               string
+	UserID           string
+	OrgID            string
+	DeviceID         string
+	ExpiresAt        time.Time
+	RevokedAt        sql.NullTime
+	LastSeenAt       sql.NullTime
+	IpAddress        sql.NullString
+	RefreshJti       sql.NullString
+	RefreshTokenHash sql.NullString
+	CreatedAt        time.Time
 }
 
 type User struct {
