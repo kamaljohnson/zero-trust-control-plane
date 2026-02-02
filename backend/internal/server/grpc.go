@@ -43,6 +43,10 @@ type Deps struct {
 	PolicyRepo policyrepo.Repository
 	// AuditRepo is the audit log repository for AuditService and the audit interceptor. If nil, ListAuditLogs returns Unimplemented and no RPCs are audited.
 	AuditRepo auditrepo.Repository
+	// HealthPinger is used by HealthService for readiness (e.g. *sql.DB). If nil, HealthCheck skips DB ping.
+	HealthPinger healthhandler.Pinger
+	// HealthPolicyChecker is used by HealthService for readiness (e.g. OPA evaluator). If nil, HealthCheck skips policy check.
+	HealthPolicyChecker healthhandler.PolicyChecker
 	// DevOTPHandler is the dev-only DevService (GetOTP). If nil, DevService is not registered. Set only when dev OTP is enabled and not production.
 	DevOTPHandler devv1.DevServiceServer
 }
@@ -76,7 +80,7 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer())
 	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer())
 	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo))
-	healthv1.RegisterHealthServiceServer(s, healthhandler.NewServer())
+	healthv1.RegisterHealthServiceServer(s, healthhandler.NewServer(deps.HealthPinger, deps.HealthPolicyChecker))
 	if deps.DevOTPHandler != nil {
 		devv1.RegisterDevServiceServer(s, deps.DevOTPHandler)
 	}

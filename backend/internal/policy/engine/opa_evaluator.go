@@ -66,6 +66,54 @@ func NewOPAEvaluator(policyRepo repository.Repository) *OPAEvaluator {
 	return &OPAEvaluator{policyRepo: policyRepo}
 }
 
+// HealthCheck verifies that the in-process OPA Rego engine can compile and evaluate the default policy.
+// Does not call the policy repo or database. Returns nil on success.
+func (e *OPAEvaluator) HealthCheck(ctx context.Context) error {
+	modules := map[string]string{"policy_0.rego": defaultRegoPolicy}
+	compiler, err := ast.CompileModules(modules)
+	if err != nil {
+		return fmt.Errorf("compile default policy: %w", err)
+	}
+	minimalInput := map[string]interface{}{
+		"platform": map[string]interface{}{
+			"mfa_required_always":    false,
+			"default_trust_ttl_days": 30,
+		},
+		"org": map[string]interface{}{
+			"mfa_required_for_new_device": true,
+			"mfa_required_for_untrusted":  true,
+			"mfa_required_always":         false,
+			"register_trust_after_mfa":    true,
+			"trust_ttl_days":              30,
+		},
+		"device": map[string]interface{}{
+			"id":                     "",
+			"trusted":                false,
+			"trusted_until":          nil,
+			"revoked_at":             nil,
+			"is_new":                 false,
+			"is_effectively_trusted": false,
+		},
+		"user": map[string]interface{}{
+			"id":        "",
+			"has_phone": false,
+		},
+	}
+	q := rego.New(
+		rego.Query("data.ztcp.device_trust.mfa_required"),
+		rego.Compiler(compiler),
+		rego.Input(minimalInput),
+	)
+	rs, err := q.Eval(ctx)
+	if err != nil {
+		return fmt.Errorf("eval default policy: %w", err)
+	}
+	if len(rs) == 0 || len(rs[0].Expressions) == 0 {
+		return fmt.Errorf("policy query returned no result")
+	}
+	return nil
+}
+
 // EvaluateMFA evaluates MFA policy using OPA Rego policies.
 func (e *OPAEvaluator) EvaluateMFA(
 	ctx context.Context,

@@ -122,6 +122,8 @@ func main() {
 		deps.PolicyRepo = policyRepo
 		auditRepo := auditrepo.NewPostgresRepository(database)
 		deps.AuditRepo = auditRepo
+		deps.HealthPinger = database
+		deps.HealthPolicyChecker = policyEvaluator
 	}
 
 	if authEnabled {

@@ -12,6 +12,7 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **[docs/audit.md](docs/audit.md)** — Audit logging: compliance trail, what is logged (action/resource from RPC), ListAuditLogs API, interceptor and wiring, when enabled/disabled, configuration.
 - **[docs/database.md](docs/database.md)** — Database: schema, enums and tables, when the DB is used, migrations, schema/codegen (sqlc, connection, repos), and cross-reference to auth table roles.
 - **[docs/device-trust.md](docs/device-trust.md)** — Device trust: identifiable/revocable/time-bound devices, policy evaluation (OPA/Rego), when MFA is required and when trust is registered, configuration.
+- **[docs/health.md](docs/health.md)** — Health checks: readiness RPC (HealthService.HealthCheck), behavior with and without database, how to call from Kubernetes or gRPC clients.
 - **[docs/mfa.md](docs/mfa.md)** — MFA: risk-based MFA, when required, challenge/OTP flow, VerifyMFA and SubmitPhoneAndRequestMFA, API and configuration.
 
 ## Layout
@@ -20,7 +21,7 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **cmd/worker** — async jobs (audit, cleanup)
 - **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
 - **cmd/seed** — Development data seeder (used by scripts/seed.sh)
-- **docs/** — documentation: `auth.md`, `audit.md`, `database.md`, `device-trust.md`, `mfa.md`
+- **docs/** — documentation: `auth.md`, `audit.md`, `database.md`, `device-trust.md`, `health.md`, `mfa.md`
 - **proto/** — Protocol Buffer definitions: common, auth, user, org, membership, device, session, policy, audit, telemetry, admin, health
 - **api/generated/** — generated Go and gRPC code from proto (buf or protoc)
 - **internal/** — server; one folder per domain: user, identity, organization, membership, device, session, policy, audit; platform (tenancy, RBAC, plans); db; security; config
