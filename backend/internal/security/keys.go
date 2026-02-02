@@ -15,12 +15,15 @@ import (
 var ErrInvalidKey = errors.New("invalid key")
 
 // LoadPEM reads content from path if s does not look like inline PEM; otherwise returns s as bytes.
+// Inline PEM may use literal `\n` (e.g. from .env); those are converted to actual newlines for decoding.
 func LoadPEM(s string) ([]byte, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil, ErrInvalidKey
 	}
 	if strings.HasPrefix(s, "-----BEGIN") {
+		// .env and similar config often leave \n as literal backslash-n; PEM needs real newlines.
+		s = strings.ReplaceAll(s, "\\n", "\n")
 		return []byte(s), nil
 	}
 	return os.ReadFile(s)
