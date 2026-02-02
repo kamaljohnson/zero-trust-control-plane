@@ -8,7 +8,7 @@ This document describes the authentication implementation for the zero-trust con
 
 Auth provides **password-only** authentication for Browser, CLI, and Admin UI with enterprise-grade security: bcrypt password hashing, JWT access and refresh tokens (RS256/ES256), refresh-token rotation, session binding via `refresh_jti` and hashed refresh token, refresh reuse detection (revoke all user sessions on reuse), and strong password policy (12+ chars, mixed case, number, symbol).
 
-**Scope**: Register, Login, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented.
+**Scope**: Register, Login (with optional risk-based MFA), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
 
 ### When auth is enabled
 
@@ -33,7 +33,7 @@ When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the
 3. Parses JWT keys via [internal/security/keys.go](../internal/security/keys.go) `ParsePrivateKey` and `ParsePublicKey` (supports inline PEM or file path; see `LoadPEM`).
 4. Builds `TokenProvider` with issuer, audience, and TTLs from config.
 5. Creates the five repos (user, identity, session, device, membership) and `NewAuthService(...)`, then sets `deps.Auth`.
-6. Builds `publicMethods` with the four full method names: AuthService Register, Login, Refresh; HealthService HealthCheck.
+6. Builds `publicMethods` with the five full method names: AuthService Register, Login, VerifyMFA, Refresh; HealthService HealthCheck.
 7. Creates the gRPC server with `grpc.NewServer(grpc.UnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods)))`.
 
 [internal/server/grpc.go](../internal/server/grpc.go) `RegisterServices` passes `deps.Auth` into `identityhandler.NewAuthServer(authSvc)`. If `deps.Auth == nil` (auth disabled), the handler returns Unimplemented for all auth RPCs.
@@ -57,7 +57,7 @@ flowchart LR
 
 ### Request path (protected RPC)
 
-For a protected RPC, the request passes through the auth interceptor before the handler. Public methods (Register, Login, Refresh, HealthCheck) skip Bearer validation and proceed even with no or invalid token.
+For a protected RPC, the request passes through the auth interceptor before the handler. Public methods (Register, Login, VerifyMFA, Refresh, HealthCheck) skip Bearer validation and proceed even with no or invalid token.
 
 ```mermaid
 sequenceDiagram
@@ -92,7 +92,9 @@ sequenceDiagram
 | RPC | Request | Response | AuthResponse contents | Notes |
 |-----|--------|----------|------------------------|-------|
 | Register | RegisterRequest | AuthResponse | `user_id` only | No tokens or org_id until Login with org. |
-| Login | LoginRequest | AuthResponse | access_token, refresh_token, expires_at, user_id, org_id | Full session. |
+| Login | LoginRequest | **LoginResponse** | oneof: **tokens**, **mfa_required** (challenge_id, phone_mask), or **phone_required** (intent_id) | If policy requires MFA and user has phone, returns mfa_required; if MFA required but user has no phone, returns phone_required; else returns tokens. |
+| VerifyMFA | VerifyMFARequest | AuthResponse | access_token, refresh_token, expires_at, user_id, org_id | Completes MFA; validates challenge and OTP, creates session, optionally marks device trusted; on first-time phone, sets user.phone and phone_verified. Returns tokens. |
+| SubmitPhoneAndRequestMFA | SubmitPhoneAndRequestMFARequest | SubmitPhoneAndRequestMFAResponse | challenge_id, phone_mask | Consumes intent from Login(phone_required); creates MFA challenge for submitted phone, sends OTP; returns challenge_id and phone_mask. Client then calls VerifyMFA. |
 | Refresh | RefreshRequest | AuthResponse | Same as Login | New tokens (rotation). |
 | Logout | LogoutRequest | google.protobuf.Empty | — | Revokes session by refresh_token or by Bearer context. |
 | LinkIdentity | LinkIdentityRequest | LinkIdentityResponse | — | Stub; returns Unimplemented. |
@@ -103,6 +105,8 @@ The following full method names are treated as public; they do not require a val
 
 - `AuthService_Register_FullMethodName`
 - `AuthService_Login_FullMethodName`
+- `AuthService_VerifyMFA_FullMethodName`
+- `AuthService_SubmitPhoneAndRequestMFA_FullMethodName`
 - `AuthService_Refresh_FullMethodName`
 - `HealthService_HealthCheck_FullMethodName`
 
@@ -114,7 +118,13 @@ These are configured in [cmd/server/main.go](../cmd/server/main.go) in the `publ
 - **LoginRequest**: `email`, `password`, `org_id` (required), optional `device_fingerprint` (used to get-or-create device for the session).
 - **RefreshRequest**: `refresh_token`.
 - **LogoutRequest**: optional `refresh_token`; if empty, the session is revoked from context when the client sends a valid Bearer (access) token (auth interceptor sets session_id in context).
-- **AuthResponse**: `access_token`, `refresh_token`, `expires_at` (Timestamp), `user_id`, `org_id`. Fields may be empty depending on RPC: Register returns only `user_id`; Login and Refresh return all fields.
+- **AuthResponse**: `access_token`, `refresh_token`, `expires_at` (Timestamp), `user_id`, `org_id`. Fields may be empty depending on RPC: Register returns only `user_id`; Login (when tokens), VerifyMFA, and Refresh return all fields.
+- **LoginResponse**: oneof **result** — **tokens** (AuthResponse), **mfa_required** (MFARequired), or **phone_required** (PhoneRequired). When MFA is required and user has phone, client uses challenge_id and phone_mask and calls VerifyMFA. When MFA required but user has no phone, client gets intent_id, prompts for phone, calls SubmitPhoneAndRequestMFA, then VerifyMFA.
+- **MFARequired**: `challenge_id` (opaque id for VerifyMFA), `phone_mask` (e.g. last 4 digits for display).
+- **PhoneRequired**: `intent_id` (one-time; pass to SubmitPhoneAndRequestMFA with user-entered phone).
+- **SubmitPhoneAndRequestMFARequest**: `intent_id` (from Login phone_required), `phone` (user-entered).
+- **SubmitPhoneAndRequestMFAResponse**: `challenge_id`, `phone_mask` (then call VerifyMFA with challenge_id and OTP).
+- **VerifyMFARequest**: `challenge_id` (from Login mfa_required or SubmitPhoneAndRequestMFA), `otp` (user-entered code).
 - **Logout**: returns `google.protobuf.Empty`.
 
 ### Errors
@@ -128,6 +138,10 @@ The handler maps auth-service sentinel errors to gRPC status codes in [internal/
 | ErrInvalidRefreshToken | Unauthenticated |
 | ErrRefreshTokenReuse | Unauthenticated |
 | ErrNotOrgMember | PermissionDenied |
+| ErrPhoneRequiredForMFA | FailedPrecondition |
+| ErrInvalidMFAChallenge, ErrInvalidOTP | Unauthenticated |
+| ErrInvalidMFAIntent | Unauthenticated |
+| ErrChallengeExpired | FailedPrecondition |
 | Validation (email, password, etc.) | InvalidArgument |
 
 Login returns a generic "invalid credentials" on failure so that "user not found" and "wrong password" are indistinguishable.
@@ -192,8 +206,17 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 2. Get user by email; get local identity by user and provider; compare password (constant-time). Return invalid credentials on any failure.
 3. Require org_id and validate membership via `GetMembershipByUserAndOrg`. If no membership, return `ErrNotOrgMember` → PermissionDenied.
 4. Get or create device: if `device_fingerprint` is provided, look up by user/org/fingerprint; if not found, create. If not provided, use fingerprint `"password-login"` and create device if needed ([auth_service.go](../internal/identity/service/auth_service.go)).
-5. Create session with id, user_id, org_id, device_id, expires_at, and **refresh_jti** and **refresh_token_hash** from the first refresh token (`security.HashRefreshToken(refreshToken)`). Session is created after issuing the first refresh token so the hash can be stored.
-6. Issue access and refresh JWTs; return AuthResponse with tokens, expires_at, user_id, org_id.
+5. Load platform and org MFA/device-trust settings (from `platform_settings` and `org_mfa_settings`) and run policy evaluation (`PolicyEvaluator.EvaluateMFA`). See [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+6. **If MFA required**: If user has no phone, create MFA intent and return **LoginResponse** with **phone_required** (intent_id); client collects phone and calls SubmitPhoneAndRequestMFA, then VerifyMFA. If user has phone, create MFA challenge, send OTP (if SMS configured); return **LoginResponse** with **mfa_required** (challenge_id, phone_mask). Client then calls VerifyMFA with challenge_id and OTP.
+7. **If MFA not required**: Create session with id, user_id, org_id, device_id, expires_at, and **refresh_jti** and **refresh_token_hash** from the first refresh token; issue access and refresh JWTs; return **LoginResponse** with **tokens** (AuthResponse).
+
+### VerifyMFA
+
+1. Validate challenge_id and otp (non-empty). Load MFA challenge by id; return Unauthenticated if not found.
+2. Check challenge not expired; return FailedPrecondition if expired. Verify OTP (constant-time) against stored code_hash; return Unauthenticated if mismatch.
+3. If user has no phone (first-time), call UserRepo.SetPhoneVerified(userID, challenge.Phone) so the user's phone is set and locked (phone_verified = true); one phone per user, immutable after verification.
+4. Re-evaluate policy for register_trust_after_mfa and trust_ttl_days; create session and issue tokens; if policy says register trust, mark device trusted with trust_ttl_days.
+5. Delete the MFA challenge; return AuthResponse with tokens.
 
 ### Refresh
 
@@ -238,19 +261,29 @@ Config is loaded in [internal/config/config.go](../internal/config/config.go) (V
 
 ---
 
+## MFA and device trust
+
+Login may return **mfa_required** instead of tokens when policy requires a second factor (e.g. new device, untrusted device, or org/platform mandate). The client then calls **VerifyMFA** with the challenge_id and user-entered OTP to complete login. Device trust is identifiable (user/org/fingerprint), revocable (`revoked_at`), and time-bound (`trusted_until`); after successful MFA the backend may register the device as trusted for a configurable TTL. For full detail (policy evaluation, OPA/Rego, OTP and SMS, configuration), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+
+---
+
 ## Database and Schema
 
-Auth uses the **users**, **identities**, **memberships**, **devices**, and **sessions** tables. Full schema and table definitions are in [database.md](database.md). Apply migrations 003 and 004 when adding auth to an existing database so that `sessions.refresh_jti` and `sessions.refresh_token_hash` exist.
+Auth uses the **users**, **identities**, **memberships**, **devices**, **sessions**, **platform_settings**, **org_mfa_settings**, and **mfa_challenges** tables. Full schema and table definitions are in [database.md](database.md). Apply migrations 003, 004, and 005 when adding auth to an existing database so that `sessions.refresh_jti`, `sessions.refresh_token_hash`, and MFA/device-trust columns and tables exist.
 
 ### Table roles (auth)
 
 | Table | Role in auth |
 |-------|----------------|
-| **users** | id, email, name, status; created by Register; looked up by email on Login. |
+| **users** | id, email, name, status, **phone** (optional; used for MFA), **phone_verified** (locked after first MFA); one phone per user, immutable after verification. Created by Register; looked up by email on Login. |
 | **identities** | user_id, provider (`local`), provider_id (email), password_hash; local identity created by Register; Login uses GetByUserAndProvider and compares password. |
 | **memberships** | user_id, org_id, role; required for Login (GetMembershipByUserAndOrg); no membership → PermissionDenied. |
-| **devices** | user_id, org_id, fingerprint; get-or-create per Login (default fingerprint `"password-login"` if not provided). |
-| **sessions** | user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, **refresh_jti**, **refresh_token_hash**; created on Login; refreshed via UpdateRefreshToken; revoked on Logout or reuse. |
+| **devices** | user_id, org_id, fingerprint, **trusted**, **trusted_until**, **revoked_at**; get-or-create per Login (default fingerprint `"password-login"` if not provided); used for MFA/device-trust policy and optional trust registration after VerifyMFA. |
+| **sessions** | user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, **refresh_jti**, **refresh_token_hash**; created on Login or after VerifyMFA; refreshed via UpdateRefreshToken; revoked on Logout or reuse. |
+| **platform_settings** | key-value; platform-wide MFA/device-trust settings (e.g. mfa_required_always, default_trust_ttl_days) used by policy evaluation. |
+| **org_mfa_settings** | one row per org; org-level MFA/device-trust settings (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.) used by policy evaluation. |
+| **mfa_intents** | one-time intents (id, user_id, org_id, device_id, expires_at); created when Login returns phone_required (user has no phone); consumed by SubmitPhoneAndRequestMFA. |
+| **mfa_challenges** | ephemeral MFA challenges (id, user_id, org_id, device_id, phone, code_hash, expires_at); created when Login returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or expiry. |
 
 ---
 

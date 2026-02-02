@@ -12,18 +12,20 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, email, name, status, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, email, name, status, created_at, updated_at
+INSERT INTO users (id, email, name, phone, phone_verified, status, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, email, name, phone, phone_verified, status, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	ID        string
-	Email     string
-	Name      sql.NullString
-	Status    UserStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            string
+	Email         string
+	Name          sql.NullString
+	Phone         sql.NullString
+	PhoneVerified bool
+	Status        UserStatus
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -31,6 +33,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.ID,
 		arg.Email,
 		arg.Name,
+		arg.Phone,
+		arg.PhoneVerified,
 		arg.Status,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -40,6 +44,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.Email,
 		&i.Name,
+		&i.Phone,
+		&i.PhoneVerified,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -48,7 +54,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, status, created_at, updated_at
+SELECT id, email, name, phone, phone_verified, status, created_at, updated_at
 FROM users
 WHERE id = $1
 `
@@ -60,6 +66,8 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 		&i.ID,
 		&i.Email,
 		&i.Name,
+		&i.Phone,
+		&i.PhoneVerified,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -68,7 +76,7 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, status, created_at, updated_at
+SELECT id, email, name, phone, phone_verified, status, created_at, updated_at
 FROM users
 WHERE email = $1
 `
@@ -80,6 +88,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.ID,
 		&i.Email,
 		&i.Name,
+		&i.Phone,
+		&i.PhoneVerified,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -87,19 +97,41 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
+const setPhoneVerified = `-- name: SetPhoneVerified :one
+UPDATE users
+SET phone = $2, phone_verified = true, updated_at = $3
+WHERE id = $1 AND (phone IS NULL OR phone = '') AND phone_verified = false
+RETURNING id
+`
+
+type SetPhoneVerifiedParams struct {
+	ID        string
+	Phone     sql.NullString
+	UpdatedAt time.Time
+}
+
+func (q *Queries) SetPhoneVerified(ctx context.Context, arg SetPhoneVerifiedParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, setPhoneVerified, arg.ID, arg.Phone, arg.UpdatedAt)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
-SET email = $2, name = $3, status = $4, updated_at = $5
+SET email = $2, name = $3, phone = $4, phone_verified = $5, status = $6, updated_at = $7
 WHERE id = $1
-RETURNING id, email, name, status, created_at, updated_at
+RETURNING id, email, name, phone, phone_verified, status, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID        string
-	Email     string
-	Name      sql.NullString
-	Status    UserStatus
-	UpdatedAt time.Time
+	ID            string
+	Email         string
+	Name          sql.NullString
+	Phone         sql.NullString
+	PhoneVerified bool
+	Status        UserStatus
+	UpdatedAt     time.Time
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -107,6 +139,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.ID,
 		arg.Email,
 		arg.Name,
+		arg.Phone,
+		arg.PhoneVerified,
 		arg.Status,
 		arg.UpdatedAt,
 	)
@@ -115,6 +149,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.ID,
 		&i.Email,
 		&i.Name,
+		&i.Phone,
+		&i.PhoneVerified,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,

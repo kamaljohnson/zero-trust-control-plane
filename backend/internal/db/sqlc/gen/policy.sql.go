@@ -43,6 +43,52 @@ func (q *Queries) CreatePolicy(ctx context.Context, arg CreatePolicyParams) (Pol
 	return i, err
 }
 
+const deletePolicy = `-- name: DeletePolicy :exec
+DELETE FROM policies
+WHERE id = $1
+`
+
+func (q *Queries) DeletePolicy(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deletePolicy, id)
+	return err
+}
+
+const getEnabledPoliciesByOrg = `-- name: GetEnabledPoliciesByOrg :many
+SELECT id, org_id, rules, enabled, created_at
+FROM policies
+WHERE org_id = $1 AND enabled = true
+ORDER BY created_at
+`
+
+func (q *Queries) GetEnabledPoliciesByOrg(ctx context.Context, orgID string) ([]Policy, error) {
+	rows, err := q.db.QueryContext(ctx, getEnabledPoliciesByOrg, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Policy
+	for rows.Next() {
+		var i Policy
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrgID,
+			&i.Rules,
+			&i.Enabled,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPolicy = `-- name: GetPolicy :one
 SELECT id, org_id, rules, enabled, created_at
 FROM policies

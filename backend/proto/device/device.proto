@@ -14,8 +14,10 @@ message Device {
   string org_id = 3;
   string fingerprint = 4;
   bool trusted = 5;
-  google.protobuf.Timestamp last_seen_at = 6;
-  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp trusted_until = 6;
+  google.protobuf.Timestamp revoked_at = 7;
+  google.protobuf.Timestamp last_seen_at = 8;
+  google.protobuf.Timestamp created_at = 9;
 }
 
 // RegisterDeviceRequest registers a new device.
@@ -53,9 +55,18 @@ message ListDevicesResponse {
   ztcp.common.v1.PaginationResult pagination = 2;
 }
 
+// RevokeDeviceRequest identifies the device to revoke (trust cleared, revoked_at set).
+message RevokeDeviceRequest {
+  string device_id = 1;
+}
+
+// RevokeDeviceResponse is empty on success.
+message RevokeDeviceResponse {}
+
 // DeviceService handles device trust and posture. Browser talks here directly.
 service DeviceService {
   rpc RegisterDevice(RegisterDeviceRequest) returns (RegisterDeviceResponse);
   rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
 }

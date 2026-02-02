@@ -12,19 +12,21 @@ import (
 )
 
 const createDevice = `-- name: CreateDevice :one
-INSERT INTO devices (id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+INSERT INTO devices (id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 `
 
 type CreateDeviceParams struct {
-	ID          string
-	UserID      string
-	OrgID       string
-	Fingerprint string
-	Trusted     bool
-	LastSeenAt  sql.NullTime
-	CreatedAt   time.Time
+	ID           string
+	UserID       string
+	OrgID        string
+	Fingerprint  string
+	Trusted      bool
+	TrustedUntil sql.NullTime
+	RevokedAt    sql.NullTime
+	LastSeenAt   sql.NullTime
+	CreatedAt    time.Time
 }
 
 func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error) {
@@ -34,6 +36,8 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		arg.OrgID,
 		arg.Fingerprint,
 		arg.Trusted,
+		arg.TrustedUntil,
+		arg.RevokedAt,
 		arg.LastSeenAt,
 		arg.CreatedAt,
 	)
@@ -44,6 +48,8 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		&i.OrgID,
 		&i.Fingerprint,
 		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 	)
@@ -51,7 +57,7 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 }
 
 const getDevice = `-- name: GetDevice :one
-SELECT id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+SELECT id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 FROM devices
 WHERE id = $1
 `
@@ -65,6 +71,8 @@ func (q *Queries) GetDevice(ctx context.Context, id string) (Device, error) {
 		&i.OrgID,
 		&i.Fingerprint,
 		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 	)
@@ -72,7 +80,7 @@ func (q *Queries) GetDevice(ctx context.Context, id string) (Device, error) {
 }
 
 const getDeviceByUserAndFingerprint = `-- name: GetDeviceByUserAndFingerprint :one
-SELECT id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+SELECT id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 FROM devices
 WHERE user_id = $1 AND org_id = $2 AND fingerprint = $3
 `
@@ -92,6 +100,8 @@ func (q *Queries) GetDeviceByUserAndFingerprint(ctx context.Context, arg GetDevi
 		&i.OrgID,
 		&i.Fingerprint,
 		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 	)
@@ -99,7 +109,7 @@ func (q *Queries) GetDeviceByUserAndFingerprint(ctx context.Context, arg GetDevi
 }
 
 const listDevicesByOrg = `-- name: ListDevicesByOrg :many
-SELECT id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+SELECT id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 FROM devices
 WHERE org_id = $1
 ORDER BY created_at
@@ -120,6 +130,8 @@ func (q *Queries) ListDevicesByOrg(ctx context.Context, orgID string) ([]Device,
 			&i.OrgID,
 			&i.Fingerprint,
 			&i.Trusted,
+			&i.TrustedUntil,
+			&i.RevokedAt,
 			&i.LastSeenAt,
 			&i.CreatedAt,
 		); err != nil {
@@ -136,11 +148,40 @@ func (q *Queries) ListDevicesByOrg(ctx context.Context, orgID string) ([]Device,
 	return items, nil
 }
 
+const revokeDevice = `-- name: RevokeDevice :one
+UPDATE devices
+SET trusted = false, trusted_until = NULL, revoked_at = $2
+WHERE id = $1
+RETURNING id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
+`
+
+type RevokeDeviceParams struct {
+	ID        string
+	RevokedAt sql.NullTime
+}
+
+func (q *Queries) RevokeDevice(ctx context.Context, arg RevokeDeviceParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, revokeDevice, arg.ID, arg.RevokedAt)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OrgID,
+		&i.Fingerprint,
+		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
+		&i.LastSeenAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const updateDeviceLastSeen = `-- name: UpdateDeviceLastSeen :one
 UPDATE devices
 SET last_seen_at = $2
 WHERE id = $1
-RETURNING id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+RETURNING id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 `
 
 type UpdateDeviceLastSeenParams struct {
@@ -157,6 +198,8 @@ func (q *Queries) UpdateDeviceLastSeen(ctx context.Context, arg UpdateDeviceLast
 		&i.OrgID,
 		&i.Fingerprint,
 		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 	)
@@ -167,7 +210,7 @@ const updateDeviceTrusted = `-- name: UpdateDeviceTrusted :one
 UPDATE devices
 SET trusted = $2
 WHERE id = $1
-RETURNING id, user_id, org_id, fingerprint, trusted, last_seen_at, created_at
+RETURNING id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
 `
 
 type UpdateDeviceTrustedParams struct {
@@ -184,6 +227,38 @@ func (q *Queries) UpdateDeviceTrusted(ctx context.Context, arg UpdateDeviceTrust
 		&i.OrgID,
 		&i.Fingerprint,
 		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
+		&i.LastSeenAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateDeviceTrustedWithExpiry = `-- name: UpdateDeviceTrustedWithExpiry :one
+UPDATE devices
+SET trusted = $2, trusted_until = $3, revoked_at = NULL
+WHERE id = $1
+RETURNING id, user_id, org_id, fingerprint, trusted, trusted_until, revoked_at, last_seen_at, created_at
+`
+
+type UpdateDeviceTrustedWithExpiryParams struct {
+	ID           string
+	Trusted      bool
+	TrustedUntil sql.NullTime
+}
+
+func (q *Queries) UpdateDeviceTrustedWithExpiry(ctx context.Context, arg UpdateDeviceTrustedWithExpiryParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, updateDeviceTrustedWithExpiry, arg.ID, arg.Trusted, arg.TrustedUntil)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OrgID,
+		&i.Fingerprint,
+		&i.Trusted,
+		&i.TrustedUntil,
+		&i.RevokedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 	)

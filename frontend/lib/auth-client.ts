@@ -13,6 +13,20 @@ export interface AuthResponse {
   org_id?: string;
 }
 
+/** Login response: either tokens (AuthResponse), MFA required (challenge_id, phone_mask), or phone required (intent_id). */
+export interface LoginResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: string;
+  user_id?: string;
+  org_id?: string;
+  mfa_required?: boolean;
+  challenge_id?: string;
+  phone_mask?: string;
+  phone_required?: boolean;
+  intent_id?: string;
+}
+
 export interface RegisterResponse {
   user_id?: string;
 }
@@ -38,14 +52,14 @@ export async function register(
 }
 
 /**
- * Login authenticates and returns tokens and user/org context.
+ * Login authenticates and returns either tokens or MFA required (challenge_id, phone_mask).
  */
 export async function login(
   email: string,
   password: string,
   orgId: string,
   deviceFingerprint?: string
-): Promise<AuthResponse> {
+): Promise<LoginResponse> {
   const res = await fetch(`${API}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -59,6 +73,41 @@ export async function login(
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error ?? "Login failed.");
+  }
+  return data;
+}
+
+/**
+ * RequestMFAWithPhone submits phone for MFA when Login returned phone_required. Returns challenge_id and phone_mask.
+ */
+export async function requestMFAWithPhone(
+  intentId: string,
+  phone: string
+): Promise<{ challenge_id: string; phone_mask: string }> {
+  const res = await fetch(`${API}/mfa/request-with-phone`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ intent_id: intentId, phone }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error ?? "Request MFA with phone failed.");
+  }
+  return data;
+}
+
+/**
+ * VerifyMFA verifies the OTP for the given challenge and returns tokens.
+ */
+export async function verifyMFA(challengeId: string, otp: string): Promise<AuthResponse> {
+  const res = await fetch(`${API}/mfa/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ challenge_id: challengeId, otp }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error ?? "MFA verification failed.");
   }
   return data;
 }

@@ -6,12 +6,14 @@ CREATE TYPE role AS ENUM ('owner', 'admin', 'member');
 
 -- Users (no FKs)
 CREATE TABLE users (
-    id         VARCHAR PRIMARY KEY,
-    email      VARCHAR NOT NULL UNIQUE,
-    name       VARCHAR,
-    status     user_status NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
+    id             VARCHAR PRIMARY KEY,
+    email          VARCHAR NOT NULL UNIQUE,
+    name           VARCHAR,
+    phone          VARCHAR,
+    phone_verified BOOLEAN NOT NULL DEFAULT false,
+    status         user_status NOT NULL,
+    created_at     TIMESTAMPTZ NOT NULL,
+    updated_at     TIMESTAMPTZ NOT NULL
 );
 
 -- Identities (ref users)
@@ -43,13 +45,15 @@ CREATE TABLE memberships (
 
 -- Devices (ref users, organizations)
 CREATE TABLE devices (
-    id           VARCHAR PRIMARY KEY,
-    user_id      VARCHAR NOT NULL REFERENCES users(id),
-    org_id       VARCHAR NOT NULL REFERENCES organizations(id),
-    fingerprint  VARCHAR NOT NULL,
-    trusted      BOOLEAN NOT NULL,
-    last_seen_at TIMESTAMPTZ,
-    created_at   TIMESTAMPTZ NOT NULL
+    id            VARCHAR PRIMARY KEY,
+    user_id       VARCHAR NOT NULL REFERENCES users(id),
+    org_id        VARCHAR NOT NULL REFERENCES organizations(id),
+    fingerprint   VARCHAR NOT NULL,
+    trusted       BOOLEAN NOT NULL,
+    trusted_until TIMESTAMPTZ,
+    revoked_at    TIMESTAMPTZ,
+    last_seen_at  TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ NOT NULL
 );
 
 -- Sessions (ref users, organizations, devices)
@@ -75,6 +79,49 @@ CREATE TABLE policies (
     enabled    BOOLEAN NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
+
+-- Platform-level settings (key-value)
+CREATE TABLE platform_settings (
+    key        VARCHAR PRIMARY KEY,
+    value_json TEXT NOT NULL
+);
+
+-- Org-level MFA/device trust settings (one row per org)
+CREATE TABLE org_mfa_settings (
+    org_id                       VARCHAR PRIMARY KEY REFERENCES organizations(id),
+    mfa_required_for_new_device  BOOLEAN NOT NULL DEFAULT true,
+    mfa_required_for_untrusted   BOOLEAN NOT NULL DEFAULT true,
+    mfa_required_always          BOOLEAN NOT NULL DEFAULT false,
+    register_trust_after_mfa     BOOLEAN NOT NULL DEFAULT true,
+    trust_ttl_days               INTEGER NOT NULL DEFAULT 30,
+    created_at                   TIMESTAMPTZ NOT NULL,
+    updated_at                   TIMESTAMPTZ NOT NULL
+);
+
+-- MFA challenges (OTP flow)
+CREATE TABLE mfa_challenges (
+    id         VARCHAR PRIMARY KEY,
+    user_id    VARCHAR NOT NULL REFERENCES users(id),
+    org_id     VARCHAR NOT NULL REFERENCES organizations(id),
+    device_id  VARCHAR NOT NULL REFERENCES devices(id),
+    phone      VARCHAR NOT NULL,
+    code_hash  VARCHAR NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_mfa_challenges_expires_at ON mfa_challenges(expires_at);
+
+-- MFA intents (one-time: collect phone then send OTP when user has no phone)
+CREATE TABLE mfa_intents (
+    id         VARCHAR PRIMARY KEY,
+    user_id    VARCHAR NOT NULL REFERENCES users(id),
+    org_id     VARCHAR NOT NULL REFERENCES organizations(id),
+    device_id  VARCHAR NOT NULL REFERENCES devices(id),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_mfa_intents_expires_at ON mfa_intents(expires_at);
 
 -- Audit logs (ref organizations, users)
 CREATE TABLE audit_logs (

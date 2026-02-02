@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ztcp.dev.v1;
+
+option go_package = "zero-trust-control-plane/backend/api/generated/dev/v1;devv1";
+
+// GetOTPRequest identifies the MFA challenge for which to return the OTP (dev-only).
+message GetOTPRequest {
+  string challenge_id = 1;
+}
+
+// GetOTPResponse returns the plain OTP and a note when dev OTP is enabled. DEV MODE ONLY.
+message GetOTPResponse {
+  string otp = 1;
+  string note = 2;
+}
+
+// DevService exposes dev-only endpoints (e.g. OTP retrieval). Only registered when dev OTP is enabled and not production.
+service DevService {
+  rpc GetOTP(GetOTPRequest) returns (GetOTPResponse);
+}

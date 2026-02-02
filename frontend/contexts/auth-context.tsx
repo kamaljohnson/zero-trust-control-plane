@@ -34,11 +34,13 @@ interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** Returns login response; if mfa_required, caller should show OTP step and call verifyMFA. */
   login: (
     email: string,
     password: string,
     orgId: string
-  ) => Promise<void>;
+  ) => Promise<authClient.LoginResponse>;
+  verifyMFA: (challengeId: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   setAuthFromResponse: (res: authClient.AuthResponse) => void;
@@ -150,8 +152,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string, orgId: string) => {
+    async (email: string, password: string, orgId: string): Promise<authClient.LoginResponse> => {
       const res = await authClient.login(email, password, orgId);
+      if (res.mfa_required !== true && res.phone_required !== true) {
+        setAuthFromResponse(res as authClient.AuthResponse);
+      }
+      return res;
+    },
+    [setAuthFromResponse]
+  );
+
+  const verifyMFA = useCallback(
+    async (challengeId: string, otp: string) => {
+      const res = await authClient.verifyMFA(challengeId, otp);
       setAuthFromResponse(res);
     },
     [setAuthFromResponse]
@@ -175,12 +188,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: state !== null,
       isLoading,
       login,
+      verifyMFA,
       logout,
       refresh,
       setAuthFromResponse,
       clearAuth,
     }),
-    [state, isLoading, login, logout, refresh, setAuthFromResponse, clearAuth]
+    [state, isLoading, login, verifyMFA, logout, refresh, setAuthFromResponse, clearAuth]
   );
 
   return (

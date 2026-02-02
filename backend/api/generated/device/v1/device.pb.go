@@ -31,8 +31,10 @@ type Device struct {
 	OrgId         string                 `protobuf:"bytes,3,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
 	Fingerprint   string                 `protobuf:"bytes,4,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	Trusted       bool                   `protobuf:"varint,5,opt,name=trusted,proto3" json:"trusted,omitempty"`
-	LastSeenAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	TrustedUntil  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=trusted_until,json=trustedUntil,proto3" json:"trusted_until,omitempty"`
+	RevokedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
+	LastSeenAt    *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -100,6 +102,20 @@ func (x *Device) GetTrusted() bool {
 		return x.Trusted
 	}
 	return false
+}
+
+func (x *Device) GetTrustedUntil() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TrustedUntil
+	}
+	return nil
+}
+
+func (x *Device) GetRevokedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RevokedAt
+	}
+	return nil
 }
 
 func (x *Device) GetLastSeenAt() *timestamppb.Timestamp {
@@ -426,21 +442,106 @@ func (x *ListDevicesResponse) GetPagination() *v1.PaginationResult {
 	return nil
 }
 
+// RevokeDeviceRequest identifies the device to revoke (trust cleared, revoked_at set).
+type RevokeDeviceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeDeviceRequest) Reset() {
+	*x = RevokeDeviceRequest{}
+	mi := &file_device_device_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeDeviceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeDeviceRequest) ProtoMessage() {}
+
+func (x *RevokeDeviceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_device_device_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeDeviceRequest.ProtoReflect.Descriptor instead.
+func (*RevokeDeviceRequest) Descriptor() ([]byte, []int) {
+	return file_device_device_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RevokeDeviceRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+// RevokeDeviceResponse is empty on success.
+type RevokeDeviceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeDeviceResponse) Reset() {
+	*x = RevokeDeviceResponse{}
+	mi := &file_device_device_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeDeviceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeDeviceResponse) ProtoMessage() {}
+
+func (x *RevokeDeviceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_device_device_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeDeviceResponse.ProtoReflect.Descriptor instead.
+func (*RevokeDeviceResponse) Descriptor() ([]byte, []int) {
+	return file_device_device_proto_rawDescGZIP(), []int{8}
+}
+
 var File_device_device_proto protoreflect.FileDescriptor
 
 const file_device_device_proto_rawDesc = "" +
 	"\n" +
-	"\x13device/device.proto\x12\x0eztcp.device.v1\x1a\x13common/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfd\x01\n" +
+	"\x13device/device.proto\x12\x0eztcp.device.v1\x1a\x13common/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf9\x02\n" +
 	"\x06Device\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06org_id\x18\x03 \x01(\tR\x05orgId\x12 \n" +
 	"\vfingerprint\x18\x04 \x01(\tR\vfingerprint\x12\x18\n" +
-	"\atrusted\x18\x05 \x01(\bR\atrusted\x12<\n" +
-	"\flast_seen_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"\atrusted\x18\x05 \x01(\bR\atrusted\x12?\n" +
+	"\rtrusted_until\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\ftrustedUntil\x129\n" +
+	"\n" +
+	"revoked_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\trevokedAt\x12<\n" +
+	"\flast_seen_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"lastSeenAt\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"i\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"i\n" +
 	"\x15RegisterDeviceRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06org_id\x18\x02 \x01(\tR\x05orgId\x12 \n" +
@@ -461,11 +562,15 @@ const file_device_device_proto_rawDesc = "" +
 	"\adevices\x18\x01 \x03(\v2\x16.ztcp.device.v1.DeviceR\adevices\x12@\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2 .ztcp.common.v1.PaginationResultR\n" +
-	"pagination2\x9a\x02\n" +
+	"pagination\"2\n" +
+	"\x13RevokeDeviceRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
+	"\x14RevokeDeviceResponse2\xf5\x02\n" +
 	"\rDeviceService\x12_\n" +
 	"\x0eRegisterDevice\x12%.ztcp.device.v1.RegisterDeviceRequest\x1a&.ztcp.device.v1.RegisterDeviceResponse\x12P\n" +
 	"\tGetDevice\x12 .ztcp.device.v1.GetDeviceRequest\x1a!.ztcp.device.v1.GetDeviceResponse\x12V\n" +
-	"\vListDevices\x12\".ztcp.device.v1.ListDevicesRequest\x1a#.ztcp.device.v1.ListDevicesResponseBCZAzero-trust-control-plane/backend/api/generated/device/v1;devicev1b\x06proto3"
+	"\vListDevices\x12\".ztcp.device.v1.ListDevicesRequest\x1a#.ztcp.device.v1.ListDevicesResponse\x12Y\n" +
+	"\fRevokeDevice\x12#.ztcp.device.v1.RevokeDeviceRequest\x1a$.ztcp.device.v1.RevokeDeviceResponseBCZAzero-trust-control-plane/backend/api/generated/device/v1;devicev1b\x06proto3"
 
 var (
 	file_device_device_proto_rawDescOnce sync.Once
@@ -479,7 +584,7 @@ func file_device_device_proto_rawDescGZIP() []byte {
 	return file_device_device_proto_rawDescData
 }
 
-var file_device_device_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_device_device_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_device_device_proto_goTypes = []any{
 	(*Device)(nil),                 // 0: ztcp.device.v1.Device
 	(*RegisterDeviceRequest)(nil),  // 1: ztcp.device.v1.RegisterDeviceRequest
@@ -488,29 +593,35 @@ var file_device_device_proto_goTypes = []any{
 	(*GetDeviceResponse)(nil),      // 4: ztcp.device.v1.GetDeviceResponse
 	(*ListDevicesRequest)(nil),     // 5: ztcp.device.v1.ListDevicesRequest
 	(*ListDevicesResponse)(nil),    // 6: ztcp.device.v1.ListDevicesResponse
-	(*timestamppb.Timestamp)(nil),  // 7: google.protobuf.Timestamp
-	(*v1.Pagination)(nil),          // 8: ztcp.common.v1.Pagination
-	(*v1.PaginationResult)(nil),    // 9: ztcp.common.v1.PaginationResult
+	(*RevokeDeviceRequest)(nil),    // 7: ztcp.device.v1.RevokeDeviceRequest
+	(*RevokeDeviceResponse)(nil),   // 8: ztcp.device.v1.RevokeDeviceResponse
+	(*timestamppb.Timestamp)(nil),  // 9: google.protobuf.Timestamp
+	(*v1.Pagination)(nil),          // 10: ztcp.common.v1.Pagination
+	(*v1.PaginationResult)(nil),    // 11: ztcp.common.v1.PaginationResult
 }
 var file_device_device_proto_depIdxs = []int32{
-	7,  // 0: ztcp.device.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
-	7,  // 1: ztcp.device.v1.Device.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 2: ztcp.device.v1.RegisterDeviceResponse.device:type_name -> ztcp.device.v1.Device
-	0,  // 3: ztcp.device.v1.GetDeviceResponse.device:type_name -> ztcp.device.v1.Device
-	8,  // 4: ztcp.device.v1.ListDevicesRequest.pagination:type_name -> ztcp.common.v1.Pagination
-	0,  // 5: ztcp.device.v1.ListDevicesResponse.devices:type_name -> ztcp.device.v1.Device
-	9,  // 6: ztcp.device.v1.ListDevicesResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
-	1,  // 7: ztcp.device.v1.DeviceService.RegisterDevice:input_type -> ztcp.device.v1.RegisterDeviceRequest
-	3,  // 8: ztcp.device.v1.DeviceService.GetDevice:input_type -> ztcp.device.v1.GetDeviceRequest
-	5,  // 9: ztcp.device.v1.DeviceService.ListDevices:input_type -> ztcp.device.v1.ListDevicesRequest
-	2,  // 10: ztcp.device.v1.DeviceService.RegisterDevice:output_type -> ztcp.device.v1.RegisterDeviceResponse
-	4,  // 11: ztcp.device.v1.DeviceService.GetDevice:output_type -> ztcp.device.v1.GetDeviceResponse
-	6,  // 12: ztcp.device.v1.DeviceService.ListDevices:output_type -> ztcp.device.v1.ListDevicesResponse
-	10, // [10:13] is the sub-list for method output_type
-	7,  // [7:10] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	9,  // 0: ztcp.device.v1.Device.trusted_until:type_name -> google.protobuf.Timestamp
+	9,  // 1: ztcp.device.v1.Device.revoked_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: ztcp.device.v1.Device.last_seen_at:type_name -> google.protobuf.Timestamp
+	9,  // 3: ztcp.device.v1.Device.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 4: ztcp.device.v1.RegisterDeviceResponse.device:type_name -> ztcp.device.v1.Device
+	0,  // 5: ztcp.device.v1.GetDeviceResponse.device:type_name -> ztcp.device.v1.Device
+	10, // 6: ztcp.device.v1.ListDevicesRequest.pagination:type_name -> ztcp.common.v1.Pagination
+	0,  // 7: ztcp.device.v1.ListDevicesResponse.devices:type_name -> ztcp.device.v1.Device
+	11, // 8: ztcp.device.v1.ListDevicesResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
+	1,  // 9: ztcp.device.v1.DeviceService.RegisterDevice:input_type -> ztcp.device.v1.RegisterDeviceRequest
+	3,  // 10: ztcp.device.v1.DeviceService.GetDevice:input_type -> ztcp.device.v1.GetDeviceRequest
+	5,  // 11: ztcp.device.v1.DeviceService.ListDevices:input_type -> ztcp.device.v1.ListDevicesRequest
+	7,  // 12: ztcp.device.v1.DeviceService.RevokeDevice:input_type -> ztcp.device.v1.RevokeDeviceRequest
+	2,  // 13: ztcp.device.v1.DeviceService.RegisterDevice:output_type -> ztcp.device.v1.RegisterDeviceResponse
+	4,  // 14: ztcp.device.v1.DeviceService.GetDevice:output_type -> ztcp.device.v1.GetDeviceResponse
+	6,  // 15: ztcp.device.v1.DeviceService.ListDevices:output_type -> ztcp.device.v1.ListDevicesResponse
+	8,  // 16: ztcp.device.v1.DeviceService.RevokeDevice:output_type -> ztcp.device.v1.RevokeDeviceResponse
+	13, // [13:17] is the sub-list for method output_type
+	9,  // [9:13] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_device_device_proto_init() }
@@ -524,7 +635,7 @@ func file_device_device_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_device_device_proto_rawDesc), len(file_device_device_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

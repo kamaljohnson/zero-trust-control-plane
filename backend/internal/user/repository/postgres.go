@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"zero-trust-control-plane/backend/internal/db/sqlc/gen"
 	"zero-trust-control-plane/backend/internal/user/domain"
@@ -47,28 +48,61 @@ func (r *PostgresRepository) GetByEmail(ctx context.Context, email string) (*dom
 // Create persists the user to the database. The user must have ID set; it is not assigned by this method.
 func (r *PostgresRepository) Create(ctx context.Context, u *domain.User) error {
 	name := sql.NullString{String: u.Name, Valid: u.Name != ""}
+	phone := sql.NullString{String: u.Phone, Valid: u.Phone != ""}
 	_, err := r.queries.CreateUser(ctx, gen.CreateUserParams{
-		ID:        u.ID,
-		Email:     u.Email,
-		Name:      name,
-		Status:    gen.UserStatus(u.Status),
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:            u.ID,
+		Email:         u.Email,
+		Name:          name,
+		Phone:         phone,
+		PhoneVerified: u.PhoneVerified,
+		Status:        gen.UserStatus(u.Status),
+		CreatedAt:     u.CreatedAt,
+		UpdatedAt:     u.UpdatedAt,
 	})
 	return err
 }
 
-// Update updates the existing user record in the database. Returns an error if the update fails.
+// Update updates the existing user record in the database. If the user has PhoneVerified true, phone is preserved and not overwritten.
 func (r *PostgresRepository) Update(ctx context.Context, u *domain.User) error {
+	current, err := r.queries.GetUser(ctx, u.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
 	name := sql.NullString{String: u.Name, Valid: u.Name != ""}
-	_, err := r.queries.UpdateUser(ctx, gen.UpdateUserParams{
-		ID:        u.ID,
-		Email:     u.Email,
-		Name:      name,
-		Status:    gen.UserStatus(u.Status),
-		UpdatedAt: u.UpdatedAt,
+	phone := sql.NullString{String: u.Phone, Valid: u.Phone != ""}
+	if current.PhoneVerified {
+		phone = current.Phone
+	}
+	_, err = r.queries.UpdateUser(ctx, gen.UpdateUserParams{
+		ID:            u.ID,
+		Email:         u.Email,
+		Name:          name,
+		Phone:         phone,
+		PhoneVerified: current.PhoneVerified,
+		Status:        gen.UserStatus(u.Status),
+		UpdatedAt:     u.UpdatedAt,
 	})
 	return err
+}
+
+// SetPhoneVerified sets the user's phone and phone_verified only when phone is currently empty and not verified. Returns nil if no row was updated.
+func (r *PostgresRepository) SetPhoneVerified(ctx context.Context, userID, phone string) error {
+	phoneVal := sql.NullString{String: phone, Valid: phone != ""}
+	_, err := r.queries.SetPhoneVerified(ctx, gen.SetPhoneVerifiedParams{
+		ID:        userID,
+		Phone:     phoneVal,
+		UpdatedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func genUserToDomain(u *gen.User) *domain.User {
@@ -79,12 +113,18 @@ func genUserToDomain(u *gen.User) *domain.User {
 	if u.Name.Valid {
 		name = u.Name.String
 	}
+	phone := ""
+	if u.Phone.Valid {
+		phone = u.Phone.String
+	}
 	return &domain.User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Name:      name,
-		Status:    domain.UserStatus(u.Status),
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:            u.ID,
+		Email:         u.Email,
+		Name:          name,
+		Phone:         phone,
+		PhoneVerified: u.PhoneVerified,
+		Status:        domain.UserStatus(u.Status),
+		CreatedAt:     u.CreatedAt,
+		UpdatedAt:     u.UpdatedAt,
 	}
 }

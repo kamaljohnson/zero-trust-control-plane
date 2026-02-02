@@ -28,6 +28,18 @@ type Config struct {
 	JWTRefreshTTL string `mapstructure:"JWT_REFRESH_TTL"`
 	// BcryptCost is the bcrypt cost factor (4–31); default 12. Used when auth is enabled.
 	BcryptCost int `mapstructure:"BCRYPT_COST"`
+	// SMSLocalAPIKey is the API key for SMS Local (PoC MFA OTP). Required when MFA is required and no fallback.
+	SMSLocalAPIKey string `mapstructure:"SMS_LOCAL_API_KEY"`
+	// SMSLocalSender is the optional sender ID for SMS Local.
+	SMSLocalSender string `mapstructure:"SMS_LOCAL_SENDER"`
+	// SMSLocalBaseURL is the SMS Local API base URL (default https://www.smslocal.com/dev/bulkV2).
+	SMSLocalBaseURL string `mapstructure:"SMS_LOCAL_BASE_URL"`
+	// DefaultTrustTTLDays is the default device trust TTL in days when platform_settings has no value (e.g. 30).
+	DefaultTrustTTLDays int `mapstructure:"DEFAULT_TRUST_TTL_DAYS"`
+	// OTPReturnToClient when true enables dev OTP mode: no SMS, OTP stored for GET /dev/mfa/otp; for PoC without DLT. Must not be true when Env is production (panic at startup).
+	OTPReturnToClient bool `mapstructure:"OTP_RETURN_TO_CLIENT"`
+	// Env is the application environment (e.g. "development", "production"). Used with OTPReturnToClient to panic if dev OTP is enabled in production.
+	Env string `mapstructure:"APP_ENV"`
 }
 
 // Load reads .env (if present), then builds and validates Config from the environment via Viper.
@@ -48,6 +60,10 @@ func Load() (*Config, error) {
 	v.SetDefault("JWT_ACCESS_TTL", "15m")
 	v.SetDefault("JWT_REFRESH_TTL", "168h") // 7d
 	v.SetDefault("BCRYPT_COST", 12)
+	v.SetDefault("SMS_LOCAL_BASE_URL", "https://app.smslocal.in/api/smsapi")
+	v.SetDefault("DEFAULT_TRUST_TTL_DAYS", 30)
+	v.SetDefault("OTP_RETURN_TO_CLIENT", false)
+	v.SetDefault("APP_ENV", "")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -56,6 +72,10 @@ func Load() (*Config, error) {
 
 	if cfg.GRPCAddr == "" {
 		return nil, errors.New("config: GRPC_ADDR must be set")
+	}
+
+	if cfg.OTPReturnToClient && cfg.Env == "production" {
+		return nil, errors.New("config: OTP_RETURN_TO_CLIENT must not be true when APP_ENV=production")
 	}
 
 	if cfg.BcryptCost == 0 {

@@ -243,7 +243,7 @@ func (x *LogoutRequest) GetRefreshToken() string {
 	return ""
 }
 
-// AuthResponse returns session tokens and user/org context. Used by Register, Login, and Refresh.
+// AuthResponse returns session tokens and user/org context. Used by Register, Login, Refresh, and VerifyMFA.
 type AuthResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -320,6 +320,362 @@ func (x *AuthResponse) GetOrgId() string {
 	return ""
 }
 
+// MFARequired is returned when Login requires MFA before issuing a session (risk-based device trust).
+type MFARequired struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	PhoneMask     string                 `protobuf:"bytes,2,opt,name=phone_mask,json=phoneMask,proto3" json:"phone_mask,omitempty"` // e.g. last 4 digits for display
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MFARequired) Reset() {
+	*x = MFARequired{}
+	mi := &file_auth_auth_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MFARequired) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MFARequired) ProtoMessage() {}
+
+func (x *MFARequired) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MFARequired.ProtoReflect.Descriptor instead.
+func (*MFARequired) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *MFARequired) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *MFARequired) GetPhoneMask() string {
+	if x != nil {
+		return x.PhoneMask
+	}
+	return ""
+}
+
+// PhoneRequired is returned when Login requires MFA but the user has no phone; client collects phone then calls SubmitPhoneAndRequestMFA.
+type PhoneRequired struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IntentId      string                 `protobuf:"bytes,1,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PhoneRequired) Reset() {
+	*x = PhoneRequired{}
+	mi := &file_auth_auth_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PhoneRequired) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PhoneRequired) ProtoMessage() {}
+
+func (x *PhoneRequired) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PhoneRequired.ProtoReflect.Descriptor instead.
+func (*PhoneRequired) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PhoneRequired) GetIntentId() string {
+	if x != nil {
+		return x.IntentId
+	}
+	return ""
+}
+
+// LoginResponse is the result of Login: either tokens (success / trusted device), MFA required (challenge_id), or phone required (intent_id).
+type LoginResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Result:
+	//
+	//	*LoginResponse_Tokens
+	//	*LoginResponse_MfaRequired
+	//	*LoginResponse_PhoneRequired
+	Result        isLoginResponse_Result `protobuf_oneof:"result"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginResponse) Reset() {
+	*x = LoginResponse{}
+	mi := &file_auth_auth_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginResponse) ProtoMessage() {}
+
+func (x *LoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
+func (*LoginResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *LoginResponse) GetResult() isLoginResponse_Result {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
+func (x *LoginResponse) GetTokens() *AuthResponse {
+	if x != nil {
+		if x, ok := x.Result.(*LoginResponse_Tokens); ok {
+			return x.Tokens
+		}
+	}
+	return nil
+}
+
+func (x *LoginResponse) GetMfaRequired() *MFARequired {
+	if x != nil {
+		if x, ok := x.Result.(*LoginResponse_MfaRequired); ok {
+			return x.MfaRequired
+		}
+	}
+	return nil
+}
+
+func (x *LoginResponse) GetPhoneRequired() *PhoneRequired {
+	if x != nil {
+		if x, ok := x.Result.(*LoginResponse_PhoneRequired); ok {
+			return x.PhoneRequired
+		}
+	}
+	return nil
+}
+
+type isLoginResponse_Result interface {
+	isLoginResponse_Result()
+}
+
+type LoginResponse_Tokens struct {
+	Tokens *AuthResponse `protobuf:"bytes,1,opt,name=tokens,proto3,oneof"`
+}
+
+type LoginResponse_MfaRequired struct {
+	MfaRequired *MFARequired `protobuf:"bytes,2,opt,name=mfa_required,json=mfaRequired,proto3,oneof"`
+}
+
+type LoginResponse_PhoneRequired struct {
+	PhoneRequired *PhoneRequired `protobuf:"bytes,3,opt,name=phone_required,json=phoneRequired,proto3,oneof"`
+}
+
+func (*LoginResponse_Tokens) isLoginResponse_Result() {}
+
+func (*LoginResponse_MfaRequired) isLoginResponse_Result() {}
+
+func (*LoginResponse_PhoneRequired) isLoginResponse_Result() {}
+
+// VerifyMFARequest carries the MFA challenge id and OTP from the user.
+type VerifyMFARequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	Otp           string                 `protobuf:"bytes,2,opt,name=otp,proto3" json:"otp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyMFARequest) Reset() {
+	*x = VerifyMFARequest{}
+	mi := &file_auth_auth_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyMFARequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyMFARequest) ProtoMessage() {}
+
+func (x *VerifyMFARequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyMFARequest.ProtoReflect.Descriptor instead.
+func (*VerifyMFARequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *VerifyMFARequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *VerifyMFARequest) GetOtp() string {
+	if x != nil {
+		return x.Otp
+	}
+	return ""
+}
+
+// SubmitPhoneAndRequestMFARequest carries the intent_id from Login(phone_required) and the user-entered phone.
+type SubmitPhoneAndRequestMFARequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IntentId      string                 `protobuf:"bytes,1,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
+	Phone         string                 `protobuf:"bytes,2,opt,name=phone,proto3" json:"phone,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubmitPhoneAndRequestMFARequest) Reset() {
+	*x = SubmitPhoneAndRequestMFARequest{}
+	mi := &file_auth_auth_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitPhoneAndRequestMFARequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitPhoneAndRequestMFARequest) ProtoMessage() {}
+
+func (x *SubmitPhoneAndRequestMFARequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitPhoneAndRequestMFARequest.ProtoReflect.Descriptor instead.
+func (*SubmitPhoneAndRequestMFARequest) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SubmitPhoneAndRequestMFARequest) GetIntentId() string {
+	if x != nil {
+		return x.IntentId
+	}
+	return ""
+}
+
+func (x *SubmitPhoneAndRequestMFARequest) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+// SubmitPhoneAndRequestMFAResponse returns challenge_id and phone_mask after creating the MFA challenge and sending OTP.
+type SubmitPhoneAndRequestMFAResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	PhoneMask     string                 `protobuf:"bytes,2,opt,name=phone_mask,json=phoneMask,proto3" json:"phone_mask,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubmitPhoneAndRequestMFAResponse) Reset() {
+	*x = SubmitPhoneAndRequestMFAResponse{}
+	mi := &file_auth_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitPhoneAndRequestMFAResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitPhoneAndRequestMFAResponse) ProtoMessage() {}
+
+func (x *SubmitPhoneAndRequestMFAResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitPhoneAndRequestMFAResponse.ProtoReflect.Descriptor instead.
+func (*SubmitPhoneAndRequestMFAResponse) Descriptor() ([]byte, []int) {
+	return file_auth_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SubmitPhoneAndRequestMFAResponse) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *SubmitPhoneAndRequestMFAResponse) GetPhoneMask() string {
+	if x != nil {
+		return x.PhoneMask
+	}
+	return ""
+}
+
 // LinkIdentityRequest links an external identity (OIDC/SAML) to a user.
 type LinkIdentityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -333,7 +689,7 @@ type LinkIdentityRequest struct {
 
 func (x *LinkIdentityRequest) Reset() {
 	*x = LinkIdentityRequest{}
-	mi := &file_auth_auth_proto_msgTypes[5]
+	mi := &file_auth_auth_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -345,7 +701,7 @@ func (x *LinkIdentityRequest) String() string {
 func (*LinkIdentityRequest) ProtoMessage() {}
 
 func (x *LinkIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[5]
+	mi := &file_auth_auth_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,7 +714,7 @@ func (x *LinkIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LinkIdentityRequest.ProtoReflect.Descriptor instead.
 func (*LinkIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{5}
+	return file_auth_auth_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *LinkIdentityRequest) GetUserId() string {
@@ -399,7 +755,7 @@ type LinkIdentityResponse struct {
 
 func (x *LinkIdentityResponse) Reset() {
 	*x = LinkIdentityResponse{}
-	mi := &file_auth_auth_proto_msgTypes[6]
+	mi := &file_auth_auth_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -411,7 +767,7 @@ func (x *LinkIdentityResponse) String() string {
 func (*LinkIdentityResponse) ProtoMessage() {}
 
 func (x *LinkIdentityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_auth_auth_proto_msgTypes[6]
+	mi := &file_auth_auth_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,7 +780,7 @@ func (x *LinkIdentityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LinkIdentityResponse.ProtoReflect.Descriptor instead.
 func (*LinkIdentityResponse) Descriptor() ([]byte, []int) {
-	return file_auth_auth_proto_rawDescGZIP(), []int{6}
+	return file_auth_auth_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *LinkIdentityResponse) GetIdentityId() string {
@@ -458,7 +814,28 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x17\n" +
 	"\auser_id\x18\x04 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06org_id\x18\x05 \x01(\tR\x05orgId\"\x86\x01\n" +
+	"\x06org_id\x18\x05 \x01(\tR\x05orgId\"O\n" +
+	"\vMFARequired\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x1d\n" +
+	"\n" +
+	"phone_mask\x18\x02 \x01(\tR\tphoneMask\",\n" +
+	"\rPhoneRequired\x12\x1b\n" +
+	"\tintent_id\x18\x01 \x01(\tR\bintentId\"\xd5\x01\n" +
+	"\rLoginResponse\x124\n" +
+	"\x06tokens\x18\x01 \x01(\v2\x1a.ztcp.auth.v1.AuthResponseH\x00R\x06tokens\x12>\n" +
+	"\fmfa_required\x18\x02 \x01(\v2\x19.ztcp.auth.v1.MFARequiredH\x00R\vmfaRequired\x12D\n" +
+	"\x0ephone_required\x18\x03 \x01(\v2\x1b.ztcp.auth.v1.PhoneRequiredH\x00R\rphoneRequiredB\b\n" +
+	"\x06result\"G\n" +
+	"\x10VerifyMFARequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x10\n" +
+	"\x03otp\x18\x02 \x01(\tR\x03otp\"T\n" +
+	"\x1fSubmitPhoneAndRequestMFARequest\x12\x1b\n" +
+	"\tintent_id\x18\x01 \x01(\tR\bintentId\x12\x14\n" +
+	"\x05phone\x18\x02 \x01(\tR\x05phone\"d\n" +
+	" SubmitPhoneAndRequestMFAResponse\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x1d\n" +
+	"\n" +
+	"phone_mask\x18\x02 \x01(\tR\tphoneMask\"\x86\x01\n" +
 	"\x13LinkIdentityRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x1f\n" +
@@ -467,10 +844,12 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\bid_token\x18\x04 \x01(\tR\aidToken\"7\n" +
 	"\x14LinkIdentityResponse\x12\x1f\n" +
 	"\videntity_id\x18\x01 \x01(\tR\n" +
-	"identityId2\xf0\x02\n" +
+	"identityId2\xb5\x04\n" +
 	"\vAuthService\x12E\n" +
-	"\bRegister\x12\x1d.ztcp.auth.v1.RegisterRequest\x1a\x1a.ztcp.auth.v1.AuthResponse\x12?\n" +
-	"\x05Login\x12\x1a.ztcp.auth.v1.LoginRequest\x1a\x1a.ztcp.auth.v1.AuthResponse\x12C\n" +
+	"\bRegister\x12\x1d.ztcp.auth.v1.RegisterRequest\x1a\x1a.ztcp.auth.v1.AuthResponse\x12@\n" +
+	"\x05Login\x12\x1a.ztcp.auth.v1.LoginRequest\x1a\x1b.ztcp.auth.v1.LoginResponse\x12G\n" +
+	"\tVerifyMFA\x12\x1e.ztcp.auth.v1.VerifyMFARequest\x1a\x1a.ztcp.auth.v1.AuthResponse\x12y\n" +
+	"\x18SubmitPhoneAndRequestMFA\x12-.ztcp.auth.v1.SubmitPhoneAndRequestMFARequest\x1a..ztcp.auth.v1.SubmitPhoneAndRequestMFAResponse\x12C\n" +
 	"\aRefresh\x12\x1c.ztcp.auth.v1.RefreshRequest\x1a\x1a.ztcp.auth.v1.AuthResponse\x12=\n" +
 	"\x06Logout\x12\x1b.ztcp.auth.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\x12U\n" +
 	"\fLinkIdentity\x12!.ztcp.auth.v1.LinkIdentityRequest\x1a\".ztcp.auth.v1.LinkIdentityResponseB?Z=zero-trust-control-plane/backend/api/generated/auth/v1;authv1b\x06proto3"
@@ -487,35 +866,48 @@ func file_auth_auth_proto_rawDescGZIP() []byte {
 	return file_auth_auth_proto_rawDescData
 }
 
-var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_auth_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_auth_auth_proto_goTypes = []any{
-	(*RegisterRequest)(nil),       // 0: ztcp.auth.v1.RegisterRequest
-	(*LoginRequest)(nil),          // 1: ztcp.auth.v1.LoginRequest
-	(*RefreshRequest)(nil),        // 2: ztcp.auth.v1.RefreshRequest
-	(*LogoutRequest)(nil),         // 3: ztcp.auth.v1.LogoutRequest
-	(*AuthResponse)(nil),          // 4: ztcp.auth.v1.AuthResponse
-	(*LinkIdentityRequest)(nil),   // 5: ztcp.auth.v1.LinkIdentityRequest
-	(*LinkIdentityResponse)(nil),  // 6: ztcp.auth.v1.LinkIdentityResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 8: google.protobuf.Empty
+	(*RegisterRequest)(nil),                  // 0: ztcp.auth.v1.RegisterRequest
+	(*LoginRequest)(nil),                     // 1: ztcp.auth.v1.LoginRequest
+	(*RefreshRequest)(nil),                   // 2: ztcp.auth.v1.RefreshRequest
+	(*LogoutRequest)(nil),                    // 3: ztcp.auth.v1.LogoutRequest
+	(*AuthResponse)(nil),                     // 4: ztcp.auth.v1.AuthResponse
+	(*MFARequired)(nil),                      // 5: ztcp.auth.v1.MFARequired
+	(*PhoneRequired)(nil),                    // 6: ztcp.auth.v1.PhoneRequired
+	(*LoginResponse)(nil),                    // 7: ztcp.auth.v1.LoginResponse
+	(*VerifyMFARequest)(nil),                 // 8: ztcp.auth.v1.VerifyMFARequest
+	(*SubmitPhoneAndRequestMFARequest)(nil),  // 9: ztcp.auth.v1.SubmitPhoneAndRequestMFARequest
+	(*SubmitPhoneAndRequestMFAResponse)(nil), // 10: ztcp.auth.v1.SubmitPhoneAndRequestMFAResponse
+	(*LinkIdentityRequest)(nil),              // 11: ztcp.auth.v1.LinkIdentityRequest
+	(*LinkIdentityResponse)(nil),             // 12: ztcp.auth.v1.LinkIdentityResponse
+	(*timestamppb.Timestamp)(nil),            // 13: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                    // 14: google.protobuf.Empty
 }
 var file_auth_auth_proto_depIdxs = []int32{
-	7, // 0: ztcp.auth.v1.AuthResponse.expires_at:type_name -> google.protobuf.Timestamp
-	0, // 1: ztcp.auth.v1.AuthService.Register:input_type -> ztcp.auth.v1.RegisterRequest
-	1, // 2: ztcp.auth.v1.AuthService.Login:input_type -> ztcp.auth.v1.LoginRequest
-	2, // 3: ztcp.auth.v1.AuthService.Refresh:input_type -> ztcp.auth.v1.RefreshRequest
-	3, // 4: ztcp.auth.v1.AuthService.Logout:input_type -> ztcp.auth.v1.LogoutRequest
-	5, // 5: ztcp.auth.v1.AuthService.LinkIdentity:input_type -> ztcp.auth.v1.LinkIdentityRequest
-	4, // 6: ztcp.auth.v1.AuthService.Register:output_type -> ztcp.auth.v1.AuthResponse
-	4, // 7: ztcp.auth.v1.AuthService.Login:output_type -> ztcp.auth.v1.AuthResponse
-	4, // 8: ztcp.auth.v1.AuthService.Refresh:output_type -> ztcp.auth.v1.AuthResponse
-	8, // 9: ztcp.auth.v1.AuthService.Logout:output_type -> google.protobuf.Empty
-	6, // 10: ztcp.auth.v1.AuthService.LinkIdentity:output_type -> ztcp.auth.v1.LinkIdentityResponse
-	6, // [6:11] is the sub-list for method output_type
-	1, // [1:6] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	13, // 0: ztcp.auth.v1.AuthResponse.expires_at:type_name -> google.protobuf.Timestamp
+	4,  // 1: ztcp.auth.v1.LoginResponse.tokens:type_name -> ztcp.auth.v1.AuthResponse
+	5,  // 2: ztcp.auth.v1.LoginResponse.mfa_required:type_name -> ztcp.auth.v1.MFARequired
+	6,  // 3: ztcp.auth.v1.LoginResponse.phone_required:type_name -> ztcp.auth.v1.PhoneRequired
+	0,  // 4: ztcp.auth.v1.AuthService.Register:input_type -> ztcp.auth.v1.RegisterRequest
+	1,  // 5: ztcp.auth.v1.AuthService.Login:input_type -> ztcp.auth.v1.LoginRequest
+	8,  // 6: ztcp.auth.v1.AuthService.VerifyMFA:input_type -> ztcp.auth.v1.VerifyMFARequest
+	9,  // 7: ztcp.auth.v1.AuthService.SubmitPhoneAndRequestMFA:input_type -> ztcp.auth.v1.SubmitPhoneAndRequestMFARequest
+	2,  // 8: ztcp.auth.v1.AuthService.Refresh:input_type -> ztcp.auth.v1.RefreshRequest
+	3,  // 9: ztcp.auth.v1.AuthService.Logout:input_type -> ztcp.auth.v1.LogoutRequest
+	11, // 10: ztcp.auth.v1.AuthService.LinkIdentity:input_type -> ztcp.auth.v1.LinkIdentityRequest
+	4,  // 11: ztcp.auth.v1.AuthService.Register:output_type -> ztcp.auth.v1.AuthResponse
+	7,  // 12: ztcp.auth.v1.AuthService.Login:output_type -> ztcp.auth.v1.LoginResponse
+	4,  // 13: ztcp.auth.v1.AuthService.VerifyMFA:output_type -> ztcp.auth.v1.AuthResponse
+	10, // 14: ztcp.auth.v1.AuthService.SubmitPhoneAndRequestMFA:output_type -> ztcp.auth.v1.SubmitPhoneAndRequestMFAResponse
+	4,  // 15: ztcp.auth.v1.AuthService.Refresh:output_type -> ztcp.auth.v1.AuthResponse
+	14, // 16: ztcp.auth.v1.AuthService.Logout:output_type -> google.protobuf.Empty
+	12, // 17: ztcp.auth.v1.AuthService.LinkIdentity:output_type -> ztcp.auth.v1.LinkIdentityResponse
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_auth_auth_proto_init() }
@@ -523,13 +915,18 @@ func file_auth_auth_proto_init() {
 	if File_auth_auth_proto != nil {
 		return
 	}
+	file_auth_auth_proto_msgTypes[7].OneofWrappers = []any{
+		(*LoginResponse_Tokens)(nil),
+		(*LoginResponse_MfaRequired)(nil),
+		(*LoginResponse_PhoneRequired)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_auth_proto_rawDesc), len(file_auth_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

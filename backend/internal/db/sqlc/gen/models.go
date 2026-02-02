@@ -193,13 +193,15 @@ type AuditLog struct {
 }
 
 type Device struct {
-	ID          string
-	UserID      string
-	OrgID       string
-	Fingerprint string
-	Trusted     bool
-	LastSeenAt  sql.NullTime
-	CreatedAt   time.Time
+	ID           string
+	UserID       string
+	OrgID        string
+	Fingerprint  string
+	Trusted      bool
+	TrustedUntil sql.NullTime
+	RevokedAt    sql.NullTime
+	LastSeenAt   sql.NullTime
+	CreatedAt    time.Time
 }
 
 type Identity struct {
@@ -219,11 +221,46 @@ type Membership struct {
 	CreatedAt time.Time
 }
 
+type MfaChallenge struct {
+	ID        string
+	UserID    string
+	OrgID     string
+	DeviceID  string
+	Phone     string
+	CodeHash  string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
+type MfaIntent struct {
+	ID        string
+	UserID    string
+	OrgID     string
+	DeviceID  string
+	ExpiresAt time.Time
+}
+
+type OrgMfaSetting struct {
+	OrgID                   string
+	MfaRequiredForNewDevice bool
+	MfaRequiredForUntrusted bool
+	MfaRequiredAlways       bool
+	RegisterTrustAfterMfa   bool
+	TrustTtlDays            int32
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
+}
+
 type Organization struct {
 	ID        string
 	Name      string
 	Status    OrgStatus
 	CreatedAt time.Time
+}
+
+type PlatformSetting struct {
+	Key       string
+	ValueJson string
 }
 
 type Policy struct {
@@ -249,10 +286,12 @@ type Session struct {
 }
 
 type User struct {
-	ID        string
-	Email     string
-	Name      sql.NullString
-	Status    UserStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            string
+	Email         string
+	Name          sql.NullString
+	Phone         sql.NullString
+	PhoneVerified bool
+	Status        UserStatus
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }

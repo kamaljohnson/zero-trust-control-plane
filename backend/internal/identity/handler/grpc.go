@@ -37,8 +37,8 @@ func (s *AuthServer) Register(ctx context.Context, req *authv1.RegisterRequest) 
 	return authResultToProto(res), nil
 }
 
-// Login authenticates the user and returns tokens.
-func (s *AuthServer) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.AuthResponse, error) {
+// Login authenticates the user and returns either tokens or MFA required (challenge_id, phone_mask).
+func (s *AuthServer) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.LoginResponse, error) {
 	if s.auth == nil {
 		return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 	}
@@ -46,7 +46,34 @@ func (s *AuthServer) Login(ctx context.Context, req *authv1.LoginRequest) (*auth
 	if err != nil {
 		return nil, authErr(err)
 	}
+	return loginResultToProto(res), nil
+}
+
+// VerifyMFA verifies the OTP for the given challenge and returns tokens.
+func (s *AuthServer) VerifyMFA(ctx context.Context, req *authv1.VerifyMFARequest) (*authv1.AuthResponse, error) {
+	if s.auth == nil {
+		return nil, status.Error(codes.Unimplemented, "method VerifyMFA not implemented")
+	}
+	res, err := s.auth.VerifyMFA(ctx, req.GetChallengeId(), req.GetOtp())
+	if err != nil {
+		return nil, authErr(err)
+	}
 	return authResultToProto(res), nil
+}
+
+// SubmitPhoneAndRequestMFA consumes the intent, creates an MFA challenge for the submitted phone, sends OTP, and returns challenge_id and phone_mask.
+func (s *AuthServer) SubmitPhoneAndRequestMFA(ctx context.Context, req *authv1.SubmitPhoneAndRequestMFARequest) (*authv1.SubmitPhoneAndRequestMFAResponse, error) {
+	if s.auth == nil {
+		return nil, status.Error(codes.Unimplemented, "method SubmitPhoneAndRequestMFA not implemented")
+	}
+	res, err := s.auth.SubmitPhoneAndRequestMFA(ctx, req.GetIntentId(), req.GetPhone())
+	if err != nil {
+		return nil, authErr(err)
+	}
+	return &authv1.SubmitPhoneAndRequestMFAResponse{
+		ChallengeId: res.ChallengeID,
+		PhoneMask:   res.PhoneMask,
+	}, nil
 }
 
 // Refresh issues new access and refresh tokens.
@@ -89,12 +116,51 @@ func authErr(err error) error {
 		return status.Error(codes.Unauthenticated, "refresh token reuse detected; all sessions revoked")
 	case errors.Is(err, service.ErrNotOrgMember):
 		return status.Error(codes.PermissionDenied, "user is not a member of the organization")
+	case errors.Is(err, service.ErrPhoneRequiredForMFA):
+		return status.Error(codes.FailedPrecondition, "phone number required for MFA; add in profile")
+	case errors.Is(err, service.ErrInvalidMFAChallenge), errors.Is(err, service.ErrInvalidOTP):
+		return status.Error(codes.Unauthenticated, "invalid or expired MFA challenge")
+	case errors.Is(err, service.ErrInvalidMFAIntent):
+		return status.Error(codes.Unauthenticated, "invalid or expired MFA intent")
+	case errors.Is(err, service.ErrChallengeExpired):
+		return status.Error(codes.FailedPrecondition, "MFA challenge expired")
 	default:
 		if err != nil {
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil
 	}
+}
+
+func loginResultToProto(r *service.LoginResult) *authv1.LoginResponse {
+	if r == nil {
+		return &authv1.LoginResponse{}
+	}
+	if r.Tokens != nil {
+		return &authv1.LoginResponse{
+			Result: &authv1.LoginResponse_Tokens{Tokens: authResultToProto(r.Tokens)},
+		}
+	}
+	if r.MFARequired != nil {
+		return &authv1.LoginResponse{
+			Result: &authv1.LoginResponse_MfaRequired{
+				MfaRequired: &authv1.MFARequired{
+					ChallengeId: r.MFARequired.ChallengeID,
+					PhoneMask:   r.MFARequired.PhoneMask,
+				},
+			},
+		}
+	}
+	if r.PhoneRequired != nil {
+		return &authv1.LoginResponse{
+			Result: &authv1.LoginResponse_PhoneRequired{
+				PhoneRequired: &authv1.PhoneRequired{
+					IntentId: r.PhoneRequired.IntentID,
+				},
+			},
+		}
+	}
+	return &authv1.LoginResponse{}
 }
 
 func authResultToProto(r *service.AuthResult) *authv1.AuthResponse {

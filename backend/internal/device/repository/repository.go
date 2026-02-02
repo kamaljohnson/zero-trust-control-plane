@@ -14,5 +14,7 @@ type Repository interface {
 	ListByOrg(ctx context.Context, orgID string) ([]*domain.Device, error)
 	Create(ctx context.Context, d *domain.Device) error
 	UpdateTrusted(ctx context.Context, id string, trusted bool) error
+	UpdateTrustedWithExpiry(ctx context.Context, id string, trusted bool, trustedUntil *time.Time) error
+	Revoke(ctx context.Context, id string) error
 	UpdateLastSeen(ctx context.Context, id string, at time.Time) error
 }

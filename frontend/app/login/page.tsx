@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
+import * as authClient from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,15 +19,31 @@ import {
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DEFAULT_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? "";
+const DEV_OTP_ENABLED = process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, verifyMFA, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgId, setOrgId] = useState(DEFAULT_ORG_ID);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [phoneIntentId, setPhoneIntentId] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  const [requestingMfa, setRequestingMfa] = useState(false);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaPhoneMask, setMfaPhoneMask] = useState<string | null>(null);
+  const [mfaOtp, setMfaOtp] = useState<string | null>(null);
+  const [mfaOtpNote, setMfaOtpNote] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   if (isLoading) {
     return (
@@ -37,7 +54,6 @@ export default function LoginPage() {
   }
 
   if (isAuthenticated) {
-    router.replace("/");
     return null;
   }
 
@@ -51,13 +67,208 @@ export default function LoginPage() {
     }
     setSubmitting(true);
     try {
-      await login(trimmedEmail, password, orgId.trim());
-      router.replace("/");
+      const res = await login(trimmedEmail, password, orgId.trim());
+      if (res.phone_required === true && res.intent_id) {
+        setPhoneIntentId(res.intent_id);
+      } else if (res.mfa_required === true && res.challenge_id) {
+        setMfaChallengeId(res.challenge_id);
+        setMfaPhoneMask(res.phone_mask ?? null);
+        setMfaOtp(null);
+        setMfaOtpNote(null);
+        setOtp("");
+      } else {
+        router.replace("/");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleSubmitPhone(e: React.FormEvent) {
+    e.preventDefault();
+    if (!phoneIntentId || !phone.trim()) return;
+    setError(null);
+    setRequestingMfa(true);
+    try {
+      const res = await authClient.requestMFAWithPhone(phoneIntentId, phone.trim());
+      setPhoneIntentId(null);
+      setPhone("");
+      setMfaChallengeId(res.challenge_id);
+      setMfaPhoneMask(res.phone_mask ?? null);
+      setMfaOtp(null);
+      setMfaOtpNote(null);
+      setOtp("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Request failed.");
+    } finally {
+      setRequestingMfa(false);
+    }
+  }
+
+  // When MFA step is shown and dev OTP is enabled, fetch OTP from GET /api/dev/mfa/otp
+  useEffect(() => {
+    if (!mfaChallengeId || !DEV_OTP_ENABLED) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/dev/mfa/otp?challenge_id=${encodeURIComponent(mfaChallengeId)}`);
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          if (data.otp) {
+            setMfaOtp(data.otp);
+            setMfaOtpNote(data.note ?? null);
+            setOtp(data.otp);
+          }
+        }
+      } catch {
+        // ignore; leave mfaOtp null
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mfaChallengeId]);
+
+  async function handleVerifyMFA(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaChallengeId || !otp.trim()) return;
+    setError(null);
+    setVerifying(true);
+    try {
+      await verifyMFA(mfaChallengeId, otp.trim());
+      router.replace("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "MFA verification failed.");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  if (phoneIntentId != null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Enter your phone number</CardTitle>
+            <CardDescription>
+              We need your phone number to send a verification code. Use digits only (e.g. with country code).
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmitPhone}>
+            <CardContent className="space-y-4">
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="login-phone">Phone number</Label>
+                <Input
+                  id="login-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").trim())}
+                  placeholder="e.g. 15551234567"
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={requestingMfa || phone.length < 10}>
+                {requestingMfa ? "Sending code…" : "Continue"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={requestingMfa}
+                onClick={() => {
+                  setPhoneIntentId(null);
+                  setPhone("");
+                  setError(null);
+                }}
+              >
+                Back to sign in
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
+  if (mfaChallengeId != null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Verify your identity</CardTitle>
+            <CardDescription>
+              {mfaOtp != null
+                ? "Your verification code is shown below (PoC mode; SMS not sent)."
+                : `Enter the 6-digit code sent to your phone${mfaPhoneMask ? ` (${mfaPhoneMask})` : ""}.`}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleVerifyMFA}>
+            <CardContent className="space-y-4">
+              {mfaOtp != null && (
+                <div className="rounded-md border border-muted bg-muted/50 p-3 text-center">
+                  <p className="text-2xl font-mono font-semibold tracking-widest">{mfaOtp}</p>
+                  {mfaOtpNote != null && (
+                    <p className="mt-2 text-xs text-muted-foreground">{mfaOtpNote}</p>
+                  )}
+                </div>
+              )}
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="login-otp">Verification code</Label>
+                <Input
+                  id="login-otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={verifying || otp.length < 6}>
+                {verifying ? "Verifying…" : "Verify"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={verifying}
+                onClick={() => {
+                  setMfaChallengeId(null);
+                  setMfaPhoneMask(null);
+                  setMfaOtp(null);
+                  setMfaOtpNote(null);
+                  setPhoneIntentId(null);
+                  setOtp("");
+                  setError(null);
+                }}
+              >
+                Back to sign in
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
   }
 
   return (

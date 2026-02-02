@@ -7,18 +7,30 @@ import (
 	"time"
 
 	devicedomain "zero-trust-control-plane/backend/internal/device/domain"
+	"zero-trust-control-plane/backend/internal/devotp"
 	identitydomain "zero-trust-control-plane/backend/internal/identity/domain"
 	membershipdomain "zero-trust-control-plane/backend/internal/membership/domain"
+	mfadomain "zero-trust-control-plane/backend/internal/mfa/domain"
+	mfaintentdomain "zero-trust-control-plane/backend/internal/mfaintent/domain"
+	orgmfasettingsdomain "zero-trust-control-plane/backend/internal/orgmfasettings/domain"
+	platformsettingsdomain "zero-trust-control-plane/backend/internal/platformsettings/domain"
+	policyengine "zero-trust-control-plane/backend/internal/policy/engine"
 	"zero-trust-control-plane/backend/internal/security"
-	sessiondomain "zero-trust-control-plane/backend/internal/session/domain"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
+	sessiondomain "zero-trust-control-plane/backend/internal/session/domain"
 	userdomain "zero-trust-control-plane/backend/internal/user/domain"
 )
 
 type memUserRepo struct {
-	mu    sync.Mutex
-	byID  map[string]*userdomain.User
+	mu      sync.Mutex
+	byID    map[string]*userdomain.User
 	byEmail map[string]*userdomain.User
+}
+
+func (r *memUserRepo) GetByID(ctx context.Context, id string) (*userdomain.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.byID[id], nil
 }
 
 func (r *memUserRepo) GetByEmail(ctx context.Context, email string) (*userdomain.User, error) {
@@ -32,6 +44,19 @@ func (r *memUserRepo) Create(ctx context.Context, u *userdomain.User) error {
 	defer r.mu.Unlock()
 	r.byID[u.ID] = u
 	r.byEmail[u.Email] = u
+	return nil
+}
+
+func (r *memUserRepo) SetPhoneVerified(ctx context.Context, userID, phone string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if u, ok := r.byID[userID]; ok && (u.Phone == "" || !u.PhoneVerified) {
+		u2 := *u
+		u2.Phone = phone
+		u2.PhoneVerified = true
+		r.byID[userID] = &u2
+		r.byEmail[u.Email] = &u2
+	}
 	return nil
 }
 
@@ -118,6 +143,12 @@ type memDeviceRepo struct {
 	m  map[string]*devicedomain.Device
 }
 
+func (r *memDeviceRepo) GetByID(ctx context.Context, id string) (*devicedomain.Device, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.m[id], nil
+}
+
 func (r *memDeviceRepo) GetByUserOrgAndFingerprint(ctx context.Context, userID, orgID, fingerprint string) (*devicedomain.Device, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -137,6 +168,164 @@ func (r *memDeviceRepo) Create(ctx context.Context, d *devicedomain.Device) erro
 	return nil
 }
 
+func (r *memDeviceRepo) UpdateTrustedWithExpiry(ctx context.Context, id string, trusted bool, trustedUntil *time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if d, ok := r.m[id]; ok {
+		d.Trusted = trusted
+		d.TrustedUntil = trustedUntil
+		if trustedUntil == nil {
+			d.RevokedAt = nil
+		}
+	}
+	return nil
+}
+
+type memPlatformSettingsRepo struct{}
+
+func (r *memPlatformSettingsRepo) GetDeviceTrustSettings(ctx context.Context, defaultTrustTTLDays int) (*platformsettingsdomain.PlatformDeviceTrustSettings, error) {
+	return &platformsettingsdomain.PlatformDeviceTrustSettings{
+		MFARequiredAlways:   false,
+		DefaultTrustTTLDays: defaultTrustTTLDays,
+	}, nil
+}
+
+type memOrgMFASettingsRepo struct{}
+
+func (r *memOrgMFASettingsRepo) GetByOrgID(ctx context.Context, orgID string) (*orgmfasettingsdomain.OrgMFASettings, error) {
+	return nil, nil // Return nil to use defaults
+}
+
+type memMFAChallengeRepo struct {
+	mu sync.Mutex
+	m  map[string]*mfadomain.Challenge
+}
+
+func (r *memMFAChallengeRepo) Create(ctx context.Context, c *mfadomain.Challenge) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	c2 := *c
+	r.m[c.ID] = &c2
+	return nil
+}
+
+func (r *memMFAChallengeRepo) GetByID(ctx context.Context, id string) (*mfadomain.Challenge, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.m[id], nil
+}
+
+func (r *memMFAChallengeRepo) Delete(ctx context.Context, id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.m, id)
+	return nil
+}
+
+type memMFAIntentRepo struct {
+	mu sync.Mutex
+	m  map[string]*mfaintentdomain.Intent
+}
+
+func (r *memMFAIntentRepo) Create(ctx context.Context, i *mfaintentdomain.Intent) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	i2 := *i
+	r.m[i.ID] = &i2
+	return nil
+}
+
+func (r *memMFAIntentRepo) GetByID(ctx context.Context, id string) (*mfaintentdomain.Intent, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.m[id], nil
+}
+
+func (r *memMFAIntentRepo) Delete(ctx context.Context, id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.m, id)
+	return nil
+}
+
+type memOTPSender struct{}
+
+func (s *memOTPSender) SendOTP(phone, otp string) error {
+	return nil // No-op for tests
+}
+
+// recordingOTPSender records SendOTP calls for tests (e.g. to assert SMS not sent when OTP returned to client).
+type recordingOTPSender struct {
+	mu    sync.Mutex
+	calls []struct{ Phone, OTP string }
+}
+
+func (s *recordingOTPSender) SendOTP(phone, otp string) error {
+	s.mu.Lock()
+	s.calls = append(s.calls, struct{ Phone, OTP string }{Phone: phone, OTP: otp})
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *recordingOTPSender) callCount() int {
+	s.mu.Lock()
+	n := len(s.calls)
+	s.mu.Unlock()
+	return n
+}
+
+type memPolicyEvaluator struct{}
+
+func (e *memPolicyEvaluator) EvaluateMFA(
+	ctx context.Context,
+	platformSettings *platformsettingsdomain.PlatformDeviceTrustSettings,
+	orgSettings *orgmfasettingsdomain.OrgMFASettings,
+	device *devicedomain.Device,
+	user *userdomain.User,
+	isNewDevice bool,
+) (policyengine.MFAResult, error) {
+	// Simple mock: require MFA for new devices or untrusted devices
+	result := policyengine.MFAResult{
+		MFARequired:           false,
+		RegisterTrustAfterMFA: true,
+		TrustTTLDays:          30,
+	}
+	if platformSettings != nil && platformSettings.MFARequiredAlways {
+		result.MFARequired = true
+		return result, nil
+	}
+	if orgSettings != nil {
+		if orgSettings.MFARequiredAlways {
+			result.MFARequired = true
+			return result, nil
+		}
+		if isNewDevice && orgSettings.MFARequiredForNewDevice {
+			result.MFARequired = true
+		}
+		if device != nil && !device.IsEffectivelyTrusted(time.Now().UTC()) && orgSettings.MFARequiredForUntrusted {
+			result.MFARequired = true
+		}
+		result.RegisterTrustAfterMFA = orgSettings.RegisterTrustAfterMFA
+		if orgSettings.TrustTTLDays > 0 {
+			result.TrustTTLDays = orgSettings.TrustTTLDays
+		} else if platformSettings != nil {
+			result.TrustTTLDays = platformSettings.DefaultTrustTTLDays
+		}
+	} else {
+		// Default: require MFA for new devices
+		if isNewDevice {
+			result.MFARequired = true
+		}
+		if device != nil && !device.IsEffectivelyTrusted(time.Now().UTC()) {
+			result.MFARequired = true
+		}
+		if platformSettings != nil {
+			result.TrustTTLDays = platformSettings.DefaultTrustTTLDays
+		}
+	}
+	return result, nil
+}
+
 type memMembershipRepo struct {
 	mu sync.Mutex
 	m  map[string]*membershipdomain.Membership
@@ -153,19 +342,50 @@ func (r *memMembershipRepo) GetMembershipByUserAndOrg(ctx context.Context, userI
 	return nil, nil
 }
 
-func newTestAuthService(t *testing.T) (*AuthService, *memSessionRepo) {
+func newTestAuthServiceOpt(t *testing.T, otpReturnToClient bool) (*AuthService, *memSessionRepo) {
+	t.Helper()
 	userRepo := &memUserRepo{byID: make(map[string]*userdomain.User), byEmail: make(map[string]*userdomain.User)}
 	identityRepo := &memIdentityRepo{m: make(map[string]*identitydomain.Identity)}
 	sessionRepo := &memSessionRepo{m: make(map[string]*sessiondomain.Session)}
 	deviceRepo := &memDeviceRepo{m: make(map[string]*devicedomain.Device)}
 	membershipRepo := &memMembershipRepo{m: make(map[string]*membershipdomain.Membership)}
+	platformSettingsRepo := &memPlatformSettingsRepo{}
+	orgMFASettingsRepo := &memOrgMFASettingsRepo{}
+	mfaChallengeRepo := &memMFAChallengeRepo{m: make(map[string]*mfadomain.Challenge)}
+	mfaIntentRepo := &memMFAIntentRepo{m: make(map[string]*mfaintentdomain.Intent)}
+	policyEvaluator := &memPolicyEvaluator{}
+	smsSender := &memOTPSender{}
 	hasher := security.NewHasher(10)
 	tokens, err := security.NewTestTokenProvider()
 	if err != nil {
 		t.Fatalf("NewTestTokenProvider: %v", err)
 	}
-	svc := NewAuthService(userRepo, identityRepo, sessionRepo, deviceRepo, membershipRepo, hasher, tokens, 15*time.Minute, 24*time.Hour)
+	svc := NewAuthService(
+		userRepo,
+		identityRepo,
+		sessionRepo,
+		deviceRepo,
+		membershipRepo,
+		platformSettingsRepo,
+		orgMFASettingsRepo,
+		mfaChallengeRepo,
+		mfaIntentRepo,
+		policyEvaluator,
+		smsSender,
+		hasher,
+		tokens,
+		15*time.Minute,
+		24*time.Hour,
+		30,             // defaultTrustTTLDays
+		10*time.Minute, // mfaChallengeTTL
+		otpReturnToClient,
+		nil, // devOTPStore
+	)
 	return svc, sessionRepo
+}
+
+func newTestAuthService(t *testing.T) (*AuthService, *memSessionRepo) {
+	return newTestAuthServiceOpt(t, false)
 }
 
 func TestAuthService_Register(t *testing.T) {
@@ -243,18 +463,34 @@ func TestAuthService_LoginAndRefreshAndLogout(t *testing.T) {
 	}
 	membershipRepo.mu.Unlock()
 
+	// Pre-create a trusted device to avoid MFA requirement
+	deviceRepo := svc.deviceRepo.(*memDeviceRepo)
+	deviceRepo.mu.Lock()
+	deviceRepo.m["d1"] = &devicedomain.Device{
+		ID:          "d1",
+		UserID:      reg.UserID,
+		OrgID:       "org-1",
+		Fingerprint: "password-login",
+		Trusted:     true,
+		CreatedAt:   time.Now(),
+	}
+	deviceRepo.mu.Unlock()
+
 	loginRes, err := svc.Login(ctx, "user@example.com", "Password123!abc", "org-1", "")
 	if err != nil {
 		t.Fatalf("Login: %v", err)
 	}
-	if loginRes.AccessToken == "" || loginRes.RefreshToken == "" {
+	if loginRes.Tokens == nil {
+		t.Fatal("Login should return tokens (not MFA required)")
+	}
+	if loginRes.Tokens.AccessToken == "" || loginRes.Tokens.RefreshToken == "" {
 		t.Fatal("Login should return tokens")
 	}
-	if loginRes.UserID != reg.UserID || loginRes.OrgID != "org-1" {
-		t.Errorf("Login user/org: got %q %q", loginRes.UserID, loginRes.OrgID)
+	if loginRes.Tokens.UserID != reg.UserID || loginRes.Tokens.OrgID != "org-1" {
+		t.Errorf("Login user/org: got %q %q", loginRes.Tokens.UserID, loginRes.Tokens.OrgID)
 	}
 
-	refreshRes, err := svc.Refresh(ctx, loginRes.RefreshToken)
+	refreshRes, err := svc.Refresh(ctx, loginRes.Tokens.RefreshToken)
 	if err != nil {
 		t.Fatalf("Refresh: %v", err)
 	}
@@ -326,5 +562,91 @@ func TestAuthService_LogoutFromContext(t *testing.T) {
 	}
 	if s.RevokedAt == nil {
 		t.Error("Logout with session in context should have revoked the session")
+	}
+}
+
+// TestAuthService_LoginOTPReturnToClient asserts that when otpReturnToClient is true and devOTPStore is set, Login stores OTP in dev store (retrievable via Get), does not call SendOTP, and MFARequired has no OTP in response.
+func TestAuthService_LoginOTPReturnToClient(t *testing.T) {
+	userRepo := &memUserRepo{byID: make(map[string]*userdomain.User), byEmail: make(map[string]*userdomain.User)}
+	identityRepo := &memIdentityRepo{m: make(map[string]*identitydomain.Identity)}
+	sessionRepo := &memSessionRepo{m: make(map[string]*sessiondomain.Session)}
+	deviceRepo := &memDeviceRepo{m: make(map[string]*devicedomain.Device)}
+	membershipRepo := &memMembershipRepo{m: make(map[string]*membershipdomain.Membership)}
+	platformSettingsRepo := &memPlatformSettingsRepo{}
+	orgMFASettingsRepo := &memOrgMFASettingsRepo{}
+	mfaChallengeRepo := &memMFAChallengeRepo{m: make(map[string]*mfadomain.Challenge)}
+	mfaIntentRepo := &memMFAIntentRepo{m: make(map[string]*mfaintentdomain.Intent)}
+	policyEvaluator := &memPolicyEvaluator{}
+	recordingSender := &recordingOTPSender{}
+	devStore := devotp.NewMemoryStore()
+	hasher := security.NewHasher(10)
+	tokens, err := security.NewTestTokenProvider()
+	if err != nil {
+		t.Fatalf("NewTestTokenProvider: %v", err)
+	}
+	svc := NewAuthService(
+		userRepo,
+		identityRepo,
+		sessionRepo,
+		deviceRepo,
+		membershipRepo,
+		platformSettingsRepo,
+		orgMFASettingsRepo,
+		mfaChallengeRepo,
+		mfaIntentRepo,
+		policyEvaluator,
+		recordingSender,
+		hasher,
+		tokens,
+		15*time.Minute,
+		24*time.Hour,
+		30,
+		10*time.Minute,
+		true, // otpReturnToClient
+		devStore,
+	)
+	ctx := context.Background()
+
+	reg, err := svc.Register(ctx, "mfa@example.com", "Password123!abc", "")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	// Give user a phone so Login returns MFARequired (not PhoneRequired)
+	userRepo.mu.Lock()
+	if u, ok := userRepo.byID[reg.UserID]; ok {
+		u2 := *u
+		u2.Phone = "15551234567"
+		userRepo.byID[reg.UserID] = &u2
+		userRepo.byEmail[u.Email] = &u2
+	}
+	userRepo.mu.Unlock()
+
+	membershipRepo.mu.Lock()
+	membershipRepo.m["m1"] = &membershipdomain.Membership{
+		ID: "m1", UserID: reg.UserID, OrgID: "org-1", Role: membershipdomain.RoleMember,
+		CreatedAt: time.Now(),
+	}
+	membershipRepo.mu.Unlock()
+
+	loginRes, err := svc.Login(ctx, "mfa@example.com", "Password123!abc", "org-1", "fp1")
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	if loginRes.MFARequired == nil {
+		t.Fatal("expected MFARequired (new device, user has phone)")
+	}
+	challengeID := loginRes.MFARequired.ChallengeID
+	if challengeID == "" {
+		t.Fatal("expected non-empty challenge_id")
+	}
+	otp, ok := devStore.Get(ctx, challengeID)
+	if !ok {
+		t.Error("expected OTP in dev store when otpReturnToClient is true")
+	}
+	if otp == "" {
+		t.Error("expected non-empty OTP from dev store")
+	}
+	if n := recordingSender.callCount(); n != 0 {
+		t.Errorf("expected SendOTP not called when otpReturnToClient is true, got %d calls", n)
 	}
 }

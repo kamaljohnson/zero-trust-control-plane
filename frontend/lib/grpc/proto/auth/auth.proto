@@ -34,6 +34,38 @@ message AuthResponse {
   string org_id = 5;
 }
 
+message MFARequired {
+  string challenge_id = 1;
+  string phone_mask = 2;
+}
+
+message PhoneRequired {
+  string intent_id = 1;
+}
+
+message LoginResponse {
+  oneof result {
+    AuthResponse tokens = 1;
+    MFARequired mfa_required = 2;
+    PhoneRequired phone_required = 3;
+  }
+}
+
+message VerifyMFARequest {
+  string challenge_id = 1;
+  string otp = 2;
+}
+
+message SubmitPhoneAndRequestMFARequest {
+  string intent_id = 1;
+  string phone = 2;
+}
+
+message SubmitPhoneAndRequestMFAResponse {
+  string challenge_id = 1;
+  string phone_mask = 2;
+}
+
 message LinkIdentityRequest {
   string user_id = 1;
   string provider = 2;
@@ -47,7 +79,9 @@ message LinkIdentityResponse {
 
 service AuthService {
   rpc Register(RegisterRequest) returns (AuthResponse);
-  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc VerifyMFA(VerifyMFARequest) returns (AuthResponse);
+  rpc SubmitPhoneAndRequestMFA(SubmitPhoneAndRequestMFARequest) returns (SubmitPhoneAndRequestMFAResponse);
   rpc Refresh(RefreshRequest) returns (AuthResponse);
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);

@@ -44,6 +44,19 @@ func (r *PostgresRepository) ListByOrg(ctx context.Context, orgID string) ([]*do
 	return out, nil
 }
 
+// GetEnabledPoliciesByOrg returns all enabled policies for the given org. Returns (nil, error) only on database errors.
+func (r *PostgresRepository) GetEnabledPoliciesByOrg(ctx context.Context, orgID string) ([]*domain.Policy, error) {
+	list, err := r.queries.GetEnabledPoliciesByOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*domain.Policy, len(list))
+	for i := range list {
+		out[i] = genPolicyToDomain(&list[i])
+	}
+	return out, nil
+}
+
 // Create persists the policy to the database. The policy must have ID set.
 func (r *PostgresRepository) Create(ctx context.Context, p *domain.Policy) error {
 	_, err := r.queries.CreatePolicy(ctx, gen.CreatePolicyParams{
@@ -58,6 +71,11 @@ func (r *PostgresRepository) Update(ctx context.Context, p *domain.Policy) error
 		ID: p.ID, Rules: p.Rules, Enabled: p.Enabled,
 	})
 	return err
+}
+
+// Delete removes the policy by id.
+func (r *PostgresRepository) Delete(ctx context.Context, id string) error {
+	return r.queries.DeletePolicy(ctx, id)
 }
 
 func genPolicyToDomain(p *gen.Policy) *domain.Policy {

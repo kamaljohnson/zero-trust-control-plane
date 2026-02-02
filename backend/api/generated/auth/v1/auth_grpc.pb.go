@@ -20,11 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Register_FullMethodName     = "/ztcp.auth.v1.AuthService/Register"
-	AuthService_Login_FullMethodName        = "/ztcp.auth.v1.AuthService/Login"
-	AuthService_Refresh_FullMethodName      = "/ztcp.auth.v1.AuthService/Refresh"
-	AuthService_Logout_FullMethodName       = "/ztcp.auth.v1.AuthService/Logout"
-	AuthService_LinkIdentity_FullMethodName = "/ztcp.auth.v1.AuthService/LinkIdentity"
+	AuthService_Register_FullMethodName                 = "/ztcp.auth.v1.AuthService/Register"
+	AuthService_Login_FullMethodName                    = "/ztcp.auth.v1.AuthService/Login"
+	AuthService_VerifyMFA_FullMethodName                = "/ztcp.auth.v1.AuthService/VerifyMFA"
+	AuthService_SubmitPhoneAndRequestMFA_FullMethodName = "/ztcp.auth.v1.AuthService/SubmitPhoneAndRequestMFA"
+	AuthService_Refresh_FullMethodName                  = "/ztcp.auth.v1.AuthService/Refresh"
+	AuthService_Logout_FullMethodName                   = "/ztcp.auth.v1.AuthService/Logout"
+	AuthService_LinkIdentity_FullMethodName             = "/ztcp.auth.v1.AuthService/LinkIdentity"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -34,7 +36,9 @@ const (
 // AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
 type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error)
-	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	VerifyMFA(ctx context.Context, in *VerifyMFARequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	SubmitPhoneAndRequestMFA(ctx context.Context, in *SubmitPhoneAndRequestMFARequest, opts ...grpc.CallOption) (*SubmitPhoneAndRequestMFAResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	LinkIdentity(ctx context.Context, in *LinkIdentityRequest, opts ...grpc.CallOption) (*LinkIdentityResponse, error)
@@ -58,10 +62,30 @@ func (c *authServiceClient) Register(ctx context.Context, in *RegisterRequest, o
 	return out, nil
 }
 
-func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) VerifyMFA(ctx context.Context, in *VerifyMFARequest, opts ...grpc.CallOption) (*AuthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuthResponse)
-	err := c.cc.Invoke(ctx, AuthService_Login_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AuthService_VerifyMFA_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SubmitPhoneAndRequestMFA(ctx context.Context, in *SubmitPhoneAndRequestMFARequest, opts ...grpc.CallOption) (*SubmitPhoneAndRequestMFAResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitPhoneAndRequestMFAResponse)
+	err := c.cc.Invoke(ctx, AuthService_SubmitPhoneAndRequestMFA_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +129,9 @@ func (c *authServiceClient) LinkIdentity(ctx context.Context, in *LinkIdentityRe
 // AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
 type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*AuthResponse, error)
-	Login(context.Context, *LoginRequest) (*AuthResponse, error)
+	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	VerifyMFA(context.Context, *VerifyMFARequest) (*AuthResponse, error)
+	SubmitPhoneAndRequestMFA(context.Context, *SubmitPhoneAndRequestMFARequest) (*SubmitPhoneAndRequestMFAResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*AuthResponse, error)
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	LinkIdentity(context.Context, *LinkIdentityRequest) (*LinkIdentityResponse, error)
@@ -122,8 +148,14 @@ type UnimplementedAuthServiceServer struct{}
 func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest) (*AuthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*AuthResponse, error) {
+func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyMFA(context.Context, *VerifyMFARequest) (*AuthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyMFA not implemented")
+}
+func (UnimplementedAuthServiceServer) SubmitPhoneAndRequestMFA(context.Context, *SubmitPhoneAndRequestMFARequest) (*SubmitPhoneAndRequestMFAResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitPhoneAndRequestMFA not implemented")
 }
 func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*AuthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
@@ -187,6 +219,42 @@ func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_VerifyMFA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyMFARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyMFA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyMFA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyMFA(ctx, req.(*VerifyMFARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SubmitPhoneAndRequestMFA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitPhoneAndRequestMFARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SubmitPhoneAndRequestMFA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SubmitPhoneAndRequestMFA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SubmitPhoneAndRequestMFA(ctx, req.(*SubmitPhoneAndRequestMFARequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -259,6 +327,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
+		},
+		{
+			MethodName: "VerifyMFA",
+			Handler:    _AuthService_VerifyMFA_Handler,
+		},
+		{
+			MethodName: "SubmitPhoneAndRequestMFA",
+			Handler:    _AuthService_SubmitPhoneAndRequestMFA_Handler,
 		},
 		{
 			MethodName: "Refresh",

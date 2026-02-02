@@ -6,21 +6,32 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 
 	authv1 "zero-trust-control-plane/backend/api/generated/auth/v1"
+	devv1 "zero-trust-control-plane/backend/api/generated/dev/v1"
 	healthv1 "zero-trust-control-plane/backend/api/generated/health/v1"
 	"zero-trust-control-plane/backend/internal/config"
 	"zero-trust-control-plane/backend/internal/db"
 	devicerepo "zero-trust-control-plane/backend/internal/device/repository"
+	"zero-trust-control-plane/backend/internal/devotp"
+	devotphandler "zero-trust-control-plane/backend/internal/devotp/handler"
 	identityrepo "zero-trust-control-plane/backend/internal/identity/repository"
 	identityservice "zero-trust-control-plane/backend/internal/identity/service"
 	membershiprepo "zero-trust-control-plane/backend/internal/membership/repository"
+	mfarepo "zero-trust-control-plane/backend/internal/mfa/repository"
+	"zero-trust-control-plane/backend/internal/mfa/sms"
+	mfaintentrepo "zero-trust-control-plane/backend/internal/mfaintent/repository"
+	orgmfasettingsrepo "zero-trust-control-plane/backend/internal/orgmfasettings/repository"
+	platformsettingsrepo "zero-trust-control-plane/backend/internal/platformsettings/repository"
+	policyengine "zero-trust-control-plane/backend/internal/policy/engine"
+	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
 	"zero-trust-control-plane/backend/internal/security"
-	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
 	"zero-trust-control-plane/backend/internal/server"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
+	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
 	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 )
 
@@ -64,27 +75,63 @@ func main() {
 		sessionRepo := sessionrepo.NewPostgresRepository(database)
 		deviceRepo := devicerepo.NewPostgresRepository(database)
 		membershipRepo := membershiprepo.NewPostgresRepository(database)
-
+		platformSettingsRepo := platformsettingsrepo.NewPostgresRepository(database)
+		orgMFASettingsRepo := orgmfasettingsrepo.NewPostgresRepository(database)
+		mfaChallengeRepo := mfarepo.NewPostgresRepository(database)
+		mfaIntentRepo := mfaintentrepo.NewPostgresRepository(database)
+		policyRepo := policyrepo.NewPostgresRepository(database)
+		policyEvaluator := policyengine.NewOPAEvaluator(policyRepo)
+		defaultTrustTTLDays := cfg.DefaultTrustTTLDays
+		if defaultTrustTTLDays <= 0 {
+			defaultTrustTTLDays = 30
+		}
+		var smsSender identityservice.OTPSender
+		if cfg.SMSLocalAPIKey != "" {
+			smsSender = sms.NewSMSLocalClient(cfg.SMSLocalAPIKey, cfg.SMSLocalBaseURL, cfg.SMSLocalSender)
+		}
+		var devOTPStore identityservice.DevOTPStore
+		if cfg.OTPReturnToClient && cfg.Env != "production" {
+			devStore := devotp.NewMemoryStore()
+			devOTPStore = devStore
+			deps.DevOTPHandler = devotphandler.NewServer(devStore)
+		}
 		authService := identityservice.NewAuthService(
 			userRepo,
 			identityRepo,
 			sessionRepo,
 			deviceRepo,
 			membershipRepo,
+			platformSettingsRepo,
+			orgMFASettingsRepo,
+			mfaChallengeRepo,
+			mfaIntentRepo,
+			policyEvaluator,
+			smsSender,
 			hasher,
 			tokens,
 			cfg.AccessTTL(),
 			cfg.RefreshTTL(),
+			defaultTrustTTLDays,
+			10*time.Minute,
+			cfg.OTPReturnToClient,
+			devOTPStore,
 		)
 		deps.Auth = authService
+		deps.DeviceRepo = deviceRepo
+		deps.PolicyRepo = policyRepo
 	}
 
 	if authEnabled {
 		publicMethods := map[string]bool{
-			authv1.AuthService_Register_FullMethodName:     true,
-			authv1.AuthService_Login_FullMethodName:        true,
-			authv1.AuthService_Refresh_FullMethodName:      true,
-			healthv1.HealthService_HealthCheck_FullMethodName: true,
+			authv1.AuthService_Register_FullMethodName:                 true,
+			authv1.AuthService_Login_FullMethodName:                    true,
+			authv1.AuthService_VerifyMFA_FullMethodName:                true,
+			authv1.AuthService_SubmitPhoneAndRequestMFA_FullMethodName: true,
+			authv1.AuthService_Refresh_FullMethodName:                  true,
+			healthv1.HealthService_HealthCheck_FullMethodName:          true,
+		}
+		if deps.DevOTPHandler != nil {
+			publicMethods[devv1.DevService_GetOTP_FullMethodName] = true
 		}
 		// tokens is in scope from authEnabled block
 		s = grpc.NewServer(grpc.UnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods)))

@@ -34,6 +34,20 @@ export interface AuthResponseJson {
   org_id?: string;
 }
 
+/** Login response: either tokens, MFA required (challenge_id, phone_mask), or phone required (intent_id). */
+export interface LoginResponseJson {
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: string;
+  user_id?: string;
+  org_id?: string;
+  mfa_required?: boolean;
+  challenge_id?: string;
+  phone_mask?: string;
+  phone_required?: boolean;
+  intent_id?: string;
+}
+
 interface AuthResponseProto {
   access_token?: string;
   refresh_token?: string;
@@ -74,12 +88,33 @@ function promisifyRegister(
   });
 }
 
+interface LoginResponseProto {
+  tokens?: AuthResponseProto;
+  mfa_required?: { challenge_id?: string; phone_mask?: string };
+  phone_required?: { intent_id?: string };
+}
+
 function promisifyLogin(
   client: grpc.Client,
   req: { email: string; password: string; org_id: string; device_fingerprint?: string }
+): Promise<LoginResponseProto> {
+  return new Promise((resolve, reject) => {
+    (client as grpc.Client & { Login: (r: unknown, c: (e: grpc.ServiceError | null, r: LoginResponseProto) => void) => void }).Login(
+      req,
+      (err: grpc.ServiceError | null, res: LoginResponseProto) => {
+        if (err) reject({ code: err.code, message: err.details || err.message });
+        else resolve(res ?? {});
+      }
+    );
+  });
+}
+
+function promisifyVerifyMFA(
+  client: grpc.Client,
+  req: { challenge_id: string; otp: string }
 ): Promise<AuthResponseProto> {
   return new Promise((resolve, reject) => {
-    (client as grpc.Client & { Login: (r: unknown, c: (e: grpc.ServiceError | null, r: AuthResponseProto) => void) => void }).Login(
+    (client as grpc.Client & { VerifyMFA: (r: unknown, c: (e: grpc.ServiceError | null, r: AuthResponseProto) => void) => void }).VerifyMFA(
       req,
       (err: grpc.ServiceError | null, res: AuthResponseProto) => {
         if (err) reject({ code: err.code, message: err.details || err.message });
@@ -154,14 +189,14 @@ export async function register(
 }
 
 /**
- * Login authenticates and returns tokens and user/org context.
+ * Login authenticates and returns either tokens or MFA required (challenge_id, phone_mask).
  */
 export async function login(
   email: string,
   password: string,
   org_id: string,
   device_fingerprint?: string
-): Promise<AuthResponseJson> {
+): Promise<LoginResponseJson> {
   const client = getAuthClient();
   const res = await promisifyLogin(client, {
     email,
@@ -169,6 +204,59 @@ export async function login(
     org_id,
     device_fingerprint: device_fingerprint ?? "password-login",
   });
+  if (res.mfa_required != null) {
+    return {
+      mfa_required: true,
+      challenge_id: res.mfa_required.challenge_id ?? "",
+      phone_mask: res.mfa_required.phone_mask ?? "",
+    };
+  }
+  if (res.phone_required != null) {
+    return {
+      phone_required: true,
+      intent_id: res.phone_required.intent_id ?? "",
+    };
+  }
+  if (res.tokens != null) {
+    return authResponseToJson(res.tokens);
+  }
+  return {};
+}
+
+/**
+ * RequestMFAWithPhone consumes the intent, creates an MFA challenge for the submitted phone, sends OTP, and returns challenge_id and phone_mask.
+ */
+export async function requestMFAWithPhone(
+  intent_id: string,
+  phone: string
+): Promise<{ challenge_id: string; phone_mask: string }> {
+  const client = getAuthClient();
+  const res = await new Promise<{ challenge_id?: string; phone_mask?: string }>((resolve, reject) => {
+    (client as grpc.Client & {
+      SubmitPhoneAndRequestMFA: (
+        r: { intent_id: string; phone: string },
+        c: (e: grpc.ServiceError | null, r: { challenge_id?: string; phone_mask?: string }) => void
+      ) => void;
+    }).SubmitPhoneAndRequestMFA(
+      { intent_id, phone },
+      (err: grpc.ServiceError | null, res: { challenge_id?: string; phone_mask?: string }) => {
+        if (err) reject({ code: err.code, message: err.details || err.message });
+        else resolve(res ?? {});
+      }
+    );
+  });
+  return {
+    challenge_id: res.challenge_id ?? "",
+    phone_mask: res.phone_mask ?? "",
+  };
+}
+
+/**
+ * VerifyMFA verifies the OTP for the given challenge and returns tokens.
+ */
+export async function verifyMFA(challenge_id: string, otp: string): Promise<AuthResponseJson> {
+  const client = getAuthClient();
+  const res = await promisifyVerifyMFA(client, { challenge_id, otp });
   return authResponseToJson(res);
 }
 

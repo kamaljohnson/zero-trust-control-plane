@@ -64,9 +64,18 @@ func (r *PostgresRepository) Create(ctx context.Context, d *domain.Device) error
 	if d.LastSeenAt != nil {
 		lastSeen = sql.NullTime{Time: *d.LastSeenAt, Valid: true}
 	}
+	trustedUntil := sql.NullTime{}
+	if d.TrustedUntil != nil {
+		trustedUntil = sql.NullTime{Time: *d.TrustedUntil, Valid: true}
+	}
+	revokedAt := sql.NullTime{}
+	if d.RevokedAt != nil {
+		revokedAt = sql.NullTime{Time: *d.RevokedAt, Valid: true}
+	}
 	_, err := r.queries.CreateDevice(ctx, gen.CreateDeviceParams{
 		ID: d.ID, UserID: d.UserID, OrgID: d.OrgID, Fingerprint: d.Fingerprint,
-		Trusted: d.Trusted, LastSeenAt: lastSeen, CreatedAt: d.CreatedAt,
+		Trusted: d.Trusted, TrustedUntil: trustedUntil, RevokedAt: revokedAt,
+		LastSeenAt: lastSeen, CreatedAt: d.CreatedAt,
 	})
 	return err
 }
@@ -74,6 +83,26 @@ func (r *PostgresRepository) Create(ctx context.Context, d *domain.Device) error
 // UpdateTrusted sets the device's trusted flag for the given id. Returns an error if the update fails.
 func (r *PostgresRepository) UpdateTrusted(ctx context.Context, id string, trusted bool) error {
 	_, err := r.queries.UpdateDeviceTrusted(ctx, gen.UpdateDeviceTrustedParams{ID: id, Trusted: trusted})
+	return err
+}
+
+// UpdateTrustedWithExpiry sets the device's trusted flag and trusted_until for the given id; clears revoked_at.
+// Pass nil for trustedUntil to set no expiry.
+func (r *PostgresRepository) UpdateTrustedWithExpiry(ctx context.Context, id string, trusted bool, trustedUntil *time.Time) error {
+	tu := sql.NullTime{}
+	if trustedUntil != nil {
+		tu = sql.NullTime{Time: *trustedUntil, Valid: true}
+	}
+	_, err := r.queries.UpdateDeviceTrustedWithExpiry(ctx, gen.UpdateDeviceTrustedWithExpiryParams{
+		ID: id, Trusted: trusted, TrustedUntil: tu,
+	})
+	return err
+}
+
+// Revoke sets revoked_at to now and clears trusted and trusted_until for the given device id.
+func (r *PostgresRepository) Revoke(ctx context.Context, id string) error {
+	now := time.Now().UTC()
+	_, err := r.queries.RevokeDevice(ctx, gen.RevokeDeviceParams{ID: id, RevokedAt: sql.NullTime{Time: now, Valid: true}})
 	return err
 }
 
@@ -87,12 +116,19 @@ func genDeviceToDomain(d *gen.Device) *domain.Device {
 	if d == nil {
 		return nil
 	}
-	var lastSeen *time.Time
+	var lastSeen, trustedUntil, revokedAt *time.Time
 	if d.LastSeenAt.Valid {
 		lastSeen = &d.LastSeenAt.Time
 	}
+	if d.TrustedUntil.Valid {
+		trustedUntil = &d.TrustedUntil.Time
+	}
+	if d.RevokedAt.Valid {
+		revokedAt = &d.RevokedAt.Time
+	}
 	return &domain.Device{
 		ID: d.ID, UserID: d.UserID, OrgID: d.OrgID, Fingerprint: d.Fingerprint,
-		Trusted: d.Trusted, LastSeenAt: lastSeen, CreatedAt: d.CreatedAt,
+		Trusted: d.Trusted, TrustedUntil: trustedUntil, RevokedAt: revokedAt,
+		LastSeenAt: lastSeen, CreatedAt: d.CreatedAt,
 	}
 }

@@ -83,3 +83,8 @@ secrets.yml
 
 .cursor/
 .nvmrc
+
+backend/server
+backend/worker
+backend/migrate
+backend/seed

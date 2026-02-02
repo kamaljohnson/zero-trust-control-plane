@@ -32,13 +32,51 @@ message LogoutRequest {
   string refresh_token = 1;  // optional; if empty, rely on context when auth interceptor is implemented
 }
 
-// AuthResponse returns session tokens and user/org context. Used by Register, Login, and Refresh.
+// AuthResponse returns session tokens and user/org context. Used by Register, Login, Refresh, and VerifyMFA.
 message AuthResponse {
   string access_token = 1;
   string refresh_token = 2;
   google.protobuf.Timestamp expires_at = 3;
   string user_id = 4;
   string org_id = 5;
+}
+
+// MFARequired is returned when Login requires MFA before issuing a session (risk-based device trust).
+message MFARequired {
+  string challenge_id = 1;
+  string phone_mask = 2;  // e.g. last 4 digits for display
+}
+
+// PhoneRequired is returned when Login requires MFA but the user has no phone; client collects phone then calls SubmitPhoneAndRequestMFA.
+message PhoneRequired {
+  string intent_id = 1;
+}
+
+// LoginResponse is the result of Login: either tokens (success / trusted device), MFA required (challenge_id), or phone required (intent_id).
+message LoginResponse {
+  oneof result {
+    AuthResponse tokens = 1;
+    MFARequired mfa_required = 2;
+    PhoneRequired phone_required = 3;
+  }
+}
+
+// VerifyMFARequest carries the MFA challenge id and OTP from the user.
+message VerifyMFARequest {
+  string challenge_id = 1;
+  string otp = 2;
+}
+
+// SubmitPhoneAndRequestMFARequest carries the intent_id from Login(phone_required) and the user-entered phone.
+message SubmitPhoneAndRequestMFARequest {
+  string intent_id = 1;
+  string phone = 2;
+}
+
+// SubmitPhoneAndRequestMFAResponse returns challenge_id and phone_mask after creating the MFA challenge and sending OTP.
+message SubmitPhoneAndRequestMFAResponse {
+  string challenge_id = 1;
+  string phone_mask = 2;
 }
 
 // LinkIdentityRequest links an external identity (OIDC/SAML) to a user.
@@ -57,7 +95,9 @@ message LinkIdentityResponse {
 // AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
 service AuthService {
   rpc Register(RegisterRequest) returns (AuthResponse);
-  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc VerifyMFA(VerifyMFARequest) returns (AuthResponse);
+  rpc SubmitPhoneAndRequestMFA(SubmitPhoneAndRequestMFARequest) returns (SubmitPhoneAndRequestMFAResponse);
   rpc Refresh(RefreshRequest) returns (AuthResponse);
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);

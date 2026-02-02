@@ -16,6 +16,7 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **cmd/server** — gRPC API server
 - **cmd/worker** — async jobs (audit, cleanup)
 - **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
+- **cmd/seed** — Development data seeder (used by scripts/seed.sh)
 - **docs/** — auth and database documentation (`auth.md`, `database.md`)
 - **proto/** — Protocol Buffer definitions: common, auth, user, org, membership, device, session, policy, audit, telemetry, admin, health
 - **api/generated/** — generated Go and gRPC code from proto (buf or protoc)
@@ -106,11 +107,22 @@ Run migrations with `./scripts/migrate.sh` from the backend root. By default it 
 
 The script reads `DATABASE_URL` from `.env` or the environment; create a `.env` from [.env.example](.env.example) if needed. If the [golang-migrate](https://github.com/golang-migrate/migrate) CLI is in PATH (e.g. `brew install golang-migrate`), the script uses it; otherwise it runs `go run ./cmd/migrate`.
 
+## Seeding development data
+
+Run `./scripts/seed.sh` from the backend root **after** migrations to insert development sample data (users, org, memberships, device, policies, MFA/platform settings). The script reads `DATABASE_URL` from `.env` or the environment. Seed is **idempotent**: if the dev user already exists, it skips inserts and exits successfully.
+
+Default dev logins for local testing:
+
+| Email               | Password    | Role   |
+|---------------------|-------------|--------|
+| `dev@example.com`   | `password123` | owner  |
+| `member@example.com`| `password123` | member |
+
 ## Scripts
 
 ```bash
 ./scripts/generate_proto.sh   # Generate code from proto/
 ./scripts/generate_sqlc.sh   # Generate sqlc code (run after installing sqlc)
 ./scripts/migrate.sh          # Run DB migrations (see docs/database.md for migrations list)
-./scripts/seed.sh             # Seed dev data
+./scripts/seed.sh             # Seed dev data (run after migrate; see Seeding development data)
 ```

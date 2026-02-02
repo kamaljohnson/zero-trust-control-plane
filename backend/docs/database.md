@@ -1,6 +1,6 @@
 # Database Structure
 
-This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) and applied via [internal/db/migrations/](../internal/db/migrations/).
+This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) and applied via [internal/db/migrations/](../internal/db/migrations/). For MFA and device-trust behavior (when MFA is required, policy evaluation, OTP flow), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
 
 **Audience**: Developers working on schema, migrations, repos, or features that persist data.
 
@@ -39,6 +39,8 @@ Core user account. No foreign keys; referenced by identities, memberships, devic
 | `email` | VARCHAR | NOT NULL, UNIQUE |
 | `name` | VARCHAR | nullable |
 | `status` | user_status | NOT NULL |
+| `phone` | VARCHAR | nullable; used for MFA (e.g. SMS OTP); one per user, immutable after phone_verified |
+| `phone_verified` | BOOLEAN | NOT NULL, DEFAULT false; set true after first successful MFA verification; once true, phone cannot be changed |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 | `updated_at` | TIMESTAMPTZ | NOT NULL |
 
@@ -88,7 +90,7 @@ User–organization association with a role. Determines access and permissions w
 
 ### devices
 
-Device registered to a user within an org (e.g. for device trust and session binding). Identified by `fingerprint` per user/org.
+Device registered to a user within an org (e.g. for device trust and session binding). Identified by `fingerprint` per user/org. Trust is **time-bound** (`trusted_until`) and **revocable** (`revoked_at`). A device is effectively trusted when `trusted` is true, `revoked_at` is null, and (`trusted_until` is null or `trusted_until` &gt; now). See [device-trust.md](device-trust.md).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -97,6 +99,8 @@ Device registered to a user within an org (e.g. for device trust and session bin
 | `org_id` | VARCHAR | NOT NULL, REFERENCES organizations(id) |
 | `fingerprint` | VARCHAR | NOT NULL |
 | `trusted` | BOOLEAN | NOT NULL |
+| `trusted_until` | TIMESTAMPTZ | nullable; trust expires at this time |
+| `revoked_at` | TIMESTAMPTZ | nullable; if set, device is revoked and not trusted |
 | `last_seen_at` | TIMESTAMPTZ | nullable |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 
@@ -124,7 +128,7 @@ Active or revoked session for a user in an org on a device. The columns `refresh
 
 ### policies
 
-Org-scoped policy definition. `rules` holds the policy content (e.g. JSON or text); `enabled` toggles application.
+Org-scoped policy definition. `rules` holds the policy content (e.g. Rego text for device-trust/MFA); `enabled` toggles application. Enabled policies for an org are loaded by the policy engine for MFA evaluation. See [device-trust.md](device-trust.md).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -133,6 +137,69 @@ Org-scoped policy definition. `rules` holds the policy content (e.g. JSON or tex
 | `rules` | TEXT | NOT NULL |
 | `enabled` | BOOLEAN | NOT NULL |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
+
+---
+
+### platform_settings
+
+Platform-wide key-value settings (e.g. MFA/device-trust). Used by policy evaluation for `mfa_required_always`, `default_trust_ttl_days`, etc. See [device-trust.md](device-trust.md).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `key` | VARCHAR | PRIMARY KEY |
+| `value_json` | TEXT | NOT NULL |
+
+---
+
+### org_mfa_settings
+
+Per-org MFA and device-trust settings. One row per org; used by policy evaluation (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.). See [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `org_id` | VARCHAR | PRIMARY KEY, REFERENCES organizations(id) |
+| `mfa_required_for_new_device` | BOOLEAN | NOT NULL, DEFAULT true |
+| `mfa_required_for_untrusted` | BOOLEAN | NOT NULL, DEFAULT true |
+| `mfa_required_always` | BOOLEAN | NOT NULL, DEFAULT false |
+| `register_trust_after_mfa` | BOOLEAN | NOT NULL, DEFAULT true |
+| `trust_ttl_days` | INTEGER | NOT NULL, DEFAULT 30 |
+| `created_at` | TIMESTAMPTZ | NOT NULL |
+| `updated_at` | TIMESTAMPTZ | NOT NULL |
+
+---
+
+### mfa_intents
+
+One-time intents for "collect phone then send OTP" when the user has no phone. Created when Login returns phone_required; consumed (deleted) when SubmitPhoneAndRequestMFA is called. See [mfa.md](mfa.md).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `id` | VARCHAR | PRIMARY KEY |
+| `user_id` | VARCHAR | NOT NULL, REFERENCES users(id) |
+| `org_id` | VARCHAR | NOT NULL, REFERENCES organizations(id) |
+| `device_id` | VARCHAR | NOT NULL, REFERENCES devices(id) |
+| `expires_at` | TIMESTAMPTZ | NOT NULL |
+
+There is an index `idx_mfa_intents_expires_at` on `expires_at`.
+
+---
+
+### mfa_challenges
+
+Ephemeral MFA challenges (OTP flow). Created when Login returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or when expired. `code_hash` is a SHA-256 hash of the OTP. See [mfa.md](mfa.md).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `id` | VARCHAR | PRIMARY KEY |
+| `user_id` | VARCHAR | NOT NULL, REFERENCES users(id) |
+| `org_id` | VARCHAR | NOT NULL, REFERENCES organizations(id) |
+| `device_id` | VARCHAR | NOT NULL, REFERENCES devices(id) |
+| `phone` | VARCHAR | NOT NULL |
+| `code_hash` | VARCHAR | NOT NULL |
+| `expires_at` | TIMESTAMPTZ | NOT NULL |
+| `created_at` | TIMESTAMPTZ | NOT NULL |
+
+There is an index `idx_mfa_challenges_expires_at` on `expires_at` for cleanup of expired challenges.
 
 ---
 
@@ -228,7 +295,7 @@ erDiagram
     }
 ```
 
-Session columns used for auth (e.g. `refresh_jti`, `refresh_token_hash`) are documented in the sessions table above.
+Session columns used for auth (e.g. `refresh_jti`, `refresh_token_hash`) are documented in the sessions table above. MFA/device-trust tables (platform_settings, org_mfa_settings, mfa_challenges) and the device/user columns used by MFA are described in the Tables and Migrations sections above; the ER diagram above does not show them.
 
 ---
 
@@ -242,8 +309,10 @@ Migrations are applied in order from [internal/db/migrations/](../internal/db/mi
 | **002_drop_telemetry** | Drops the `telemetry` table if present. |
 | **003_refresh_jti** | Adds `sessions.refresh_jti` (VARCHAR, nullable). For existing DBs created before this column. |
 | **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |
+| **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](mfa.md) and [device-trust.md](device-trust.md). |
+| **006_mfa_intent** | Creates `mfa_intents` table (one-time phone-collect binding); adds `users.phone_verified` (BOOLEAN NOT NULL DEFAULT false). See [mfa.md](mfa.md). |
 
-The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti` and `refresh_token_hash` (and does not include telemetry). Migrations 003 and 004 are for databases that were created from migration 001 before those columns were added to the canonical schema. New deployments run all ups; existing DBs may need 003 and 004 when adding auth.
+The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti`, `refresh_token_hash`, MFA/device-trust columns and tables, `mfa_intents`, and `users.phone_verified` (and does not include telemetry). Migrations 003–006 are for databases that were created from migration 001 before those columns and tables were added. New deployments run all ups; existing DBs may need 003–006 when adding auth and MFA/device trust.
 
 To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scripts/migrate.sh down` to roll back). The script reads `DATABASE_URL` from `.env` or the environment. You can install the [golang-migrate](https://github.com/golang-migrate/migrate) CLI (e.g. `brew install golang-migrate`) or use the built-in Go runner (`go run ./cmd/migrate`).
 
@@ -257,7 +326,7 @@ To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scr
 
 ### Migrations (applied to database)
 
-Migrations are applied in order (001, 002, 003, 004). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
+Migrations are applied in order (001, 002, 003, 004, 005). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
 
 ### Connection
 
@@ -277,5 +346,5 @@ After changing schema or queries, run sqlc generate to regenerate `gen/`. After 
 
 ### Cross-reference to auth
 
-For how each table is used by the auth flows (Register, Login, Refresh, Logout), see [auth.md](auth.md) "Database and Schema" / "Table roles (auth)".
+For how each table is used by the auth flows (Register, Login, VerifyMFA, Refresh, Logout), see [auth.md](auth.md) "Database and Schema" / "Table roles (auth)". For MFA and device-trust logic (policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
 

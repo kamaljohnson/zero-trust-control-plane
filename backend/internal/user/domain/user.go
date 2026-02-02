@@ -7,12 +7,14 @@ import (
 
 // User is the core user entity.
 type User struct {
-	ID        string
-	Email     string
-	Name      string
-	Status    UserStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            string
+	Email         string
+	Name          string
+	Phone         string // optional; used for MFA (PoC); immutable after PhoneVerified
+	PhoneVerified bool   // true after first successful MFA verification
+	Status        UserStatus
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type UserStatus string
