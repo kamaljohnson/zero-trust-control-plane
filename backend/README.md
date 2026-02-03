@@ -4,17 +4,17 @@ gRPC API server and async worker for the zero-trust control plane.
 
 ## Overview
 
-The backend is a **gRPC API server** (and optional async worker). The server registers multiple gRPC services: Admin, Auth, User, Organization, Membership, Device, Session, Policy, Telemetry, Audit, and Health. **Auth is optional**: when enabled (see [Configuration](#configuration)), the server opens the database, wires the auth service and repos, and registers an auth interceptor that validates Bearer tokens and sets identity in context for protected RPCs; when disabled, no database connection is opened and auth RPCs return Unimplemented. AuthService is implemented by the identity handler ([internal/identity/handler](internal/identity/handler)) and auth service ([internal/identity/service](internal/identity/service)); see [docs/auth.md](docs/auth.md). When auth is enabled, **audit logging** is also enabled: an audit interceptor records who did what (org, user, action, resource, IP) after each protected RPC, and the auth service explicitly logs login success/failure, logout, and session created; see [docs/audit.md](docs/audit.md). **MFA** (risk-based, challenge/OTP) and **device trust** (policy-driven, revocable, time-bound) influence when a second factor is required; see [docs/mfa.md](docs/mfa.md) and [docs/device-trust.md](docs/device-trust.md).
+The backend is a **gRPC API server** (and optional async worker). The server registers multiple gRPC services: Admin, Auth, User, Organization, Membership, Device, Session, Policy, Telemetry, Audit, and Health. **Auth is optional**: when enabled (see [Configuration](#configuration)), the server opens the database, wires the auth service and repos, and registers an auth interceptor that validates Bearer tokens and sets identity in context for protected RPCs; when disabled, no database connection is opened and auth RPCs return Unimplemented. AuthService is implemented by the identity handler ([internal/identity/handler](internal/identity/handler)) and auth service ([internal/identity/service](internal/identity/service)); see [docs/auth.md](../docs/auth.md). When auth is enabled, **audit logging** is also enabled: an audit interceptor records who did what (org, user, action, resource, IP) after each protected RPC, and the auth service explicitly logs login success/failure, logout, and session created; see [docs/audit.md](../docs/audit.md). **MFA** (risk-based, challenge/OTP) and **device trust** (policy-driven, revocable, time-bound) influence when a second factor is required; see [docs/mfa.md](../docs/mfa.md) and [docs/device-trust.md](../docs/device-trust.md).
 
 ## Documentation
 
-- **[docs/auth.md](docs/auth.md)** — Authentication: architecture, API (Register, Login, Refresh, Logout), security (passwords, JWT, refresh rotation, reuse detection, interceptor), flows, configuration, and how auth uses the database.
-- **[docs/audit.md](docs/audit.md)** — Audit logging: compliance trail, what is logged (RPC-derived and explicit auth/session events), ListAuditLogs API, interceptor and wiring, when enabled/disabled, configuration.
-- **[docs/database.md](docs/database.md)** — Database: schema, enums and tables, when the DB is used, migrations, schema/codegen (sqlc, connection, repos), and cross-reference to auth table roles.
-- **[docs/device-trust.md](docs/device-trust.md)** — Device trust: identifiable/revocable/time-bound devices, policy evaluation (OPA/Rego), when MFA is required and when trust is registered, configuration.
-- **[docs/health.md](docs/health.md)** — Health checks: readiness RPC (HealthService.HealthCheck), behavior with and without database, how to call from Kubernetes or gRPC clients.
-- **[docs/mfa.md](docs/mfa.md)** — MFA: risk-based MFA, when required, challenge/OTP flow, VerifyMFA and SubmitPhoneAndRequestMFA, API and configuration.
-- **[docs/telemetry.md](docs/telemetry.md)** — Telemetry: gRPC interceptor and TelemetryService → Kafka → worker → Loki → Grafana; configuration, LogQL examples, and optional dashboard.
+- **[docs/auth.md](../docs/auth.md)** — Authentication: architecture, API (Register, Login, Refresh, Logout), security (passwords, JWT, refresh rotation, reuse detection, interceptor), flows, configuration, and how auth uses the database.
+- **[docs/audit.md](../docs/audit.md)** — Audit logging: compliance trail, what is logged (RPC-derived and explicit auth/session events), ListAuditLogs API, interceptor and wiring, when enabled/disabled, configuration.
+- **[docs/database.md](../docs/database.md)** — Database: schema, enums and tables, when the DB is used, migrations, schema/codegen (sqlc, connection, repos), and cross-reference to auth table roles.
+- **[docs/device-trust.md](../docs/device-trust.md)** — Device trust: identifiable/revocable/time-bound devices, policy evaluation (OPA/Rego), when MFA is required and when trust is registered, configuration.
+- **[docs/health.md](../docs/health.md)** — Health checks: readiness RPC (HealthService.HealthCheck), behavior with and without database, how to call from Kubernetes or gRPC clients.
+- **[docs/mfa.md](../docs/mfa.md)** — MFA: risk-based MFA, when required, challenge/OTP flow, VerifyMFA and SubmitPhoneAndRequestMFA, API and configuration.
+- **[docs/telemetry.md](../docs/telemetry.md)** — Telemetry: gRPC interceptor and TelemetryService → Kafka → worker → Loki → Grafana; configuration, LogQL examples, and optional dashboard.
 
 ## Layout
 
@@ -22,7 +22,7 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **cmd/worker** — telemetry worker (Kafka → Loki); optional async jobs
 - **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
 - **cmd/seed** — Development data seeder (used by scripts/seed.sh)
-- **docs/** — documentation: `auth.md`, `audit.md`, `database.md`, `device-trust.md`, `health.md`, `mfa.md`
+- **../docs/** — project documentation (repo root); see [Documentation](#documentation) above.
 - **proto/** — Protocol Buffer definitions: common, auth, user, org, membership, device, session, policy, audit, telemetry, admin, health
 - **api/generated/** — generated Go and gRPC code from proto (buf or protoc)
 - **internal/** — server; one folder per domain: user, identity, organization, membership, device, session, policy, audit; platform (tenancy, RBAC, plans); db; security; config
@@ -36,13 +36,13 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 
 Config is loaded from environment or `.env` (see [.env.example](.env.example)). `GRPC_ADDR` (default `:8080`) is the listen address.
 
-**Auth and database**: Auth (and the database) are enabled only when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server opens Postgres, builds the auth service and repos, and protects non-public RPCs with a Bearer access token. When any of the three is missing, the server runs without a DB and auth RPCs return Unimplemented. Full auth configuration and flows: [docs/auth.md](docs/auth.md).
+**Auth and database**: Auth (and the database) are enabled only when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server opens Postgres, builds the auth service and repos, and protects non-public RPCs with a Bearer access token. When any of the three is missing, the server runs without a DB and auth RPCs return Unimplemented. Full auth configuration and flows: [docs/auth.md](../docs/auth.md).
 
-**Telemetry**: When `KAFKA_BROKERS` is set, the server emits telemetry events (per-RPC and via TelemetryService) to Kafka. Run the worker with `KAFKA_BROKERS`, `LOKI_URL`, and `GRPC_ADDR=:0` to consume from Kafka and push logs to Loki; then add Loki as a Grafana datasource and use [docs/telemetry.md](docs/telemetry.md) for LogQL and dashboard import.
+**Telemetry**: When `KAFKA_BROKERS` is set, the server emits telemetry events (per-RPC and via TelemetryService) to Kafka. Run the worker with `KAFKA_BROKERS`, `LOKI_URL`, and `GRPC_ADDR=:0` to consume from Kafka and push logs to Loki; then add Loki as a Grafana datasource and use [docs/telemetry.md](../docs/telemetry.md) for LogQL and dashboard import.
 
 ## Generating sqlc code
 
-The repository layer uses [sqlc](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html#setting-up) for type-safe SQL. The `internal/db/sqlc/gen/` directory is **generated** by sqlc from `internal/db/sqlc/schema/` and `internal/db/sqlc/queries/`; do not edit files in `gen/`. See [docs/database.md](docs/database.md) for migrations list and schema/codegen workflow.
+The repository layer uses [sqlc](https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html#setting-up) for type-safe SQL. The `internal/db/sqlc/gen/` directory is **generated** by sqlc from `internal/db/sqlc/schema/` and `internal/db/sqlc/queries/`; do not edit files in `gen/`. See [docs/database.md](../docs/database.md) for migrations list and schema/codegen workflow.
 
 1. **Install sqlc** (one of):
    ```bash
@@ -130,6 +130,6 @@ Default dev logins for local testing:
 ```bash
 ./scripts/generate_proto.sh   # Generate code from proto/
 ./scripts/generate_sqlc.sh   # Generate sqlc code (run after installing sqlc)
-./scripts/migrate.sh          # Run DB migrations (see docs/database.md for migrations list)
+./scripts/migrate.sh          # Run DB migrations (see ../docs/database.md for migrations list)
 ./scripts/seed.sh             # Seed dev data (run after migrate; see Seeding development data)
 ```

@@ -1,0 +1,26 @@
+{
+  "id": "backend/auth",
+  "title": "Auth Implementation",
+  "description": "This document describes the authentication implementation for the zero-trust control plane backend: architecture, API surface, security measures, flows, and configuration. The canonical proto is internal/proto/auth/auth.proto; business logic lives in internal/identity/service/authservice.go; the gRPC server is implemented in internal/identity/handler/grpc.go.",
+  "source": "@site/docs/backend/auth.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/auth",
+  "permalink": "/docs/backend/auth",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Auth Implementation",
+    "sidebar_label": "Auth"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Backend",
+    "permalink": "/docs/category/backend"
+  },
+  "next": {
+    "title": "Audit",
+    "permalink": "/docs/backend/audit"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "backend/device-trust",
+  "title": "Device Trust",
+  "description": "This document describes device-trust logic in the zero-trust control plane backend: how devices are identifiable, revocable, and time-bound; policy evaluation (OPA/Rego) that decides when MFA is required and when to register or refresh trust; and configuration. For MFA flows (Login MFA branch, Refresh MFA branch, VerifyMFA, challenge/OTP, API), see mfa.md. Business logic lives in internal/identity/service/authservice.go; policy evaluation is in internal/policy/engine/.",
+  "source": "@site/docs/backend/device-trust.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/device-trust",
+  "permalink": "/docs/backend/device-trust",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Device Trust",
+    "sidebar_label": "Device Trust"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Database",
+    "permalink": "/docs/backend/database"
+  },
+  "next": {
+    "title": "Health",
+    "permalink": "/docs/backend/health"
+  }
+}

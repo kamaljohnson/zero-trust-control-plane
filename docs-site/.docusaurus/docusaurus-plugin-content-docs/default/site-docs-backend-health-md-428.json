@@ -1,0 +1,26 @@
+{
+  "id": "backend/health",
+  "title": "Health checks",
+  "description": "The backend exposes a readiness health check via the gRPC HealthService.HealthCheck RPC. It is used by Kubernetes, load balancers, and CI to determine whether the server is ready to accept traffic.",
+  "source": "@site/docs/backend/health.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/health",
+  "permalink": "/docs/backend/health",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Health checks",
+    "sidebar_label": "Health"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Device Trust",
+    "permalink": "/docs/backend/device-trust"
+  },
+  "next": {
+    "title": "MFA",
+    "permalink": "/docs/backend/mfa"
+  }
+}

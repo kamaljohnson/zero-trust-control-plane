@@ -1,12 +1,17 @@
+---
+title: Device Trust
+sidebar_label: Device Trust
+---
+
 # Device Trust
 
-This document describes device-trust logic in the zero-trust control plane backend: how devices are identifiable, revocable, and time-bound; policy evaluation (OPA/Rego) that decides when MFA is required and when to register or refresh trust; and configuration. For MFA flows (Login MFA branch, Refresh MFA branch, VerifyMFA, challenge/OTP, API), see [mfa.md](mfa.md). Business logic lives in [internal/identity/service/auth_service.go](../internal/identity/service/auth_service.go); policy evaluation is in [internal/policy/engine/](../internal/policy/engine/).
+This document describes device-trust logic in the zero-trust control plane backend: how devices are identifiable, revocable, and time-bound; policy evaluation (OPA/Rego) that decides when MFA is required and when to register or refresh trust; and configuration. For MFA flows (Login MFA branch, Refresh MFA branch, VerifyMFA, challenge/OTP, API), see [mfa.md](./mfa). Business logic lives in [internal/identity/service/auth_service.go](../../../backend/internal/identity/service/auth_service.go); policy evaluation is in [internal/policy/engine/](../../../backend/internal/policy/engine/).
 
 **Audience**: Developers integrating with or extending device trust or policy evaluation.
 
 ## Overview
 
-**Device trust**: Devices are identifiable by `user_id`, `org_id`, and `fingerprint`. Trust is **revocable** (a device can be marked revoked via `revoked_at`) and **time-bound** (trust can expire via `trusted_until`). After successful MFA, the backend may register the device as trusted for a configurable number of days, depending on policy. Effective trust is: `Trusted && !RevokedAt && (TrustedUntil == nil || TrustedUntil > now)`. When a device is not effectively trusted, policy may require MFA on the next **login or refresh**; see [mfa.md](mfa.md) for the Login, Refresh, and VerifyMFA flows. On **Refresh**, the client may send **device_fingerprint**; the backend evaluates the same policy and, if MFA is required, revokes the current session and returns mfa_required or phone_required, so the user must complete MFA to obtain new tokens.
+**Device trust**: Devices are identifiable by `user_id`, `org_id`, and `fingerprint`. Trust is **revocable** (a device can be marked revoked via `revoked_at`) and **time-bound** (trust can expire via `trusted_until`). After successful MFA, the backend may register the device as trusted for a configurable number of days, depending on policy. Effective trust is: `Trusted && !RevokedAt && (TrustedUntil == nil || TrustedUntil > now)`. When a device is not effectively trusted, policy may require MFA on the next **login or refresh**; see [mfa.md](./mfa) for the Login, Refresh, and VerifyMFA flows. On **Refresh**, the client may send **device_fingerprint**; the backend evaluates the same policy and, if MFA is required, revokes the current session and returns mfa_required or phone_required, so the user must complete MFA to obtain new tokens.
 
 ---
 
@@ -39,7 +44,7 @@ flowchart LR
 
 ### Interface
 
-The auth service depends on a **PolicyEvaluator** interface ([internal/policy/engine/evaluator.go](../internal/policy/engine/evaluator.go)):
+The auth service depends on a **PolicyEvaluator** interface ([internal/policy/engine/evaluator.go](../../../backend/internal/policy/engine/evaluator.go)):
 
 - **EvaluateMFA**(ctx, platformSettings, orgSettings, device, user, isNewDevice) → (**MFAResult**, error)
 - **MFAResult** fields: `MFARequired` (bool), `RegisterTrustAfterMFA` (bool), `TrustTTLDays` (int).
@@ -48,7 +53,7 @@ Implementations decide whether MFA is required and, when the user completes MFA,
 
 ### OPA implementation
 
-The default implementation is **OPAEvaluator** ([internal/policy/engine/opa_evaluator.go](../internal/policy/engine/opa_evaluator.go)):
+The default implementation is **OPAEvaluator** ([internal/policy/engine/opa_evaluator.go](../../../backend/internal/policy/engine/opa_evaluator.go)):
 
 - Loads **enabled** policies for the org from the `policies` table (Rego text in `rules`).
 - Builds an **input** map from platform settings, org settings, device state, user (e.g. has_phone), and `is_new`.
@@ -94,8 +99,8 @@ When no org-specific policies are present, the engine uses this logic (equivalen
 
 ### Settings sources
 
-- **Platform**: [internal/platformsettings/domain/settings.go](../internal/platformsettings/domain/settings.go) `PlatformDeviceTrustSettings` — `MFARequiredAlways`, `DefaultTrustTTLDays`. Stored in `platform_settings` (key-value; keys e.g. `mfa_required_always`, `default_trust_ttl_days`). Repository: [internal/platformsettings/repository/](../internal/platformsettings/repository/).
-- **Org**: [internal/orgmfasettings/domain/settings.go](../internal/orgmfasettings/domain/settings.go) `OrgMFASettings` — `MFARequiredForNewDevice`, `MFARequiredForUntrusted`, `MFARequiredAlways`, `RegisterTrustAfterMFA`, `TrustTTLDays`. One row per org in `org_mfa_settings`. Repository: [internal/orgmfasettings/repository/](../internal/orgmfasettings/repository/).
+- **Platform**: [internal/platformsettings/domain/settings.go](../../../backend/internal/platformsettings/domain/settings.go) `PlatformDeviceTrustSettings` — `MFARequiredAlways`, `DefaultTrustTTLDays`. Stored in `platform_settings` (key-value; keys e.g. `mfa_required_always`, `default_trust_ttl_days`). Repository: [internal/platformsettings/repository/](../../../backend/internal/platformsettings/repository/).
+- **Org**: [internal/orgmfasettings/domain/settings.go](../../../backend/internal/orgmfasettings/domain/settings.go) `OrgMFASettings` — `MFARequiredForNewDevice`, `MFARequiredForUntrusted`, `MFARequiredAlways`, `RegisterTrustAfterMFA`, `TrustTTLDays`. One row per org in `org_mfa_settings`. Repository: [internal/orgmfasettings/repository/](../../../backend/internal/orgmfasettings/repository/).
 
 ---
 
@@ -103,7 +108,7 @@ When no org-specific policies are present, the engine uses this logic (equivalen
 
 ### Domain
 
-[internal/device/domain/device.go](../internal/device/domain/device.go):
+[internal/device/domain/device.go](../../../backend/internal/device/domain/device.go):
 
 - **Trusted** (bool): whether the device is marked trusted.
 - **TrustedUntil** (*time.Time): optional expiry of trust; after this time the device is not effectively trusted.
@@ -112,11 +117,11 @@ When no org-specific policies are present, the engine uses this logic (equivalen
 
 ### Registration after MFA
 
-When `VerifyMFA` succeeds and policy returns `RegisterTrustAfterMFA == true` and `TrustTTLDays > 0`, the auth service calls `createSessionAndResult(ctx, userID, orgID, deviceID, true, trustTTLDays)`, which sets `trusted = true`, `trusted_until = now + trustTTLDays`, and clears `revoked_at` via [DeviceRepo.UpdateTrustedWithExpiry](../internal/device/repository/postgres.go).
+When `VerifyMFA` succeeds and policy returns `RegisterTrustAfterMFA == true` and `TrustTTLDays > 0`, the auth service calls `createSessionAndResult(ctx, userID, orgID, deviceID, true, trustTTLDays)`, which sets `trusted = true`, `trusted_until = now + trustTTLDays`, and clears `revoked_at` via [DeviceRepo.UpdateTrustedWithExpiry](../../../backend/internal/device/repository/postgres.go).
 
 ### Revocation
 
-The **DeviceService** exposes **RevokeDevice** ([proto/device/device.proto](../proto/device/device.proto), [internal/device/handler/grpc.go](../internal/device/handler/grpc.go)): it sets the device to `trusted = false`, `trusted_until = null`, `revoked_at = now`. After revocation, the device is no longer effectively trusted, so on the next login policy may require MFA again (if org requires MFA for untrusted devices).
+The **DeviceService** exposes **RevokeDevice** ([proto/device/device.proto](../../../backend/proto/device/device.proto), [internal/device/handler/grpc.go](../../../backend/internal/device/handler/grpc.go)): it sets the device to `trusted = false`, `trusted_until = null`, `revoked_at = now`. After revocation, the device is no longer effectively trusted, so on the next login policy may require MFA again (if org requires MFA for untrusted devices).
 
 ---
 
@@ -126,7 +131,7 @@ The **DeviceService** exposes **RevokeDevice** ([proto/device/device.proto](../p
 |----------|-------------|---------|
 | DEFAULT_TRUST_TTL_DAYS | Default device trust TTL in days when platform_settings has no value. | 30 |
 
-Platform-wide settings are stored in **platform_settings** (key-value). Org-level settings are in **org_mfa_settings** (one row per org). See [database.md](database.md) for schema.
+Platform-wide settings are stored in **platform_settings** (key-value). Org-level settings are in **org_mfa_settings** (one row per org). See [database.md](./database) for schema.
 
 For SMS and MFA challenge TTL configuration, see [mfa.md](mfa.md#configuration).
 
@@ -135,5 +140,5 @@ For SMS and MFA challenge TTL configuration, see [mfa.md](mfa.md#configuration).
 ## See also
 
 - [auth.md](auth.md) — Authentication overview, Register, Login, Refresh, Logout, and public methods.
-- [database.md](database.md) — Schema for platform_settings, org_mfa_settings, devices, and policies.
-- [mfa.md](mfa.md) — MFA flows, challenge/OTP, API, and SMS configuration.
+- [database.md](./database) — Schema for platform_settings, org_mfa_settings, devices, and policies.
+- [mfa.md](./mfa) — MFA flows, challenge/OTP, API, and SMS configuration.

@@ -1,0 +1,26 @@
+{
+  "id": "backend/telemetry",
+  "title": "Telemetry",
+  "description": "Telemetry events (gRPC request metrics and explicit TelemetryService emits) flow through Kafka to a worker that pushes logs to Loki for querying in Grafana.",
+  "source": "@site/docs/backend/telemetry.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/telemetry",
+  "permalink": "/docs/backend/telemetry",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Telemetry",
+    "sidebar_label": "Telemetry"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "MFA",
+    "permalink": "/docs/backend/mfa"
+  },
+  "next": {
+    "title": "Pending",
+    "permalink": "/docs/contributing/pending"
+  }
+}

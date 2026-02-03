@@ -1,0 +1,78 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "backend/audit",
+              "path": "/docs/backend/audit",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/auth",
+              "path": "/docs/backend/auth",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/database",
+              "path": "/docs/backend/database",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/device-trust",
+              "path": "/docs/backend/device-trust",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/health",
+              "path": "/docs/backend/health",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/mfa",
+              "path": "/docs/backend/mfa",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/telemetry",
+              "path": "/docs/backend/telemetry",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "contributing/pending",
+              "path": "/docs/contributing/pending",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/docs/intro",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "/category/backend",
+              "path": "/docs/category/backend",
+              "sidebar": "docsSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docsSidebar": {
+              "link": {
+                "path": "/docs/intro",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

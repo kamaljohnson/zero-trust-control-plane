@@ -1,3 +1,8 @@
+---
+title: Health checks
+sidebar_label: Health
+---
+
 # Health checks
 
 The backend exposes a **readiness** health check via the gRPC `HealthService.HealthCheck` RPC. It is used by Kubernetes, load balancers, and CI to determine whether the server is ready to accept traffic.

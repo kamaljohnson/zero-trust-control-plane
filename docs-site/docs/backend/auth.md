@@ -1,6 +1,11 @@
+---
+title: Auth Implementation
+sidebar_label: Auth
+---
+
 # Auth Implementation
 
-This document describes the authentication implementation for the zero-trust control plane backend: architecture, API surface, security measures, flows, and configuration. The canonical proto is [internal/proto/auth/auth.proto](../proto/auth/auth.proto); business logic lives in [internal/identity/service/auth_service.go](../internal/identity/service/auth_service.go); the gRPC server is implemented in [internal/identity/handler/grpc.go](../internal/identity/handler/grpc.go).
+This document describes the authentication implementation for the zero-trust control plane backend: architecture, API surface, security measures, flows, and configuration. The canonical proto is [internal/proto/auth/auth.proto](../../../backend/proto/auth/auth.proto); business logic lives in [internal/identity/service/auth_service.go](../../../backend/internal/identity/service/auth_service.go); the gRPC server is implemented in [internal/identity/handler/grpc.go](../../../backend/internal/identity/handler/grpc.go).
 
 **Audience**: Developers integrating with or extending the auth system (clients, tests, or backend changes).
 
@@ -8,11 +13,11 @@ This document describes the authentication implementation for the zero-trust con
 
 Auth provides **password-only** authentication for Browser, CLI, and Admin UI with enterprise-grade security: bcrypt password hashing, JWT access and refresh tokens (RS256/ES256), refresh-token rotation, session binding via `refresh_jti` and hashed refresh token, refresh reuse detection (revoke all user sessions on reuse), and strong password policy (12+ chars, mixed case, number, symbol).
 
-**Scope**: Register, Login (with optional risk-based MFA), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+**Scope**: Register, Login (with optional risk-based MFA), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 
 ### When auth is enabled
 
-Auth is enabled when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. See [cmd/server/main.go](../cmd/server/main.go) line 43: `authEnabled := cfg.DatabaseURL != "" && cfg.JWTPrivateKey != "" && cfg.JWTPublicKey != ""`. When enabled, the server opens the database, builds the auth service and repos, registers the auth interceptor, and auth RPCs are fully functional.
+Auth is enabled when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. See [cmd/server/main.go](../../../backend/cmd/server/main.go) line 43: `authEnabled := cfg.DatabaseURL != "" && cfg.JWTPrivateKey != "" && cfg.JWTPublicKey != ""`. When enabled, the server opens the database, builds the auth service and repos, registers the auth interceptor, and auth RPCs are fully functional.
 
 ### When auth is disabled
 
@@ -26,17 +31,17 @@ If any of the three (DATABASE_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY) is missing: 
 
 ### Wiring (startup)
 
-When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the following:
+When `authEnabled` is true, [cmd/server/main.go](../../../backend/cmd/server/main.go) does the following:
 
 1. Opens the database with `db.Open(cfg.DatabaseURL)`.
 2. Creates the hasher with `security.NewHasher(cfg.BcryptCost)`.
-3. Parses JWT keys via [internal/security/keys.go](../internal/security/keys.go) `ParsePrivateKey` and `ParsePublicKey` (supports inline PEM or file path; see `LoadPEM`).
+3. Parses JWT keys via [internal/security/keys.go](../../../backend/internal/security/keys.go) `ParsePrivateKey` and `ParsePublicKey` (supports inline PEM or file path; see `LoadPEM`).
 4. Builds `TokenProvider` with issuer, audience, and TTLs from config.
-5. Creates the five repos (user, identity, session, device, membership) and other repos (platform settings, org MFA settings, MFA challenge/intent, policy). Creates the audit repo and audit logger; see [audit.md](audit.md). Calls `NewAuthService(..., auditLogger)` and sets `deps.Auth`, `deps.DeviceRepo`, `deps.PolicyRepo`, `deps.AuditRepo`, `deps.HealthPinger`, `deps.HealthPolicyChecker`.
+5. Creates the five repos (user, identity, session, device, membership) and other repos (platform settings, org MFA settings, MFA challenge/intent, policy). Creates the audit repo and audit logger; see [audit.md](./audit). Calls `NewAuthService(..., auditLogger)` and sets `deps.Auth`, `deps.DeviceRepo`, `deps.PolicyRepo`, `deps.AuditRepo`, `deps.HealthPinger`, `deps.HealthPolicyChecker`.
 6. Builds `publicMethods` with the five full method names: AuthService Register, Login, VerifyMFA, Refresh; HealthService HealthCheck.
-7. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`. See [audit.md](audit.md) for the audit skip set and when audit is written.
+7. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`. See [audit.md](./audit) for the audit skip set and when audit is written.
 
-[internal/server/grpc.go](../internal/server/grpc.go) `RegisterServices` passes `deps.Auth` into `identityhandler.NewAuthServer(authSvc)`. If `deps.Auth == nil` (auth disabled), the handler returns Unimplemented for all auth RPCs.
+[internal/server/grpc.go](../../../backend/internal/server/grpc.go) `RegisterServices` passes `deps.Auth` into `identityhandler.NewAuthServer(authSvc)`. If `deps.Auth == nil` (auth disabled), the handler returns Unimplemented for all auth RPCs.
 
 ### Component diagram
 
@@ -110,7 +115,7 @@ The following full method names are treated as public; they do not require a val
 - `AuthService_Refresh_FullMethodName`
 - `HealthService_HealthCheck_FullMethodName`
 
-These are configured in [cmd/server/main.go](../cmd/server/main.go) in the `publicMethods` map passed to the auth interceptor.
+These are configured in [cmd/server/main.go](../../../backend/cmd/server/main.go) in the `publicMethods` map passed to the auth interceptor.
 
 ### Messages
 
@@ -130,7 +135,7 @@ These are configured in [cmd/server/main.go](../cmd/server/main.go) in the `publ
 
 ### Errors
 
-The handler maps auth-service sentinel errors to gRPC status codes in [internal/identity/handler/grpc.go](../internal/identity/handler/grpc.go) `authErr()` (switch on sentinels from [auth_service.go](../internal/identity/service/auth_service.go)):
+The handler maps auth-service sentinel errors to gRPC status codes in [internal/identity/handler/grpc.go](../../../backend/internal/identity/handler/grpc.go) `authErr()` (switch on sentinels from [auth_service.go](../../../backend/internal/identity/service/auth_service.go)):
 
 | Service error | gRPC code |
 |---------------|-----------|
@@ -153,20 +158,20 @@ Login returns a generic "invalid credentials" on failure so that "user not found
 
 ### Passwords
 
-- **Hashing**: [internal/security/hashing.go](../internal/security/hashing.go) uses bcrypt. Cost is configurable (default 12). Comparison is constant-time via `bcrypt.CompareHashAndPassword`. Callers must not log or persist plaintext passwords.
+- **Hashing**: [internal/security/hashing.go](../../../backend/internal/security/hashing.go) uses bcrypt. Cost is configurable (default 12). Comparison is constant-time via `bcrypt.CompareHashAndPassword`. Callers must not log or persist plaintext passwords.
 - **Policy**: Min 12 characters; at least one uppercase, one lowercase, one number, and one symbol (non-alphanumeric). Enforced on Register.
-- **Validation**: Email and password validation live in [auth_service.go](../internal/identity/service/auth_service.go) as `validateEmail` (simple regex) and `validatePassword` (length and character classes).
+- **Validation**: Email and password validation live in [auth_service.go](../../../backend/internal/identity/service/auth_service.go) as `validateEmail` (simple regex) and `validatePassword` (length and character classes).
 
 ### Tokens
 
-- **Implementation**: [internal/security/tokens.go](../internal/security/tokens.go) uses **RS256/ES256** (asymmetric: `JWT_PRIVATE_KEY` + `JWT_PUBLIC_KEY`). The algorithm is chosen from the key type in `sign()`: RSA public key → RS256, ECDSA public key → ES256. Issuer (`iss`) and audience (`aud`) are set on all tokens and validated on refresh.
-- **Key loading**: Keys can be inline PEM (string starting with `-----BEGIN`) or a file path; [internal/security/keys.go](../internal/security/keys.go) `LoadPEM` treats a value that looks like PEM as inline, otherwise reads from the filesystem.
+- **Implementation**: [internal/security/tokens.go](../../../backend/internal/security/tokens.go) uses **RS256/ES256** (asymmetric: `JWT_PRIVATE_KEY` + `JWT_PUBLIC_KEY`). The algorithm is chosen from the key type in `sign()`: RSA public key → RS256, ECDSA public key → ES256. Issuer (`iss`) and audience (`aud`) are set on all tokens and validated on refresh.
+- **Key loading**: Keys can be inline PEM (string starting with `-----BEGIN`) or a file path; [internal/security/keys.go](../../../backend/internal/security/keys.go) `LoadPEM` treats a value that looks like PEM as inline, otherwise reads from the filesystem.
 - **Access token**: Short-lived. Claims: `jti`, `sub` (user_id), `org_id`, `session_id`, `iss`, `aud`, `exp`, `iat`.
 - **Refresh token**: Long-lived. Claims: `session_id`, `jti` (unique id for rotation), `sub`, `org_id`, `iss`, `aud`, `exp`, `iat`.
 
 ### Refresh token hash
 
-The current refresh token is hashed (SHA-256, hex) and stored in **sessions.refresh_token_hash**. [internal/security/refresh_hash.go](../internal/security/refresh_hash.go) provides `HashRefreshToken(token)` and `RefreshTokenHashEqual(providedToken, storedHash)`; the comparison is constant-time. If the DB leaks, attackers cannot use refresh tokens without the actual token string. Migration [internal/db/migrations/004_refresh_token_hash.up.sql](../internal/db/migrations/004_refresh_token_hash.up.sql) adds the column. Legacy sessions (empty hash) allow jti-only check until next rotation.
+The current refresh token is hashed (SHA-256, hex) and stored in **sessions.refresh_token_hash**. [internal/security/refresh_hash.go](../../../backend/internal/security/refresh_hash.go) provides `HashRefreshToken(token)` and `RefreshTokenHashEqual(providedToken, storedHash)`; the comparison is constant-time. If the DB leaks, attackers cannot use refresh tokens without the actual token string. Migration [internal/db/migrations/004_refresh_token_hash.up.sql](../../../backend/internal/db/migrations/004_refresh_token_hash.up.sql) adds the column. Legacy sessions (empty hash) allow jti-only check until next rotation.
 
 ### Refresh rotation and reuse detection
 
@@ -176,16 +181,16 @@ Refresh also accepts optional **device_fingerprint**. When provided, the service
 
 ### Auth interceptor
 
-A unary gRPC interceptor ([internal/server/interceptors/auth.go](../internal/server/interceptors/auth.go)) runs when auth is enabled.
+A unary gRPC interceptor ([internal/server/interceptors/auth.go](../../../backend/internal/server/interceptors/auth.go)) runs when auth is enabled.
 
 - **Bearer extraction**: It reads the gRPC metadata key `authorization` and expects `Bearer <access_token>` (case-insensitive "bearer" prefix), per `extractBearer`. Leading/trailing space is trimmed.
 - **Public methods**: If the RPC is in `publicMethods`, the request is allowed through even when the token is missing or invalid; identity is not set in context.
 - **Protected methods**: If the RPC is not public and the client does not send a valid Bearer token (missing or `TokenProvider.ValidateAccess` fails), the interceptor returns `Unauthenticated` immediately and the handler is not called.
-- **Valid token**: On successful `ValidateAccess`, the interceptor calls `WithIdentity(ctx, userID, orgID, sessionID)`. Handlers and the auth service read identity via [internal/server/interceptors/context.go](../internal/server/interceptors/context.go) `GetUserID`, `GetOrgID`, and `GetSessionID`. Logout with empty `refresh_token` revokes the session from context when the caller sent a valid Bearer token.
+- **Valid token**: On successful `ValidateAccess`, the interceptor calls `WithIdentity(ctx, userID, orgID, sessionID)`. Handlers and the auth service read identity via [internal/server/interceptors/context.go](../../../backend/internal/server/interceptors/context.go) `GetUserID`, `GetOrgID`, and `GetSessionID`. Logout with empty `refresh_token` revokes the session from context when the caller sent a valid Bearer token.
 
 ### Session binding
 
-The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`. See [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) and migrations 003 and 004. Apply migrations 003 and 004 when adding auth to an existing database.
+The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`. See [internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql) and migrations 003 and 004. Apply migrations 003 and 004 when adding auth to an existing database.
 
 ### Validation
 
@@ -198,7 +203,7 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 
 ### Register
 
-1. Validate email format and password strength (via `validateEmail` and `validatePassword` in [auth_service.go](../internal/identity/service/auth_service.go)).
+1. Validate email format and password strength (via `validateEmail` and `validatePassword` in [auth_service.go](../../../backend/internal/identity/service/auth_service.go)).
 2. Ensure no user exists with the given email (return AlreadyExists if so).
 3. Create user (status active) and local identity (provider `local`, provider_id = email, bcrypt-hashed password).
 4. Return AuthResponse with `user_id` only (no tokens or org_id). **No organization or membership is created.** To obtain tokens, the user must later be added to an org (a row in **memberships**). **MembershipService.AddMember is currently unimplemented**; in practice, membership is created manually (e.g. direct DB insert or admin tool) until AddMember is implemented. After membership exists, the client calls Login with that `org_id`.
@@ -208,8 +213,8 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 1. Validate email, password, and org_id (non-empty).
 2. Get user by email; get local identity by user and provider; compare password (constant-time). Return invalid credentials on any failure.
 3. Require org_id and validate membership via `GetMembershipByUserAndOrg`. If no membership, return `ErrNotOrgMember` → PermissionDenied.
-4. Get or create device: if `device_fingerprint` is provided, look up by user/org/fingerprint; if not found, create. If not provided, use fingerprint `"password-login"` and create device if needed ([auth_service.go](../internal/identity/service/auth_service.go)).
-5. Load platform and org MFA/device-trust settings (from `platform_settings` and `org_mfa_settings`) and run policy evaluation (`PolicyEvaluator.EvaluateMFA`). See [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+4. Get or create device: if `device_fingerprint` is provided, look up by user/org/fingerprint; if not found, create. If not provided, use fingerprint `"password-login"` and create device if needed ([auth_service.go](../../../backend/internal/identity/service/auth_service.go)).
+5. Load platform and org MFA/device-trust settings (from `platform_settings` and `org_mfa_settings`) and run policy evaluation (`PolicyEvaluator.EvaluateMFA`). See [mfa.md](./mfa) and [device-trust.md](./device-trust).
 6. **If MFA required**: If user has no phone, create MFA intent and return **LoginResponse** with **phone_required** (intent_id); client collects phone and calls SubmitPhoneAndRequestMFA, then VerifyMFA. If user has phone, create MFA challenge, send OTP (if SMS configured); return **LoginResponse** with **mfa_required** (challenge_id, phone_mask). Client then calls VerifyMFA with challenge_id and OTP.
 7. **If MFA not required**: Create session with id, user_id, org_id, device_id, expires_at, and **refresh_jti** and **refresh_token_hash** from the first refresh token; issue access and refresh JWTs; return **LoginResponse** with **tokens** (AuthResponse).
 
@@ -260,23 +265,23 @@ Auth is enabled when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBL
 | JWT_REFRESH_TTL | Refresh token lifetime (e.g. `168h` for 7 days). | `168h` |
 | BCRYPT_COST | Bcrypt cost factor (4–31). | `12` |
 
-**JWT keys**: Values can be either inline PEM (string starting with `-----BEGIN`) or a file path; [internal/security/keys.go](../internal/security/keys.go) `LoadPEM` treats a value that looks like PEM as inline, otherwise reads from the filesystem.
+**JWT keys**: Values can be either inline PEM (string starting with `-----BEGIN`) or a file path; [internal/security/keys.go](../../../backend/internal/security/keys.go) `LoadPEM` treats a value that looks like PEM as inline, otherwise reads from the filesystem.
 
-**AccessTTL / RefreshTTL**: Parsed in [internal/config/config.go](../internal/config/config.go) via `AccessTTL()` and `RefreshTTL()` (Go `time.ParseDuration`). If unset or invalid, they fall back to 15 minutes and 168 hours (7 days) respectively.
+**AccessTTL / RefreshTTL**: Parsed in [internal/config/config.go](../../../backend/internal/config/config.go) via `AccessTTL()` and `RefreshTTL()` (Go `time.ParseDuration`). If unset or invalid, they fall back to 15 minutes and 168 hours (7 days) respectively.
 
-Config is loaded in [internal/config/config.go](../internal/config/config.go) (Viper: optional `.env` file, then env). See [.env.example](../.env.example) for a template. For production, load the private key from KMS/Vault (e.g. env populated by sidecar or startup script).
+Config is loaded in [internal/config/config.go](../../../backend/internal/config/config.go) (Viper: optional `.env` file, then env). See [.env.example](../../../backend/.env.example) for a template. For production, load the private key from KMS/Vault (e.g. env populated by sidecar or startup script).
 
 ---
 
 ## MFA and device trust
 
-Login may return **mfa_required** instead of tokens when policy requires a second factor (e.g. new device, untrusted device, or org/platform mandate). The client then calls **VerifyMFA** with the challenge_id and user-entered OTP to complete login. Device trust is identifiable (user/org/fingerprint), revocable (`revoked_at`), and time-bound (`trusted_until`); after successful MFA the backend may register the device as trusted for a configurable TTL. For full detail (policy evaluation, OPA/Rego, OTP and SMS, configuration), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+Login may return **mfa_required** instead of tokens when policy requires a second factor (e.g. new device, untrusted device, or org/platform mandate). The client then calls **VerifyMFA** with the challenge_id and user-entered OTP to complete login. Device trust is identifiable (user/org/fingerprint), revocable (`revoked_at`), and time-bound (`trusted_until`); after successful MFA the backend may register the device as trusted for a configurable TTL. For full detail (policy evaluation, OPA/Rego, OTP and SMS, configuration), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 
 ---
 
 ## Database and Schema
 
-Auth uses the **users**, **identities**, **memberships**, **devices**, **sessions**, **platform_settings**, **org_mfa_settings**, and **mfa_challenges** tables. Full schema and table definitions are in [database.md](database.md). Apply migrations 003, 004, and 005 when adding auth to an existing database so that `sessions.refresh_jti`, `sessions.refresh_token_hash`, and MFA/device-trust columns and tables exist.
+Auth uses the **users**, **identities**, **memberships**, **devices**, **sessions**, **platform_settings**, **org_mfa_settings**, and **mfa_challenges** tables. Full schema and table definitions are in [database.md](./database). Apply migrations 003, 004, and 005 when adding auth to an existing database so that `sessions.refresh_jti`, `sessions.refresh_token_hash`, and MFA/device-trust columns and tables exist.
 
 ### Table roles (auth)
 
@@ -298,9 +303,9 @@ Auth uses the **users**, **identities**, **memberships**, **devices**, **session
 
 Unit tests cover:
 
-- **Hashing**: [internal/security/hashing_test.go](../internal/security/hashing_test.go) — Hash/Compare, wrong password, cost.
-- **Tokens**: [internal/security/tokens_test.go](../internal/security/tokens_test.go) — IssueAccess, IssueRefresh, ValidateRefresh, ValidateAccess, invalid token.
-- **Auth service**: [internal/identity/service/auth_service_test.go](../internal/identity/service/auth_service_test.go) — Register (success and duplicate email), validation failures, Login requires membership, Login/Refresh/Logout flow, Logout from context (session_id in context), wrong password. Uses in-memory stub repos. Auth RPCs (Register, Login, Refresh) are public, so tests can call them without a Bearer token.
+- **Hashing**: [internal/security/hashing_test.go](../../../backend/internal/security/hashing_test.go) — Hash/Compare, wrong password, cost.
+- **Tokens**: [internal/security/tokens_test.go](../../../backend/internal/security/tokens_test.go) — IssueAccess, IssueRefresh, ValidateRefresh, ValidateAccess, invalid token.
+- **Auth service**: [internal/identity/service/auth_service_test.go](../../../backend/internal/identity/service/auth_service_test.go) — Register (success and duplicate email), validation failures, Login requires membership, Login/Refresh/Logout flow, Logout from context (session_id in context), wrong password. Uses in-memory stub repos. Auth RPCs (Register, Login, Refresh) are public, so tests can call them without a Bearer token.
 
 ---
 

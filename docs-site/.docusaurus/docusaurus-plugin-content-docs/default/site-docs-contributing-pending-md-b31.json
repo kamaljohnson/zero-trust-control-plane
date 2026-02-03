@@ -1,0 +1,22 @@
+{
+  "id": "contributing/pending",
+  "title": "Pending documentation",
+  "description": "This file lists documentation entries that are planned but not yet written for the project. Each entry is a suggested topic with a short description.",
+  "source": "@site/docs/contributing/pending.md",
+  "sourceDirName": "contributing",
+  "slug": "/contributing/pending",
+  "permalink": "/docs/contributing/pending",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Pending documentation",
+    "sidebar_label": "Pending"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Telemetry",
+    "permalink": "/docs/backend/telemetry"
+  }
+}

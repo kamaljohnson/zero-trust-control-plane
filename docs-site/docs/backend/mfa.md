@@ -1,6 +1,11 @@
+---
+title: MFA (Multi-Factor Authentication)
+sidebar_label: MFA
+---
+
 # MFA (Multi-Factor Authentication)
 
-This document describes the risk-based MFA logic in the zero-trust control plane backend: when MFA is required, MFA challenge and OTP flow, API surface, and configuration. Device trust (identifiable, revocable, time-bound) influences whether MFA is required; see [device-trust.md](device-trust.md). The canonical proto for auth is [proto/auth/auth.proto](../proto/auth/auth.proto); business logic lives in [internal/identity/service/auth_service.go](../internal/identity/service/auth_service.go).
+This document describes the risk-based MFA logic in the zero-trust control plane backend: when MFA is required, MFA challenge and OTP flow, API surface, and configuration. Device trust (identifiable, revocable, time-bound) influences whether MFA is required; see [device-trust.md](./device-trust). The canonical proto for auth is [proto/auth/auth.proto](../../../backend/proto/auth/auth.proto); business logic lives in [internal/identity/service/auth_service.go](../../../backend/internal/identity/service/auth_service.go).
 
 **Audience**: Developers integrating with or extending MFA flows, challenge/OTP, or SMS delivery.
 
@@ -14,7 +19,7 @@ This document describes the risk-based MFA logic in the zero-trust control plane
 
 **Refresh** can also require MFA when the client sends a **device_fingerprint** with the refresh request: the backend evaluates device-trust policy for that device; if MFA is required (e.g. new or untrusted device), it revokes the current session and returns **RefreshResponse** with **mfa_required** or **phone_required**. The client then completes MFA the same way as after Login (VerifyMFA or SubmitPhoneAndRequestMFA then VerifyMFA).
 
-If MFA is required and the user has a phone on file, the backend creates an MFA challenge, sends a one-time password (OTP) via SMS (PoC: SMS Local), and returns a `challenge_id` and masked phone; the client then calls **VerifyMFA** with the challenge id and OTP to complete login. If MFA is required but the user has no phone, the backend returns **phone_required** with an `intent_id`; the client prompts for phone, calls **SubmitPhoneAndRequestMFA**(intent_id, phone) to create the challenge and send OTP, then calls **VerifyMFA**. After successful VerifyMFA, the user's phone is set and locked (phone_verified = true); one phone per user, immutable after verification. For how device trust and policy evaluation work, see [device-trust.md](device-trust.md).
+If MFA is required and the user has a phone on file, the backend creates an MFA challenge, sends a one-time password (OTP) via SMS (PoC: SMS Local), and returns a `challenge_id` and masked phone; the client then calls **VerifyMFA** with the challenge id and OTP to complete login. If MFA is required but the user has no phone, the backend returns **phone_required** with an `intent_id`; the client prompts for phone, calls **SubmitPhoneAndRequestMFA**(intent_id, phone) to create the challenge and send OTP, then calls **VerifyMFA**. After successful VerifyMFA, the user's phone is set and locked (phone_verified = true); one phone per user, immutable after verification. For how device trust and policy evaluation work, see [device-trust.md](./device-trust).
 
 ---
 
@@ -58,7 +63,7 @@ flowchart LR
 7. **If MFA not required**:
    - Create session and issue access/refresh tokens; return `LoginResponse` with `tokens`. Device trust is not updated on this path (trust is only set after successful MFA when policy says so).
 
-See [auth_service.go](../internal/identity/service/auth_service.go) `Login` and `createSessionAndResult`.
+See [auth_service.go](../../../backend/internal/identity/service/auth_service.go) `Login` and `createSessionAndResult`.
 
 ```mermaid
 sequenceDiagram
@@ -103,7 +108,7 @@ sequenceDiagram
 7. Create session and issue tokens. If policy says register trust, call `UpdateTrustedWithExpiry(deviceID, true, trustedUntil)` with `trustedUntil = now + trustTTLDays`.
 8. Delete the MFA challenge; return `AuthResponse` with tokens.
 
-See [auth_service.go](../internal/identity/service/auth_service.go) `VerifyMFA`.
+See [auth_service.go](../../../backend/internal/identity/service/auth_service.go) `VerifyMFA`.
 
 ```mermaid
 sequenceDiagram
@@ -134,11 +139,11 @@ Whether MFA is required is determined by the **PolicyEvaluator** (interface and 
 
 ### Challenge
 
-[internal/mfa/domain/challenge.go](../internal/mfa/domain/challenge.go): id, user_id, org_id, device_id, phone, code_hash, expires_at, created_at. Stored in **mfa_challenges**. TTL is configured in code (e.g. 10 minutes) when creating the auth service; challenges are deleted after successful VerifyMFA or left to expire.
+[internal/mfa/domain/challenge.go](../../../backend/internal/mfa/domain/challenge.go): id, user_id, org_id, device_id, phone, code_hash, expires_at, created_at. Stored in **mfa_challenges**. TTL is configured in code (e.g. 10 minutes) when creating the auth service; challenges are deleted after successful VerifyMFA or left to expire.
 
 ### OTP
 
-[internal/mfa/otp.go](../internal/mfa/otp.go):
+[internal/mfa/otp.go](../../../backend/internal/mfa/otp.go):
 
 - **GenerateOTP()**: returns a 6-digit numeric string (crypto/rand).
 - **HashOTP(otp)**: SHA-256 hash, hex-encoded; stored in the challenge as `code_hash`.
@@ -146,13 +151,13 @@ Whether MFA is required is determined by the **PolicyEvaluator** (interface and 
 
 ### SMS (PoC)
 
-[internal/mfa/sms/smslocal.go](../internal/mfa/sms/smslocal.go): client for SMS Local API. Configured via `SMSLocalAPIKey`, `SMSLocalBaseURL`, `SMSLocalSender` ([internal/config/config.go](../internal/config/config.go)). If no API key is set, the auth service still creates the challenge but does not send SMS (suitable for tests or when using another channel).
+[internal/mfa/sms/smslocal.go](../../../backend/internal/mfa/sms/smslocal.go): client for SMS Local API. Configured via `SMSLocalAPIKey`, `SMSLocalBaseURL`, `SMSLocalSender` ([internal/config/config.go](../../../backend/internal/config/config.go)). If no API key is set, the auth service still creates the challenge but does not send SMS (suitable for tests or when using another channel).
 
 ### Dev-only OTP endpoint (PoC)
 
-When **OTP_RETURN_TO_CLIENT** is true and **APP_ENV** is not `"production"` ([internal/config/config.go](../internal/config/config.go)), the backend does **not** call the SMS sender. Instead, it stores the plain OTP in an in-memory dev store keyed by `challenge_id`. The client (or BFF) can retrieve the OTP via a **dev-only** endpoint:
+When **OTP_RETURN_TO_CLIENT** is true and **APP_ENV** is not `"production"` ([internal/config/config.go](../../../backend/internal/config/config.go)), the backend does **not** call the SMS sender. Instead, it stores the plain OTP in an in-memory dev store keyed by `challenge_id`. The client (or BFF) can retrieve the OTP via a **dev-only** endpoint:
 
-- **GET /api/dev/mfa/otp?challenge_id=...** (BFF) → `{ otp: "123456", note: "DEV MODE ONLY" }`. Returns 404 when `NODE_ENV` is production or `DEV_OTP_ENABLED` is not set. The BFF calls the backend gRPC **DevService.GetOTP** ([proto/dev/dev.proto](../proto/dev/dev.proto)), which is only registered when dev OTP is enabled and not production. **Guards**: separate module ([internal/devotp](../internal/devotp)), feature-flag + env check at startup (config load fails if `OTPReturnToClient && Env == "production"`). Login and SubmitPhoneAndRequestMFA do **not** return OTP in the response; the client fetches OTP from the dev endpoint when in dev mode.
+- **GET /api/dev/mfa/otp?challenge_id=...** (BFF) → `{ otp: "123456", note: "DEV MODE ONLY" }`. Returns 404 when `NODE_ENV` is production or `DEV_OTP_ENABLED` is not set. The BFF calls the backend gRPC **DevService.GetOTP** ([proto/dev/dev.proto](../../../backend/proto/dev/dev.proto)), which is only registered when dev OTP is enabled and not production. **Guards**: separate module ([internal/devotp](../../../backend/internal/devotp)), feature-flag + env check at startup (config load fails if `OTPReturnToClient && Env == "production"`). Login and SubmitPhoneAndRequestMFA do **not** return OTP in the response; the client fetches OTP from the dev endpoint when in dev mode.
 
 ---
 
@@ -160,7 +165,7 @@ When **OTP_RETURN_TO_CLIENT** is true and **APP_ENV** is not `"production"` ([in
 
 ### LoginResponse
 
-Login returns **LoginResponse** ([proto/auth/auth.proto](../proto/auth/auth.proto)) with a oneof:
+Login returns **LoginResponse** ([proto/auth/auth.proto](../../../backend/proto/auth/auth.proto)) with a oneof:
 
 - **tokens**: AuthResponse (access_token, refresh_token, expires_at, user_id, org_id) when MFA was not required or already satisfied.
 - **mfa_required**: MFARequired with `challenge_id` (opaque id for VerifyMFA) and `phone_mask` (e.g. `****1234` for display). OTP is not returned here; when dev OTP is enabled, the client fetches it from GET /api/dev/mfa/otp.
@@ -168,7 +173,7 @@ Login returns **LoginResponse** ([proto/auth/auth.proto](../proto/auth/auth.prot
 
 ### RefreshResponse
 
-Refresh returns **RefreshResponse** ([proto/auth/auth.proto](../proto/auth/auth.proto)) with the same oneof shape as LoginResponse (tokens | mfa_required | phone_required). When the client sends **RefreshRequest** with optional **device_fingerprint**, the backend evaluates device-trust policy; if MFA is required, it revokes the current session and returns **mfa_required** or **phone_required** instead of new tokens. Challenges and intents created from Refresh are consumed the same way (VerifyMFA, SubmitPhoneAndRequestMFA).
+Refresh returns **RefreshResponse** ([proto/auth/auth.proto](../../../backend/proto/auth/auth.proto)) with the same oneof shape as LoginResponse (tokens | mfa_required | phone_required). When the client sends **RefreshRequest** with optional **device_fingerprint**, the backend evaluates device-trust policy; if MFA is required, it revokes the current session and returns **mfa_required** or **phone_required** instead of new tokens. Challenges and intents created from Refresh are consumed the same way (VerifyMFA, SubmitPhoneAndRequestMFA).
 
 ### SubmitPhoneAndRequestMFA
 
@@ -182,7 +187,7 @@ Refresh returns **RefreshResponse** ([proto/auth/auth.proto](../proto/auth/auth.
 - **RPC**: `VerifyMFA(VerifyMFARequest) returns (AuthResponse)`.
 - **Request**: `challenge_id` (from Login's mfa_required), `otp` (user-entered code).
 - **Response**: Same AuthResponse as Login/Refresh (tokens and user/org ids).
-- **Public**: No Bearer token required; method name is in `publicMethods` in [cmd/server/main.go](../cmd/server/main.go).
+- **Public**: No Bearer token required; method name is in `publicMethods` in [cmd/server/main.go](../../../backend/cmd/server/main.go).
 
 ### Errors (MFA)
 
@@ -194,7 +199,7 @@ Refresh returns **RefreshResponse** ([proto/auth/auth.proto](../proto/auth/auth.
 | ErrInvalidMFAIntent | Unauthenticated | invalid or expired MFA intent |
 | ErrChallengeExpired | FailedPrecondition | MFA challenge expired |
 
-Mapping is in [internal/identity/handler/grpc.go](../internal/identity/handler/grpc.go) `authErr`.
+Mapping is in [internal/identity/handler/grpc.go](../../../backend/internal/identity/handler/grpc.go) `authErr`.
 
 ---
 
@@ -208,20 +213,20 @@ Mapping is in [internal/identity/handler/grpc.go](../internal/identity/handler/g
 | APP_ENV | Application environment (e.g. `development`, `production`). Must not be `production` when OTP_RETURN_TO_CLIENT is true. | (none) |
 | OTP_RETURN_TO_CLIENT | When true (and APP_ENV != production), dev OTP mode: SMS not sent; OTP stored for GET /api/dev/mfa/otp. For PoC without DLT. | false |
 
-MFA challenge TTL (e.g. 10 minutes) is set in code when constructing the auth service ([cmd/server/main.go](../cmd/server/main.go)).
+MFA challenge TTL (e.g. 10 minutes) is set in code when constructing the auth service ([cmd/server/main.go](../../../backend/cmd/server/main.go)).
 
-For platform and org MFA/device-trust settings (e.g. default trust TTL), see [device-trust.md](device-trust.md#configuration). Schema for `mfa_challenges` and related tables: [database.md](database.md).
+For platform and org MFA/device-trust settings (e.g. default trust TTL), see [device-trust.md](device-trust.md#configuration). Schema for `mfa_challenges` and related tables: [database.md](./database).
 
 ---
 
 ## Testing
 
-Auth service tests ([internal/identity/service/auth_service_test.go](../internal/identity/service/auth_service_test.go)) use a mock **PolicyEvaluator** and in-memory repos. The MFA branch (Login returning mfa_required) and VerifyMFA can be tested without a real SMS sender; the mock evaluator can be configured to require or skip MFA based on device and org settings.
+Auth service tests ([internal/identity/service/auth_service_test.go](../../../backend/internal/identity/service/auth_service_test.go)) use a mock **PolicyEvaluator** and in-memory repos. The MFA branch (Login returning mfa_required) and VerifyMFA can be tested without a real SMS sender; the mock evaluator can be configured to require or skip MFA based on device and org settings.
 
 ---
 
 ## See also
 
-- [auth.md](auth.md) — Authentication overview, Register, Login, Refresh, Logout, and public methods.
-- [database.md](database.md) — Schema for mfa_challenges and device/user columns used by MFA.
-- [device-trust.md](device-trust.md) — Device trust model, policy evaluation (OPA/Rego), trust registration and revocation.
+- [auth.md](./auth) — Authentication overview, Register, Login, Refresh, Logout, and public methods.
+- [database.md](./database) — Schema for mfa_challenges and device/user columns used by MFA.
+- [device-trust.md](./device-trust) — Device trust model, policy evaluation (OPA/Rego), trust registration and revocation.

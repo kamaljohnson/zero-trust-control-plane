@@ -1,0 +1,26 @@
+{
+  "id": "backend/mfa",
+  "title": "MFA (Multi-Factor Authentication)",
+  "description": "This document describes the risk-based MFA logic in the zero-trust control plane backend: when MFA is required, MFA challenge and OTP flow, API surface, and configuration. Device trust (identifiable, revocable, time-bound) influences whether MFA is required; see device-trust.md. The canonical proto for auth is proto/auth/auth.proto; business logic lives in internal/identity/service/authservice.go.",
+  "source": "@site/docs/backend/mfa.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/mfa",
+  "permalink": "/docs/backend/mfa",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "MFA (Multi-Factor Authentication)",
+    "sidebar_label": "MFA"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Health",
+    "permalink": "/docs/backend/health"
+  },
+  "next": {
+    "title": "Telemetry",
+    "permalink": "/docs/backend/telemetry"
+  }
+}

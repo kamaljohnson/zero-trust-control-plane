@@ -1,0 +1,26 @@
+{
+  "id": "backend/database",
+  "title": "Database Structure",
+  "description": "This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in internal/db/sqlc/schema/001schema.sql and applied via internal/db/migrations/. For MFA and device-trust behavior (when MFA is required, policy evaluation, OTP flow), see mfa.md and device-trust.md.",
+  "source": "@site/docs/backend/database.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/database",
+  "permalink": "/docs/backend/database",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Database Structure",
+    "sidebar_label": "Database"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Audit",
+    "permalink": "/docs/backend/audit"
+  },
+  "next": {
+    "title": "Device Trust",
+    "permalink": "/docs/backend/device-trust"
+  }
+}

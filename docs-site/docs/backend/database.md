@@ -1,6 +1,11 @@
+---
+title: Database Structure
+sidebar_label: Database
+---
+
 # Database Structure
 
-This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) and applied via [internal/db/migrations/](../internal/db/migrations/). For MFA and device-trust behavior (when MFA is required, policy evaluation, OTP flow), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+This document describes the current PostgreSQL schema for the zero-trust control plane backend. The canonical schema is maintained in [internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql) and applied via [internal/db/migrations/](../../../backend/internal/db/migrations/). For MFA and device-trust behavior (when MFA is required, policy evaluation, OTP flow), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 
 **Audience**: Developers working on schema, migrations, repos, or features that persist data.
 
@@ -12,7 +17,7 @@ All timestamps use `TIMESTAMPTZ`. Primary keys for core entities are `VARCHAR` (
 
 ### When the database is used
 
-The database is opened only when auth is enabled: `DATABASE_URL` and both `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` must be set ([cmd/server/main.go](../cmd/server/main.go)). When auth is disabled, no database connection is opened; all persistence (auth, memberships, etc.) is unavailable and auth RPCs return Unimplemented. The connection is opened via [internal/db/postgres.go](../internal/db/postgres.go) `Open(dsn)` (pgx driver; caller must call `Close`).
+The database is opened only when auth is enabled: `DATABASE_URL` and both `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` must be set ([cmd/server/main.go](../../../backend/cmd/server/main.go)). When auth is disabled, no database connection is opened; all persistence (auth, memberships, etc.) is unavailable and auth RPCs return Unimplemented. The connection is opened via [internal/db/postgres.go](../../../backend/internal/db/postgres.go) `Open(dsn)` (pgx driver; caller must call `Close`).
 
 ---
 
@@ -90,7 +95,7 @@ User–organization association with a role. Determines access and permissions w
 
 ### devices
 
-Device registered to a user within an org (e.g. for device trust and session binding). Identified by `fingerprint` per user/org. Trust is **time-bound** (`trusted_until`) and **revocable** (`revoked_at`). A device is effectively trusted when `trusted` is true, `revoked_at` is null, and (`trusted_until` is null or `trusted_until` &gt; now). See [device-trust.md](device-trust.md).
+Device registered to a user within an org (e.g. for device trust and session binding). Identified by `fingerprint` per user/org. Trust is **time-bound** (`trusted_until`) and **revocable** (`revoked_at`). A device is effectively trusted when `trusted` is true, `revoked_at` is null, and (`trusted_until` is null or `trusted_until` &gt; now). See [device-trust.md](./device-trust).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -121,14 +126,14 @@ Active or revoked session for a user in an org on a device. The columns `refresh
 | `last_seen_at` | TIMESTAMPTZ | nullable |
 | `ip_address` | VARCHAR | nullable |
 | `refresh_jti` | VARCHAR | nullable; current refresh token JTI for rotation; updated on each Refresh |
-| `refresh_token_hash` | VARCHAR | nullable; SHA-256 hash of current refresh token; used to validate refresh tokens without storing the token (see [auth.md](auth.md)) |
+| `refresh_token_hash` | VARCHAR | nullable; SHA-256 hash of current refresh token; used to validate refresh tokens without storing the token (see [auth.md](./auth)) |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 
 ---
 
 ### policies
 
-Org-scoped policy definition. `rules` holds the policy content (e.g. Rego text for device-trust/MFA); `enabled` toggles application. Enabled policies for an org are loaded by the policy engine for MFA evaluation. See [device-trust.md](device-trust.md).
+Org-scoped policy definition. `rules` holds the policy content (e.g. Rego text for device-trust/MFA); `enabled` toggles application. Enabled policies for an org are loaded by the policy engine for MFA evaluation. See [device-trust.md](./device-trust).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -142,7 +147,7 @@ Org-scoped policy definition. `rules` holds the policy content (e.g. Rego text f
 
 ### platform_settings
 
-Platform-wide key-value settings (e.g. MFA/device-trust). Used by policy evaluation for `mfa_required_always`, `default_trust_ttl_days`, etc. See [device-trust.md](device-trust.md).
+Platform-wide key-value settings (e.g. MFA/device-trust). Used by policy evaluation for `mfa_required_always`, `default_trust_ttl_days`, etc. See [device-trust.md](./device-trust).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -153,7 +158,7 @@ Platform-wide key-value settings (e.g. MFA/device-trust). Used by policy evaluat
 
 ### org_mfa_settings
 
-Per-org MFA and device-trust settings. One row per org; used by policy evaluation (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.). See [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+Per-org MFA and device-trust settings. One row per org; used by policy evaluation (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.). See [mfa.md](./mfa) and [device-trust.md](./device-trust).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -170,7 +175,7 @@ Per-org MFA and device-trust settings. One row per org; used by policy evaluatio
 
 ### mfa_intents
 
-One-time intents for "collect phone then send OTP" when the user has no phone. Created when Login returns phone_required; consumed (deleted) when SubmitPhoneAndRequestMFA is called. See [mfa.md](mfa.md).
+One-time intents for "collect phone then send OTP" when the user has no phone. Created when Login returns phone_required; consumed (deleted) when SubmitPhoneAndRequestMFA is called. See [mfa.md](./mfa).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -186,7 +191,7 @@ There is an index `idx_mfa_intents_expires_at` on `expires_at`.
 
 ### mfa_challenges
 
-Ephemeral MFA challenges (OTP flow). Created when Login returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or when expired. `code_hash` is a SHA-256 hash of the OTP. See [mfa.md](mfa.md).
+Ephemeral MFA challenges (OTP flow). Created when Login returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or when expired. `code_hash` is a SHA-256 hash of the OTP. See [mfa.md](./mfa).
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -301,7 +306,7 @@ Session columns used for auth (e.g. `refresh_jti`, `refresh_token_hash`) are doc
 
 ## Migrations
 
-Migrations are applied in order from [internal/db/migrations/](../internal/db/migrations/). Each migration has an up and a down script.
+Migrations are applied in order from [internal/db/migrations/](../../../backend/internal/db/migrations/). Each migration has an up and a down script.
 
 | Migration | Description |
 |-----------|-------------|
@@ -309,11 +314,11 @@ Migrations are applied in order from [internal/db/migrations/](../internal/db/mi
 | **002_drop_telemetry** | Drops the `telemetry` table if present. |
 | **003_refresh_jti** | Adds `sessions.refresh_jti` (VARCHAR, nullable). For existing DBs created before this column. |
 | **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |
-| **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](mfa.md) and [device-trust.md](device-trust.md). |
-| **006_mfa_intent** | Creates `mfa_intents` table (one-time phone-collect binding); adds `users.phone_verified` (BOOLEAN NOT NULL DEFAULT false). See [mfa.md](mfa.md). |
-| **007_system_org** | Inserts sentinel organization _system (id = '_system') for audit events that have no org (e.g. login_failure, logout with invalid token). See [audit.md](audit.md). |
+| **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](./mfa) and [device-trust.md](./device-trust). |
+| **006_mfa_intent** | Creates `mfa_intents` table (one-time phone-collect binding); adds `users.phone_verified` (BOOLEAN NOT NULL DEFAULT false). See [mfa.md](./mfa). |
+| **007_system_org** | Inserts sentinel organization _system (id = '_system') for audit events that have no org (e.g. login_failure, logout with invalid token). See [audit.md](./audit). |
 
-The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti`, `refresh_token_hash`, MFA/device-trust columns and tables, `mfa_intents`, and `users.phone_verified` (and does not include telemetry). Migrations 003–006 are for databases that were created from migration 001 before those columns and tables were added. New deployments run all ups; existing DBs may need 003–006 when adding auth and MFA/device trust.
+The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti`, `refresh_token_hash`, MFA/device-trust columns and tables, `mfa_intents`, and `users.phone_verified` (and does not include telemetry). Migrations 003–006 are for databases that were created from migration 001 before those columns and tables were added. New deployments run all ups; existing DBs may need 003–006 when adding auth and MFA/device trust.
 
 To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scripts/migrate.sh down` to roll back). The script reads `DATABASE_URL` from `.env` or the environment. You can install the [golang-migrate](https://github.com/golang-migrate/migrate) CLI (e.g. `brew install golang-migrate`) or use the built-in Go runner (`go run ./cmd/migrate`).
 
@@ -323,19 +328,19 @@ To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scr
 
 ### Canonical schema
 
-[internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql) is the single source for table and enum definitions used by sqlc. Do not edit generated Go in `gen/`.
+[internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql) is the single source for table and enum definitions used by sqlc. Do not edit generated Go in `gen/`.
 
 ### Migrations (applied to database)
 
-Migrations are applied in order (001 through 007). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
+Migrations are applied in order (001 through 007). Up/down scripts live in [internal/db/migrations/](../../../backend/internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
 
 ### Connection
 
-[internal/db/postgres.go](../internal/db/postgres.go) `Open(dsn)` opens a Postgres connection using the pgx driver. It is used in [cmd/server/main.go](../cmd/server/main.go) when auth is enabled. The caller must call `Close` when done.
+[internal/db/postgres.go](../../../backend/internal/db/postgres.go) `Open(dsn)` opens a Postgres connection using the pgx driver. It is used in [cmd/server/main.go](../../../backend/cmd/server/main.go) when auth is enabled. The caller must call `Close` when done.
 
 ### Queries and codegen
 
-SQL queries live in [internal/db/sqlc/queries/](../internal/db/sqlc/queries/) (one file per domain: user, identity, organization, membership, device, session, policy, audit_log). [internal/db/sqlc/sqlc.yaml](../internal/db/sqlc/sqlc.yaml) configures the schema path, queries path, and Go output to `gen/`. Generated Go is in [internal/db/sqlc/gen/](../internal/db/sqlc/gen/); do not edit.
+SQL queries live in [internal/db/sqlc/queries/](../../../backend/internal/db/sqlc/queries/) (one file per domain: user, identity, organization, membership, device, session, policy, audit_log). [internal/db/sqlc/sqlc.yaml](../../../backend/internal/db/sqlc/sqlc.yaml) configures the schema path, queries path, and Go output to `gen/`. Generated Go is in [internal/db/sqlc/gen/](../../../backend/internal/db/sqlc/gen/); do not edit.
 
 ### Repositories
 
@@ -347,5 +352,5 @@ After changing schema or queries, run sqlc generate to regenerate `gen/`. After 
 
 ### Cross-reference to auth
 
-For how each table is used by the auth flows (Register, Login, VerifyMFA, Refresh, Logout), see [auth.md](auth.md) "Database and Schema" / "Table roles (auth)". For MFA and device-trust logic (policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](mfa.md) and [device-trust.md](device-trust.md).
+For how each table is used by the auth flows (Register, Login, VerifyMFA, Refresh, Logout), see [auth.md](./auth) "Database and Schema" / "Table roles (auth)". For MFA and device-trust logic (policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 

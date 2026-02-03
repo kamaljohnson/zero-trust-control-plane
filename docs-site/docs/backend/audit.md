@@ -1,6 +1,11 @@
+---
+title: Audit Logging
+sidebar_label: Audit
+---
+
 # Audit Logging
 
-This document describes the audit logging system for the zero-trust control plane backend: purpose, what is logged, how to query, and behavior. The canonical proto is [proto/audit/audit.proto](../proto/audit/audit.proto); the write path is implemented in [internal/server/interceptors/audit.go](../internal/server/interceptors/audit.go); the read path is in [internal/audit/handler/grpc.go](../internal/audit/handler/grpc.go). For interceptor order and identity in context, see [auth.md](auth.md). For the `audit_logs` table and schema, see [database.md](database.md).
+This document describes the audit logging system for the zero-trust control plane backend: purpose, what is logged, how to query, and behavior. The canonical proto is [proto/audit/audit.proto](../../../backend/proto/audit/audit.proto); the write path is implemented in [internal/server/interceptors/audit.go](../../../backend/internal/server/interceptors/audit.go); the read path is in [internal/audit/handler/grpc.go](../../../backend/internal/audit/handler/grpc.go). For interceptor order and identity in context, see [auth.md](./auth). For the `audit_logs` table and schema, see [database.md](./database).
 
 **Audience**: Developers integrating with or extending the audit system (compliance, security review, or backend changes).
 
@@ -12,7 +17,7 @@ Audit logging provides a **compliance and security trail** of who did what, when
 
 ### When audit is enabled
 
-Audit is enabled when auth is enabled: same condition in [cmd/server/main.go](../cmd/server/main.go) — `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server creates the audit repo, sets `deps.AuditRepo`, chains the audit interceptor after the auth interceptor, and registers the audit handler with the repo. ListAuditLogs and the write path (audit log creation after each audited RPC) are active.
+Audit is enabled when auth is enabled: same condition in [cmd/server/main.go](../../../backend/cmd/server/main.go) — `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server creates the audit repo, sets `deps.AuditRepo`, chains the audit interceptor after the auth interceptor, and registers the audit handler with the repo. ListAuditLogs and the write path (audit log creation after each audited RPC) are active.
 
 ### When audit is disabled
 
@@ -45,7 +50,7 @@ flowchart LR
 
 ### Wiring (startup)
 
-When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the following:
+When `authEnabled` is true, [cmd/server/main.go](../../../backend/cmd/server/main.go) does the following:
 
 1. Opens the database and creates repos (user, identity, session, device, membership, policy, etc.).
 2. Creates the audit repo with `auditrepo.NewPostgresRepository(database)` and sets `deps.AuditRepo`.
@@ -53,7 +58,7 @@ When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the
 4. Builds `auditSkipMethods` with at least `HealthService_HealthCheck_FullMethodName`.
 5. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`.
 
-[internal/server/grpc.go](../internal/server/grpc.go) `RegisterServices` passes `deps.AuditRepo` into `audithandler.NewServer(deps.AuditRepo)`. If `deps.AuditRepo == nil` (auth disabled), the audit handler returns Unimplemented for ListAuditLogs and no RPCs are audited.
+[internal/server/grpc.go](../../../backend/internal/server/grpc.go) `RegisterServices` passes `deps.AuditRepo` into `audithandler.NewServer(deps.AuditRepo)`. If `deps.AuditRepo == nil` (auth disabled), the audit handler returns Unimplemented for ListAuditLogs and no RPCs are audited.
 
 ### Request path (audited RPC)
 
@@ -100,7 +105,7 @@ sequenceDiagram
 
 ### Errors
 
-The handler maps conditions to gRPC status codes in [internal/audit/handler/grpc.go](../internal/audit/handler/grpc.go):
+The handler maps conditions to gRPC status codes in [internal/audit/handler/grpc.go](../../../backend/internal/audit/handler/grpc.go):
 
 | Condition | gRPC code |
 |-----------|-----------|
@@ -132,7 +137,7 @@ Action and resource are derived from the gRPC full method name (e.g. `/ztcp.user
 - **Action**: Inferred from the method name. Common mappings: `Get*` → `get`, `List*` → `list`, `Create*` → `create`, `Update*` → `update`, `Delete*` → `delete`, `Add*` → `add`, `Remove*` → `remove`, `Register*` → `register`, `Revoke*` → `revoke`, `Suspend*` → `suspend`. Others fall back to the lowercase method name.
 - **Resource**: Taken from the service name with `Service` stripped and lowercased (e.g. `UserService` → `user`, `OrganizationService` → `organization`, `AuditService` → `audit`).
 
-The mapping logic lives in [internal/audit/mapping.go](../internal/audit/mapping.go).
+The mapping logic lives in [internal/audit/mapping.go](../../../backend/internal/audit/mapping.go).
 
 ### Action/resource reference (examples)
 
@@ -149,7 +154,7 @@ The mapping logic lives in [internal/audit/mapping.go](../internal/audit/mapping
 
 ### Explicit audit events (AuthService)
 
-The auth service logs the following via [internal/audit/logger.go](../internal/audit/logger.go) (best-effort; failures do not fail the RPC):
+The auth service logs the following via [internal/audit/logger.go](../../../backend/internal/audit/logger.go) (best-effort; failures do not fail the RPC):
 
 | action | resource | When |
 |--------|----------|------|
@@ -158,7 +163,7 @@ The auth service logs the following via [internal/audit/logger.go](../internal/a
 | logout | authentication | Logout revokes a session; org_id/user_id from the revoked session or sentinel if unknown. |
 | session_created | session | A session is created (Login, VerifyMFA, or Refresh issues tokens). |
 
-**Sentinel org**: Events that have no org (e.g. login_failure when org is empty, logout with invalid token) use `org_id = "_system"`. The sentinel organization is created by migration [007_system_org.up.sql](../internal/db/migrations/007_system_org.up.sql). ListAuditLogs for `org_id = "_system"` returns these system-level auth events.
+**Sentinel org**: Events that have no org (e.g. login_failure when org is empty, logout with invalid token) use `org_id = "_system"`. The sentinel organization is created by migration [007_system_org.up.sql](../../../backend/internal/db/migrations/007_system_org.up.sql). ListAuditLogs for `org_id = "_system"` returns these system-level auth events.
 
 **Critical config**: Policy create/update/delete are audited by the interceptor (action create, update, delete; resource policy) and count as critical config changes. MFA policy, device trust, and domain allow/block changes are covered when they are performed via PolicyService or future org/platform settings RPCs. Per-user MFA enabled/disabled (resource security, actions mfa_enabled/mfa_disabled) should be audited when that feature is implemented.
 
@@ -166,7 +171,7 @@ The auth service logs the following via [internal/audit/logger.go](../internal/a
 
 ## Skip set
 
-Methods in the audit skip set are not written to the audit log. At least **HealthCheck** is skipped to avoid noise. Other methods (e.g. ListAuditLogs) can be skipped or audited; currently only HealthCheck is in the skip set. The skip set is configured in [cmd/server/main.go](../cmd/server/main.go) as `auditSkipMethods` passed to `AuditUnary`.
+Methods in the audit skip set are not written to the audit log. At least **HealthCheck** is skipped to avoid noise. Other methods (e.g. ListAuditLogs) can be skipped or audited; currently only HealthCheck is in the skip set. The skip set is configured in [cmd/server/main.go](../../../backend/cmd/server/main.go) as `auditSkipMethods` passed to `AuditUnary`.
 
 ## Best-effort write
 
@@ -176,10 +181,10 @@ If `auditRepo.Create` fails (e.g. database error), the error is logged with `log
 
 ## Configuration
 
-There are no dedicated audit environment variables. Audit is on when auth is on: the same `DATABASE_URL`, `JWT_PRIVATE_KEY`, and `JWT_PUBLIC_KEY` that enable auth enable the audit repo and interceptor. Adding or removing methods from the audit skip set is done in code in [cmd/server/main.go](../cmd/server/main.go) (`auditSkipMethods`).
+There are no dedicated audit environment variables. Audit is on when auth is on: the same `DATABASE_URL`, `JWT_PRIVATE_KEY`, and `JWT_PUBLIC_KEY` that enable auth enable the audit repo and interceptor. Adding or removing methods from the audit skip set is done in code in [cmd/server/main.go](../../../backend/cmd/server/main.go) (`auditSkipMethods`).
 
 ---
 
 ## Database
 
-The `audit_logs` table is defined in [internal/db/migrations/001_schema.up.sql](../internal/db/migrations/001_schema.up.sql) and [internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql). Queries are in [internal/db/sqlc/queries/audit_log.sql](../internal/db/sqlc/queries/audit_log.sql); generated code in [internal/db/sqlc/gen/audit_log.sql.go](../internal/db/sqlc/gen/audit_log.sql.go). The repository is implemented in [internal/audit/repository/postgres.go](../internal/audit/repository/postgres.go). For the full schema and table relationships, see [database.md](database.md).
+The `audit_logs` table is defined in [internal/db/migrations/001_schema.up.sql](../../../backend/internal/db/migrations/001_schema.up.sql) and [internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql). Queries are in [internal/db/sqlc/queries/audit_log.sql](../../../backend/internal/db/sqlc/queries/audit_log.sql); generated code in [internal/db/sqlc/gen/audit_log.sql.go](../../../backend/internal/db/sqlc/gen/audit_log.sql.go). The repository is implemented in [internal/audit/repository/postgres.go](../../../backend/internal/audit/repository/postgres.go). For the full schema and table relationships, see [database.md](./database).

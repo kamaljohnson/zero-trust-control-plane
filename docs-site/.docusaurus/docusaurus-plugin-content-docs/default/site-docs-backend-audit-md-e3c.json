@@ -1,0 +1,26 @@
+{
+  "id": "backend/audit",
+  "title": "Audit Logging",
+  "description": "This document describes the audit logging system for the zero-trust control plane backend: purpose, what is logged, how to query, and behavior. The canonical proto is proto/audit/audit.proto; the write path is implemented in internal/server/interceptors/audit.go; the read path is in internal/audit/handler/grpc.go. For interceptor order and identity in context, see auth.md. For the audit_logs table and schema, see database.md.",
+  "source": "@site/docs/backend/audit.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/audit",
+  "permalink": "/docs/backend/audit",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Audit Logging",
+    "sidebar_label": "Audit"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Auth",
+    "permalink": "/docs/backend/auth"
+  },
+  "next": {
+    "title": "Database",
+    "permalink": "/docs/backend/database"
+  }
+}
