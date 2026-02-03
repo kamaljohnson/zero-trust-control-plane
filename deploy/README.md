@@ -117,6 +117,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The app talks to the backend at `localhost:8080` by default.
 
+### Step 7 (optional): Configure Grafana dashboard
+
+1. Open **Grafana**: http://localhost:3002.
+2. If not already done: add datasources (Prometheus `http://prometheus:9090`, Loki `http://loki:3100`, Tempo `http://tempo:3200`) as described in [Step 5: Open Grafana and add datasources](#step-5-open-grafana-and-add-datasources) in the Observability stack section.
+3. The ZTCP Telemetry dashboard is auto-provisioned when using the Compose stack; open **Dashboards** and select **ZTCP Telemetry** (if prompted for a datasource, choose Loki). To import manually: **Dashboards → New → Import → Upload JSON file** and choose `docs/grafana/ztcp-telemetry-dashboard.json` from the repo.
+
 ### Optional: Makefile (one-command setup)
 
 From the **repo root**, a Makefile runs the full local setup in one go:
@@ -219,7 +225,11 @@ Send traffic or call TelemetryService (`EmitTelemetryEvent` / `BatchEmitTelemetr
    - **Loki**: URL `http://loki:3100` (or `http://localhost:3100` from host).
    - **Tempo**: URL `http://tempo:3200` (or `http://localhost:3200` from host).
 
-Save & test each. You can then build dashboards or use Explore to query logs (LogQL), metrics (PromQL), and traces (Tempo).
+Save & test each.
+
+3. **ZTCP telemetry dashboard**: The stack auto-provisions the ZTCP Telemetry dashboard (from `docs/grafana/ztcp-telemetry-dashboard.json`). Open Dashboards and select **ZTCP Telemetry**; if prompted for a datasource, choose Loki. To import manually instead: Dashboards → New → Import → Upload JSON file → **`docs/grafana/ztcp-telemetry-dashboard.json`**, then select the Loki datasource. The dashboard shows telemetry logs, gRPC request/error rates, and related panels for the ZTCP backend.
+
+You can also build custom dashboards or use Explore to query logs (LogQL), metrics (PromQL), and traces (Tempo).
 
 ### Step 6: Running the collector on the host (optional)
 
@@ -228,7 +238,7 @@ If you run the collector binary (e.g. `otelcol-contrib`) on the same machine as 
 ### Step 7: Optional links
 
 - **Telemetry overview**: [Telemetry doc](../docs-site/docs/backend/telemetry.md) and [Backend README](../backend/README.md) (Configuration → Telemetry) for server-side config.
-- **Grafana dashboard**: The repo may include a dashboard JSON under `docs/grafana/` or `docs-site/static/`; import it in Grafana if needed.
+- **Grafana dashboard**: ZTCP telemetry dashboard: import [docs/grafana/ztcp-telemetry-dashboard.json](../docs/grafana/ztcp-telemetry-dashboard.json) as in Step 5 above.
 
 ---
 
@@ -317,8 +327,9 @@ For large or critical deployments, consider Kubernetes and official Helm charts 
 
 | Issue | What to check |
 |-------|----------------|
-| **Port already in use** | Another process is using 5432, 4317, 4318, 8889, 3100, 3200, 9090, 3002, or 3000. Change the Compose `ports` or stop the conflicting service. Use `docker-compose.override.yml` for local port changes. |
+| **Port already in use** | Another process is using 5432, 4317, 4318, 8889, 3100, 3200, 9090, 3002, or 3000. Only the OpenTelemetry Collector exposes 4317 on the host; Tempo's OTLP port is internal (collector reaches it via Docker network). Change the Compose `ports` or stop the conflicting service. Use `docker-compose.override.yml` for local port changes. |
 | **Migrate fails** | Ensure Postgres is up: `docker compose ps` and `docker compose exec postgres pg_isready -U ztcp`. Check `DATABASE_URL` in `backend/.env` matches the Compose credentials (`postgres://ztcp:ztcp@localhost:5432/ztcp?sslmode=disable`). |
+| **password authentication failed for user "root"** | Local Postgres uses user `ztcp`, not `root`. Set `DATABASE_URL=postgres://ztcp:ztcp@localhost:5432/ztcp?sslmode=disable` in `backend/.env`, or copy from `deploy/.env.example`. Running `make setup` will auto-fix `backend/.env` if it contains a `root` user URL. |
 | **Collector fails to start or logs errors** | `docker compose logs otelcol`. Ensure Loki and Tempo are up (`docker compose ps`) and reachable from the collector (same network). For "connection refused" to Loki, confirm `otelcol-config.yaml` uses `http://loki:3100/loki/api/v1/push`. |
 | **Prometheus target down** | In Prometheus UI (http://localhost:9090/targets), the `otelcol` target should be `otelcol:8889`. If down, check collector logs and that the collector exposes 8889 and is on the same network as Prometheus. |
 | **No data in Grafana** | Confirm datasource URLs (use service names from inside Docker: `http://prometheus:9090`, `http://loki:3100`, `http://tempo:3200`). Check time range and that the ZTCP server has `OTEL_EXPORTER_OTLP_ENDPOINT` set and has sent traffic. |

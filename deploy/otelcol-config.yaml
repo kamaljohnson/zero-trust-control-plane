@@ -1,10 +1,10 @@
 # OpenTelemetry Collector config for ZTCP: receive OTLP from the gRPC server,
 # export traces to Tempo, metrics to Prometheus, and logs to Loki.
-# Use with the contrib distribution: otelcol-contrib (includes loki exporter).
+# Use with the contrib distribution: otelcol-contrib.
+# Logs use otlphttp to Loki's OTLP endpoint (Loki 3.0+); the legacy "loki" exporter was removed from contrib.
 #
 # Docker Compose: use as-is (service names loki, tempo). Mount this file as the collector config.
-# Host/standalone: copy this file and set Loki endpoint to http://localhost:3100/loki/api/v1/push
-# and Tempo endpoint to localhost:4317 so the collector can reach backends on the same machine.
+# Host/standalone: set Loki endpoint to http://localhost:3100/otlp and Tempo to localhost:4317.
 #
 # Set OTEL_EXPORTER_OTLP_ENDPOINT to the collector's gRPC address (e.g. localhost:4317).
 
@@ -33,12 +33,11 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: ztcp
 
-  # Logs -> Loki. Use loki:3100 in Compose; localhost:3100 when running on host.
-  loki:
-    endpoint: http://loki:3100/loki/api/v1/push
-    default_labels_enabled:
-      exporter: true
-      job: true
+  # Logs -> Loki via OTLP (Loki 3.0+). Use loki:3100 in Compose; localhost:3100 when running on host.
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
 
 service:
   pipelines:
@@ -53,4 +52,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [loki]
+      exporters: [otlphttp/loki]

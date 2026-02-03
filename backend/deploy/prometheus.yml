@@ -1,0 +1,12 @@
+# Prometheus config for ZTCP: scrape the OpenTelemetry Collector's metrics endpoint.
+# The collector exposes /metrics on port 8889 with namespace ztcp.
+
+scrape_configs:
+  - job_name: otelcol
+    static_configs:
+      - targets: ["otelcol:8889"]
+    # Optional: keep only ztcp_* metrics. Remove this block to scrape all collector metrics.
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "ztcp_.*"
+        action: keep
