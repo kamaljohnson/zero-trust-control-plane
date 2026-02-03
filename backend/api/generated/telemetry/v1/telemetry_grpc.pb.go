@@ -30,6 +30,7 @@ const (
 // TelemetryService handles observability and analytics. High-volume, async, best-effort.
 type TelemetryServiceClient interface {
 	EmitTelemetryEvent(ctx context.Context, in *EmitTelemetryEventRequest, opts ...grpc.CallOption) (*EmitTelemetryEventResponse, error)
+	// Batch is capped at 500 events; excess events are dropped.
 	BatchEmitTelemetry(ctx context.Context, in *BatchEmitTelemetryRequest, opts ...grpc.CallOption) (*BatchEmitTelemetryResponse, error)
 }
 
@@ -68,6 +69,7 @@ func (c *telemetryServiceClient) BatchEmitTelemetry(ctx context.Context, in *Bat
 // TelemetryService handles observability and analytics. High-volume, async, best-effort.
 type TelemetryServiceServer interface {
 	EmitTelemetryEvent(context.Context, *EmitTelemetryEventRequest) (*EmitTelemetryEventResponse, error)
+	// Batch is capped at 500 events; excess events are dropped.
 	BatchEmitTelemetry(context.Context, *BatchEmitTelemetryRequest) (*BatchEmitTelemetryResponse, error)
 	mustEmbedUnimplementedTelemetryServiceServer()
 }

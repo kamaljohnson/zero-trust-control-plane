@@ -254,6 +254,7 @@ func (*EmitTelemetryEventResponse) Descriptor() ([]byte, []int) {
 }
 
 // BatchEmitTelemetryRequest records multiple telemetry events.
+// Batch is capped at 500 events per request; if more are sent, only the first 500 are processed and excess are dropped.
 type BatchEmitTelemetryRequest struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
 	Events        []*EmitTelemetryEventRequest `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`

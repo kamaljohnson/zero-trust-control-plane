@@ -120,6 +120,16 @@
       ],
       "title": "Traces (Tempo)",
       "type": "traces"
+    },
+    {
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 24 },
+      "id": 7,
+      "options": {
+        "content": "**Tempo:** Use **Trace ID** or **Service name** search in Explore. TraceQL metrics (e.g. `rate() by(resource.service.name)`) are not supported in local deploy and will show \"empty ring\".",
+        "mode": "markdown"
+      },
+      "title": "Tempo note",
+      "type": "text"
     }
   ],
   "schemaVersion": 38,

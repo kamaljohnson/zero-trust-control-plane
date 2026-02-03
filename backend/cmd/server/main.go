@@ -114,7 +114,7 @@ func main() {
 		}
 		auditRepo := auditrepo.NewPostgresRepository(database)
 		deps.AuditRepo = auditRepo
-		auditLogger := audit.NewLogger(auditRepo, interceptors.ClientIP)
+		auditLogger := audit.NewLogger(auditRepo, interceptors.ClientIP, deps.TelemetryEmitter)
 		authService := identityservice.NewAuthService(
 			userRepo,
 			identityRepo,
