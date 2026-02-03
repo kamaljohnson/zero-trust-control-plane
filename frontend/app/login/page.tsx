@@ -45,6 +45,30 @@ export default function LoginPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // When MFA step is shown and dev OTP is enabled, fetch OTP from GET /api/dev/mfa/otp
+  useEffect(() => {
+    if (!mfaChallengeId || !DEV_OTP_ENABLED) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/dev/mfa/otp?challenge_id=${encodeURIComponent(mfaChallengeId)}`);
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          if (data.otp) {
+            setMfaOtp(data.otp);
+            setMfaOtpNote(data.note ?? null);
+            setOtp(data.otp);
+          }
+        }
+      } catch {
+        // ignore; leave mfaOtp null
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mfaChallengeId]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -106,30 +130,6 @@ export default function LoginPage() {
       setRequestingMfa(false);
     }
   }
-
-  // When MFA step is shown and dev OTP is enabled, fetch OTP from GET /api/dev/mfa/otp
-  useEffect(() => {
-    if (!mfaChallengeId || !DEV_OTP_ENABLED) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/dev/mfa/otp?challenge_id=${encodeURIComponent(mfaChallengeId)}`);
-        if (!cancelled && res.ok) {
-          const data = await res.json();
-          if (data.otp) {
-            setMfaOtp(data.otp);
-            setMfaOtpNote(data.note ?? null);
-            setOtp(data.otp);
-          }
-        }
-      } catch {
-        // ignore; leave mfaOtp null
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mfaChallengeId]);
 
   async function handleVerifyMFA(e: React.FormEvent) {
     e.preventDefault();

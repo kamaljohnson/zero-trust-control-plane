@@ -3,13 +3,15 @@ import { getDevOTP } from "@/lib/grpc/dev-client";
 
 /**
  * GET /api/dev/mfa/otp?challenge_id=... — dev-only: returns OTP and note for the given MFA challenge.
- * Guards: returns 404 when NODE_ENV is production or DEV_OTP_ENABLED is not set.
+ * Guards: returns 404 when NODE_ENV is production or neither DEV_OTP_ENABLED nor NEXT_PUBLIC_DEV_OTP_ENABLED is set.
  */
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const devOtpEnabled = process.env.DEV_OTP_ENABLED === "true" || process.env.DEV_OTP_ENABLED === "1";
+  const devOtpEnabled =
+    process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" ||
+    process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
   if (!devOtpEnabled) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
