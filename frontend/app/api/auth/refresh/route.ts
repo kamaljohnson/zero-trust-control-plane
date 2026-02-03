@@ -4,8 +4,8 @@ import { grpcErrorToHttp } from "@/lib/grpc/grpc-to-http";
 import { refreshBodySchema } from "@/lib/api/auth-schemas";
 
 /**
- * POST /api/auth/refresh — issue new access and refresh tokens.
- * Body: { refresh_token }. Returns AuthResponse shape.
+ * POST /api/auth/refresh — issue new access and refresh tokens, or return MFA required / phone required when device-trust policy requires it.
+ * Body: { refresh_token, device_fingerprint? }. Returns tokens or mfa_required or phone_required (same shape as login).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
         parsed.error.issues[0]?.message ?? "refresh_token is required.";
       return NextResponse.json({ error: message }, { status: 400 });
     }
-    const { refresh_token } = parsed.data;
-    const res = await auth.refresh(refresh_token);
+    const { refresh_token, device_fingerprint } = parsed.data;
+    const res = await auth.refresh(refresh_token, device_fingerprint);
     return NextResponse.json(res);
   } catch (err) {
     const e = err as { code?: number; message?: string };

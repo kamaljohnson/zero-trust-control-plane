@@ -70,6 +70,9 @@ type LoginResult struct {
 	PhoneRequired *PhoneRequiredResult
 }
 
+// RefreshResult is the result of Refresh: same shape as LoginResult (tokens, mfa_required, or phone_required).
+type RefreshResult = LoginResult
+
 // UserRepo is the minimal user repository needed by the auth service.
 type UserRepo interface {
 	GetByID(ctx context.Context, id string) (*userdomain.User, error)
@@ -592,8 +595,10 @@ func (s *AuthService) VerifyMFA(ctx context.Context, challengeID, otp string) (*
 	return authResult.Tokens, nil
 }
 
-// Refresh validates the refresh token, rotates it, and returns new tokens.
-func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*AuthResult, error) {
+// Refresh validates the refresh token, evaluates device-trust policy (using device_fingerprint), and returns
+// either new tokens or MFA required / phone required. When policy requires MFA, the current session is revoked
+// so the refresh token cannot be reused until the user completes VerifyMFA.
+func (s *AuthService) Refresh(ctx context.Context, refreshToken, deviceFingerprint string) (*RefreshResult, error) {
 	if refreshToken == "" {
 		return nil, ErrInvalidRefreshToken
 	}
@@ -615,6 +620,126 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*AuthRe
 	if sess.RefreshTokenHash != "" && !security.RefreshTokenHashEqual(refreshToken, sess.RefreshTokenHash) {
 		return nil, ErrInvalidRefreshToken
 	}
+
+	fp := strings.TrimSpace(deviceFingerprint)
+	if fp == "" {
+		fp = "password-login"
+	}
+	dev, err := s.deviceRepo.GetByUserOrgAndFingerprint(ctx, userID, orgID, fp)
+	if err != nil {
+		return nil, err
+	}
+	isNewDevice := dev == nil
+	if dev == nil {
+		dev = &devicedomain.Device{
+			ID:          uuid.New().String(),
+			UserID:      userID,
+			OrgID:       orgID,
+			Fingerprint: fp,
+			Trusted:     false,
+			CreatedAt:   time.Now().UTC(),
+		}
+		if err := s.deviceRepo.Create(ctx, dev); err != nil {
+			return nil, err
+		}
+	}
+
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, ErrInvalidRefreshToken
+	}
+	var platformSettings *platformsettingsdomain.PlatformDeviceTrustSettings
+	if s.platformSettingsRepo != nil {
+		platformSettings, _ = s.platformSettingsRepo.GetDeviceTrustSettings(ctx, s.defaultTrustTTLDays)
+	}
+	if platformSettings == nil {
+		platformSettings = &platformsettingsdomain.PlatformDeviceTrustSettings{
+			MFARequiredAlways:   false,
+			DefaultTrustTTLDays: s.defaultTrustTTLDays,
+		}
+	}
+	var orgSettings *orgmfasettingsdomain.OrgMFASettings
+	if s.orgMFASettingsRepo != nil {
+		orgSettings, _ = s.orgMFASettingsRepo.GetByOrgID(ctx, orgID)
+	}
+	var result engine.MFAResult
+	if s.policyEvaluator != nil {
+		result, _ = s.policyEvaluator.EvaluateMFA(ctx, platformSettings, orgSettings, dev, user, isNewDevice)
+	} else {
+		result = engine.MFAResult{
+			MFARequired:           false,
+			RegisterTrustAfterMFA: true,
+			TrustTTLDays:          s.defaultTrustTTLDays,
+		}
+		if platformSettings != nil {
+			result.TrustTTLDays = platformSettings.DefaultTrustTTLDays
+		}
+		if orgSettings != nil {
+			result.RegisterTrustAfterMFA = orgSettings.RegisterTrustAfterMFA
+			if orgSettings.TrustTTLDays > 0 {
+				result.TrustTTLDays = orgSettings.TrustTTLDays
+			}
+		}
+	}
+
+	if result.MFARequired {
+		_ = s.sessionRepo.Revoke(ctx, sessionID)
+		phone := strings.TrimSpace(user.Phone)
+		if phone == "" {
+			if s.mfaIntentRepo == nil {
+				return nil, ErrPhoneRequiredForMFA
+			}
+			intentID := uuid.New().String()
+			now := time.Now().UTC()
+			expiresAt := now.Add(s.mfaChallengeTTL)
+			intent := &mfaintentdomain.Intent{
+				ID:        intentID,
+				UserID:    user.ID,
+				OrgID:     orgID,
+				DeviceID:  dev.ID,
+				ExpiresAt: expiresAt,
+			}
+			if err := s.mfaIntentRepo.Create(ctx, intent); err != nil {
+				return nil, err
+			}
+			return &RefreshResult{
+				PhoneRequired: &PhoneRequiredResult{IntentID: intentID},
+			}, nil
+		}
+		otp, err := mfa.GenerateOTP()
+		if err != nil {
+			return nil, err
+		}
+		challengeID := uuid.New().String()
+		now := time.Now().UTC()
+		expiresAt := now.Add(s.mfaChallengeTTL)
+		challenge := &mfadomain.Challenge{
+			ID:        challengeID,
+			UserID:    user.ID,
+			OrgID:     orgID,
+			DeviceID:  dev.ID,
+			Phone:     phone,
+			CodeHash:  mfa.HashOTP(otp),
+			ExpiresAt: expiresAt,
+			CreatedAt: now,
+		}
+		if err := s.mfaChallengeRepo.Create(ctx, challenge); err != nil {
+			return nil, err
+		}
+		if s.otpReturnToClient && s.devOTPStore != nil {
+			s.devOTPStore.Put(ctx, challengeID, otp, expiresAt)
+		} else if s.smsSender != nil {
+			if err := s.smsSender.SendOTP(phone, otp); err != nil {
+				_ = s.mfaChallengeRepo.Delete(ctx, challengeID)
+				return nil, err
+			}
+		}
+		phoneMask := maskPhone(phone)
+		return &RefreshResult{
+			MFARequired: &MFARequiredResult{ChallengeID: challengeID, PhoneMask: phoneMask},
+		}, nil
+	}
+
 	now := time.Now().UTC()
 	_ = s.sessionRepo.UpdateLastSeen(ctx, sessionID, now)
 	newRefresh, newJti, _, err := s.tokens.IssueRefresh(sessionID, userID, orgID)
@@ -628,12 +753,14 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*AuthRe
 	if err != nil {
 		return nil, err
 	}
-	return &AuthResult{
-		AccessToken:  accessToken,
-		RefreshToken: newRefresh,
-		ExpiresAt:    accessExp,
-		UserID:       userID,
-		OrgID:        orgID,
+	return &RefreshResult{
+		Tokens: &AuthResult{
+			AccessToken:  accessToken,
+			RefreshToken: newRefresh,
+			ExpiresAt:    accessExp,
+			UserID:       userID,
+			OrgID:        orgID,
+		},
 	}, nil
 }
 

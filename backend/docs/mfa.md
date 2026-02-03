@@ -12,6 +12,8 @@ This document describes the risk-based MFA logic in the zero-trust control plane
 - The device is new (first time seen for this user/org/fingerprint) and the org requires MFA for new devices, or
 - The device is not effectively trusted (e.g. revoked, trust expired, or never trusted) and the org requires MFA for untrusted devices.
 
+**Refresh** can also require MFA when the client sends a **device_fingerprint** with the refresh request: the backend evaluates device-trust policy for that device; if MFA is required (e.g. new or untrusted device), it revokes the current session and returns **RefreshResponse** with **mfa_required** or **phone_required**. The client then completes MFA the same way as after Login (VerifyMFA or SubmitPhoneAndRequestMFA then VerifyMFA).
+
 If MFA is required and the user has a phone on file, the backend creates an MFA challenge, sends a one-time password (OTP) via SMS (PoC: SMS Local), and returns a `challenge_id` and masked phone; the client then calls **VerifyMFA** with the challenge id and OTP to complete login. If MFA is required but the user has no phone, the backend returns **phone_required** with an `intent_id`; the client prompts for phone, calls **SubmitPhoneAndRequestMFA**(intent_id, phone) to create the challenge and send OTP, then calls **VerifyMFA**. After successful VerifyMFA, the user's phone is set and locked (phone_verified = true); one phone per user, immutable after verification. For how device trust and policy evaluation work, see [device-trust.md](device-trust.md).
 
 ---
@@ -163,6 +165,10 @@ Login returns **LoginResponse** ([proto/auth/auth.proto](../proto/auth/auth.prot
 - **tokens**: AuthResponse (access_token, refresh_token, expires_at, user_id, org_id) when MFA was not required or already satisfied.
 - **mfa_required**: MFARequired with `challenge_id` (opaque id for VerifyMFA) and `phone_mask` (e.g. `****1234` for display). OTP is not returned here; when dev OTP is enabled, the client fetches it from GET /api/dev/mfa/otp.
 - **phone_required**: PhoneRequired with `intent_id` (one-time; pass to SubmitPhoneAndRequestMFA with user-entered phone). Used when MFA is required but the user has no phone on file.
+
+### RefreshResponse
+
+Refresh returns **RefreshResponse** ([proto/auth/auth.proto](../proto/auth/auth.proto)) with the same oneof shape as LoginResponse (tokens | mfa_required | phone_required). When the client sends **RefreshRequest** with optional **device_fingerprint**, the backend evaluates device-trust policy; if MFA is required, it revokes the current session and returns **mfa_required** or **phone_required** instead of new tokens. Challenges and intents created from Refresh are consumed the same way (VerifyMFA, SubmitPhoneAndRequestMFA).
 
 ### SubmitPhoneAndRequestMFA
 

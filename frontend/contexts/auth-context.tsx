@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import * as authClient from "@/lib/auth-client";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
 
 const STORAGE_KEYS = {
   access_token: "ztcp_access_token",
@@ -100,7 +101,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshToken = state?.refreshToken;
     if (!refreshToken) return;
     try {
-      const res = await authClient.refresh(refreshToken);
+      const fingerprint = await getDeviceFingerprint();
+      const res = await authClient.refresh(refreshToken, fingerprint);
+      if (res.mfa_required === true && res.challenge_id) {
+        clearStorage();
+        setState(null);
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("refresh_mfa_challenge_id", res.challenge_id);
+          if (res.phone_mask) window.sessionStorage.setItem("refresh_mfa_phone_mask", res.phone_mask);
+          window.location.href = "/login";
+        }
+        return;
+      }
+      if (res.phone_required === true && res.intent_id) {
+        clearStorage();
+        setState(null);
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("refresh_mfa_intent_id", res.intent_id);
+          window.location.href = "/login";
+        }
+        return;
+      }
       if (res.access_token && res.refresh_token && res.user_id && res.org_id) {
         const next: AuthState = {
           user: { user_id: res.user_id, org_id: res.org_id },
@@ -153,7 +174,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string, orgId: string): Promise<authClient.LoginResponse> => {
-      const res = await authClient.login(email, password, orgId);
+      const fingerprint = await getDeviceFingerprint();
+      const res = await authClient.login(email, password, orgId, fingerprint);
       if (res.mfa_required !== true && res.phone_required !== true) {
         setAuthFromResponse(res as authClient.AuthResponse);
       }

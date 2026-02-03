@@ -112,14 +112,23 @@ export async function verifyMFA(challengeId: string, otp: string): Promise<AuthR
   return data;
 }
 
+/** Refresh response: same shape as LoginResponse (tokens or mfa_required or phone_required). */
+export type RefreshResponse = LoginResponse;
+
 /**
- * Refresh returns new access and refresh tokens.
+ * Refresh returns new access and refresh tokens, or MFA required / phone required when device-trust policy requires it.
  */
-export async function refresh(refreshToken: string): Promise<AuthResponse> {
+export async function refresh(
+  refreshToken: string,
+  deviceFingerprint?: string
+): Promise<RefreshResponse> {
   const res = await fetch(`${API}/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+      device_fingerprint: deviceFingerprint,
+    }),
   });
   const data = await res.json();
   if (!res.ok) {

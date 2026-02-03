@@ -45,6 +45,26 @@ export default function LoginPage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // On mount: if we were redirected from refresh with MFA required, restore challenge/intent from sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const challengeId = window.sessionStorage.getItem("refresh_mfa_challenge_id");
+    const phoneMask = window.sessionStorage.getItem("refresh_mfa_phone_mask");
+    const intentId = window.sessionStorage.getItem("refresh_mfa_intent_id");
+    if (challengeId) {
+      window.sessionStorage.removeItem("refresh_mfa_challenge_id");
+      window.sessionStorage.removeItem("refresh_mfa_phone_mask");
+      setMfaChallengeId(challengeId);
+      setMfaPhoneMask(phoneMask ?? null);
+      setMfaOtp(null);
+      setMfaOtpNote(null);
+      setOtp("");
+    } else if (intentId) {
+      window.sessionStorage.removeItem("refresh_mfa_intent_id");
+      setPhoneIntentId(intentId);
+    }
+  }, []);
+
   // When MFA step is shown and dev OTP is enabled, fetch OTP from GET /api/dev/mfa/otp
   useEffect(() => {
     if (!mfaChallengeId || !DEV_OTP_ENABLED) return;

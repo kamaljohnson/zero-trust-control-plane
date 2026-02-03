@@ -1,12 +1,12 @@
 # Device Trust
 
-This document describes device-trust logic in the zero-trust control plane backend: how devices are identifiable, revocable, and time-bound; policy evaluation (OPA/Rego) that decides when MFA is required and when to register or refresh trust; and configuration. For MFA flows (Login MFA branch, VerifyMFA, challenge/OTP, API), see [mfa.md](mfa.md). Business logic lives in [internal/identity/service/auth_service.go](../internal/identity/service/auth_service.go); policy evaluation is in [internal/policy/engine/](../internal/policy/engine/).
+This document describes device-trust logic in the zero-trust control plane backend: how devices are identifiable, revocable, and time-bound; policy evaluation (OPA/Rego) that decides when MFA is required and when to register or refresh trust; and configuration. For MFA flows (Login MFA branch, Refresh MFA branch, VerifyMFA, challenge/OTP, API), see [mfa.md](mfa.md). Business logic lives in [internal/identity/service/auth_service.go](../internal/identity/service/auth_service.go); policy evaluation is in [internal/policy/engine/](../internal/policy/engine/).
 
 **Audience**: Developers integrating with or extending device trust or policy evaluation.
 
 ## Overview
 
-**Device trust**: Devices are identifiable by `user_id`, `org_id`, and `fingerprint`. Trust is **revocable** (a device can be marked revoked via `revoked_at`) and **time-bound** (trust can expire via `trusted_until`). After successful MFA, the backend may register the device as trusted for a configurable number of days, depending on policy. Effective trust is: `Trusted && !RevokedAt && (TrustedUntil == nil || TrustedUntil > now)`. When a device is not effectively trusted, policy may require MFA on the next login; see [mfa.md](mfa.md) for the Login and VerifyMFA flows.
+**Device trust**: Devices are identifiable by `user_id`, `org_id`, and `fingerprint`. Trust is **revocable** (a device can be marked revoked via `revoked_at`) and **time-bound** (trust can expire via `trusted_until`). After successful MFA, the backend may register the device as trusted for a configurable number of days, depending on policy. Effective trust is: `Trusted && !RevokedAt && (TrustedUntil == nil || TrustedUntil > now)`. When a device is not effectively trusted, policy may require MFA on the next **login or refresh**; see [mfa.md](mfa.md) for the Login, Refresh, and VerifyMFA flows. On **Refresh**, the client may send **device_fingerprint**; the backend evaluates the same policy and, if MFA is required, revokes the current session and returns mfa_required or phone_required, so the user must complete MFA to obtain new tokens.
 
 ---
 

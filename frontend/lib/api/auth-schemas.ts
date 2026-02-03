@@ -20,6 +20,7 @@ export const registerBodySchema = z.object({
 
 export const refreshBodySchema = z.object({
   refresh_token: z.string().min(1, "refresh_token is required."),
+  device_fingerprint: z.string().optional(),
 });
 
 export const logoutBodySchema = z.object({

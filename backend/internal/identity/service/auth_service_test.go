@@ -490,21 +490,24 @@ func TestAuthService_LoginAndRefreshAndLogout(t *testing.T) {
 		t.Errorf("Login user/org: got %q %q", loginRes.Tokens.UserID, loginRes.Tokens.OrgID)
 	}
 
-	refreshRes, err := svc.Refresh(ctx, loginRes.Tokens.RefreshToken)
+	refreshRes, err := svc.Refresh(ctx, loginRes.Tokens.RefreshToken, "password-login")
 	if err != nil {
 		t.Fatalf("Refresh: %v", err)
 	}
-	if refreshRes.AccessToken == "" || refreshRes.RefreshToken == "" {
+	if refreshRes.Tokens == nil {
+		t.Fatal("Refresh should return tokens (device trusted)")
+	}
+	if refreshRes.Tokens.AccessToken == "" || refreshRes.Tokens.RefreshToken == "" {
 		t.Fatal("Refresh should return new tokens")
 	}
-	if refreshRes.UserID != reg.UserID || refreshRes.OrgID != "org-1" {
-		t.Errorf("Refresh user/org: got %q %q", refreshRes.UserID, refreshRes.OrgID)
+	if refreshRes.Tokens.UserID != reg.UserID || refreshRes.Tokens.OrgID != "org-1" {
+		t.Errorf("Refresh user/org: got %q %q", refreshRes.Tokens.UserID, refreshRes.Tokens.OrgID)
 	}
 
-	if err := svc.Logout(ctx, refreshRes.RefreshToken); err != nil {
+	if err := svc.Logout(ctx, refreshRes.Tokens.RefreshToken); err != nil {
 		t.Fatalf("Logout: %v", err)
 	}
-	_, err = svc.Refresh(ctx, refreshRes.RefreshToken)
+	_, err = svc.Refresh(ctx, refreshRes.Tokens.RefreshToken, "")
 	if err != ErrInvalidRefreshToken {
 		t.Errorf("Refresh after logout: want ErrInvalidRefreshToken, got %v", err)
 	}

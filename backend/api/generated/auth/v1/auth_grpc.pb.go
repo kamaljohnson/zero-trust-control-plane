@@ -39,7 +39,7 @@ type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	VerifyMFA(ctx context.Context, in *VerifyMFARequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	SubmitPhoneAndRequestMFA(ctx context.Context, in *SubmitPhoneAndRequestMFARequest, opts ...grpc.CallOption) (*SubmitPhoneAndRequestMFAResponse, error)
-	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	LinkIdentity(ctx context.Context, in *LinkIdentityRequest, opts ...grpc.CallOption) (*LinkIdentityResponse, error)
 }
@@ -92,9 +92,9 @@ func (c *authServiceClient) SubmitPhoneAndRequestMFA(ctx context.Context, in *Su
 	return out, nil
 }
 
-func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuthResponse)
+	out := new(RefreshResponse)
 	err := c.cc.Invoke(ctx, AuthService_Refresh_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	VerifyMFA(context.Context, *VerifyMFARequest) (*AuthResponse, error)
 	SubmitPhoneAndRequestMFA(context.Context, *SubmitPhoneAndRequestMFARequest) (*SubmitPhoneAndRequestMFAResponse, error)
-	Refresh(context.Context, *RefreshRequest) (*AuthResponse, error)
+	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	LinkIdentity(context.Context, *LinkIdentityRequest) (*LinkIdentityResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -157,7 +157,7 @@ func (UnimplementedAuthServiceServer) VerifyMFA(context.Context, *VerifyMFAReque
 func (UnimplementedAuthServiceServer) SubmitPhoneAndRequestMFA(context.Context, *SubmitPhoneAndRequestMFARequest) (*SubmitPhoneAndRequestMFAResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitPhoneAndRequestMFA not implemented")
 }
-func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*AuthResponse, error) {
+func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
 }
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {

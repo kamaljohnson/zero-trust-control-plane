@@ -95,7 +95,7 @@ sequenceDiagram
 | Login | LoginRequest | **LoginResponse** | oneof: **tokens**, **mfa_required** (challenge_id, phone_mask), or **phone_required** (intent_id) | If policy requires MFA and user has phone, returns mfa_required; if MFA required but user has no phone, returns phone_required; else returns tokens. |
 | VerifyMFA | VerifyMFARequest | AuthResponse | access_token, refresh_token, expires_at, user_id, org_id | Completes MFA; validates challenge and OTP, creates session, optionally marks device trusted; on first-time phone, sets user.phone and phone_verified. Returns tokens. |
 | SubmitPhoneAndRequestMFA | SubmitPhoneAndRequestMFARequest | SubmitPhoneAndRequestMFAResponse | challenge_id, phone_mask | Consumes intent from Login(phone_required); creates MFA challenge for submitted phone, sends OTP; returns challenge_id and phone_mask. Client then calls VerifyMFA. |
-| Refresh | RefreshRequest | AuthResponse | Same as Login | New tokens (rotation). |
+| Refresh | RefreshRequest | **RefreshResponse** | oneof: **tokens**, **mfa_required**, or **phone_required** | When policy does not require MFA: rotate tokens and return tokens. When policy requires MFA: revoke current session and return mfa_required or phone_required; client completes MFA (VerifyMFA or SubmitPhoneAndRequestMFA then VerifyMFA) to obtain new tokens. |
 | Logout | LogoutRequest | google.protobuf.Empty | — | Revokes session by refresh_token or by Bearer context. |
 | LinkIdentity | LinkIdentityRequest | LinkIdentityResponse | — | Stub; returns Unimplemented. |
 
@@ -116,9 +116,10 @@ These are configured in [cmd/server/main.go](../cmd/server/main.go) in the `publ
 
 - **RegisterRequest**: `email`, `password`, optional `name`.
 - **LoginRequest**: `email`, `password`, `org_id` (required), optional `device_fingerprint` (used to get-or-create device for the session).
-- **RefreshRequest**: `refresh_token`.
+- **RefreshRequest**: `refresh_token`; optional `device_fingerprint` (used to evaluate device-trust policy, same semantics as Login; default `"password-login"` if omitted).
+- **RefreshResponse**: oneof **result** — **tokens** (AuthResponse), **mfa_required** (MFARequired), or **phone_required** (PhoneRequired). Same shape as LoginResponse. Returned when device-trust policy is evaluated on Refresh; when MFA is required, the current session is revoked and the client must complete MFA to get new tokens.
 - **LogoutRequest**: optional `refresh_token`; if empty, the session is revoked from context when the client sends a valid Bearer (access) token (auth interceptor sets session_id in context).
-- **AuthResponse**: `access_token`, `refresh_token`, `expires_at` (Timestamp), `user_id`, `org_id`. Fields may be empty depending on RPC: Register returns only `user_id`; Login (when tokens), VerifyMFA, and Refresh return all fields.
+- **AuthResponse**: `access_token`, `refresh_token`, `expires_at` (Timestamp), `user_id`, `org_id`. Fields may be empty depending on RPC: Register returns only `user_id`; Login (when tokens), VerifyMFA, and Refresh (when tokens) return all fields.
 - **LoginResponse**: oneof **result** — **tokens** (AuthResponse), **mfa_required** (MFARequired), or **phone_required** (PhoneRequired). When MFA is required and user has phone, client uses challenge_id and phone_mask and calls VerifyMFA. When MFA required but user has no phone, client gets intent_id, prompts for phone, calls SubmitPhoneAndRequestMFA, then VerifyMFA.
 - **MFARequired**: `challenge_id` (opaque id for VerifyMFA), `phone_mask` (e.g. last 4 digits for display).
 - **PhoneRequired**: `intent_id` (one-time; pass to SubmitPhoneAndRequestMFA with user-entered phone).
@@ -170,6 +171,8 @@ The current refresh token is hashed (SHA-256, hex) and stored in **sessions.refr
 ### Refresh rotation and reuse detection
 
 On **Refresh**, the service validates the refresh JWT (signature, exp, iss, aud), loads the session by `session_id`, and verifies the session is not revoked. If `session.refresh_jti != token jti` (old token reused after rotation), the service **revokes all sessions for that user** and returns `ErrRefreshTokenReuse` (possible compromise). Otherwise it verifies the refresh token hash (when stored), then issues new access and refresh tokens (new jti), updates `session.refresh_jti` and `session.refresh_token_hash`, and returns the new AuthResponse.
+
+Refresh also accepts optional **device_fingerprint**. When provided, the service resolves the device by (user_id, org_id, fingerprint) (get-or-create), loads platform and org MFA/device-trust settings, and runs **PolicyEvaluator.EvaluateMFA** (same as Login). If the result requires MFA, the service **revokes the current session**, creates an MFA challenge or phone intent as in Login, and returns **RefreshResponse** with **mfa_required** or **phone_required** instead of rotating tokens. The client then completes MFA via VerifyMFA (or SubmitPhoneAndRequestMFA then VerifyMFA) to obtain a new session and tokens.
 
 ### Auth interceptor
 
@@ -223,8 +226,10 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 1. **JWT validation first** (no DB): validate refresh JWT (signature, exp, iss, aud) and parse session_id and jti.
 2. Load session; if not found or revoked, return ErrInvalidRefreshToken. **Reuse check**: if `session.refresh_jti != jti` (old token reused after rotation), revoke all sessions for that user and return ErrRefreshTokenReuse.
 3. If session has refresh_token_hash, require `RefreshTokenHashEqual(provided token, session.refresh_token_hash)`; else allow (legacy).
-4. Update session last_seen; issue new access and refresh tokens (new jti); update session via `UpdateRefreshToken(sessionID, newJti, Hash(newRefresh))`.
-5. Return AuthResponse with new tokens and same user_id, org_id.
+4. Resolve device: optional **device_fingerprint** (default `"password-login"`); get-or-create device by (user_id, org_id, fingerprint).
+5. Load user, platform device-trust settings, org MFA settings; run **PolicyEvaluator.EvaluateMFA** (same inputs as Login).
+6. **If MFA required**: Revoke current session. If user has no phone: create MFA intent, return **RefreshResponse** with **phone_required** (intent_id). Else: create MFA challenge, send OTP if configured; return **RefreshResponse** with **mfa_required** (challenge_id, phone_mask). Client completes MFA as after Login.
+7. **If MFA not required**: Update session last_seen; rotate refresh token (new jti, new refresh token hash); issue new access and refresh tokens; return **RefreshResponse** with **tokens** (AuthResponse).
 
 ### Logout
 
@@ -278,12 +283,12 @@ Auth uses the **users**, **identities**, **memberships**, **devices**, **session
 | **users** | id, email, name, status, **phone** (optional; used for MFA), **phone_verified** (locked after first MFA); one phone per user, immutable after verification. Created by Register; looked up by email on Login. |
 | **identities** | user_id, provider (`local`), provider_id (email), password_hash; local identity created by Register; Login uses GetByUserAndProvider and compares password. |
 | **memberships** | user_id, org_id, role; required for Login (GetMembershipByUserAndOrg); no membership → PermissionDenied. |
-| **devices** | user_id, org_id, fingerprint, **trusted**, **trusted_until**, **revoked_at**; get-or-create per Login (default fingerprint `"password-login"` if not provided); used for MFA/device-trust policy and optional trust registration after VerifyMFA. |
-| **sessions** | user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, **refresh_jti**, **refresh_token_hash**; created on Login or after VerifyMFA; refreshed via UpdateRefreshToken; revoked on Logout or reuse. |
+| **devices** | user_id, org_id, fingerprint, **trusted**, **trusted_until**, **revoked_at**; get-or-create per Login and per Refresh (when device_fingerprint sent); used for MFA/device-trust policy and optional trust registration after VerifyMFA. |
+| **sessions** | user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, **refresh_jti**, **refresh_token_hash**; created on Login or after VerifyMFA; refreshed via UpdateRefreshToken; revoked on Logout, reuse, or when Refresh returns MFA required. |
 | **platform_settings** | key-value; platform-wide MFA/device-trust settings (e.g. mfa_required_always, default_trust_ttl_days) used by policy evaluation. |
 | **org_mfa_settings** | one row per org; org-level MFA/device-trust settings (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.) used by policy evaluation. |
-| **mfa_intents** | one-time intents (id, user_id, org_id, device_id, expires_at); created when Login returns phone_required (user has no phone); consumed by SubmitPhoneAndRequestMFA. |
-| **mfa_challenges** | ephemeral MFA challenges (id, user_id, org_id, device_id, phone, code_hash, expires_at); created when Login returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or expiry. |
+| **mfa_intents** | one-time intents (id, user_id, org_id, device_id, expires_at); created when Login or Refresh returns phone_required (user has no phone); consumed by SubmitPhoneAndRequestMFA. |
+| **mfa_challenges** | ephemeral MFA challenges (id, user_id, org_id, device_id, phone, code_hash, expires_at); created when Login or Refresh returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or expiry. |
 
 ---
 

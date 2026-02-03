@@ -124,19 +124,45 @@ function promisifyVerifyMFA(
   });
 }
 
+interface RefreshResponseProto {
+  tokens?: AuthResponseProto;
+  mfa_required?: { challenge_id?: string; phone_mask?: string };
+  phone_required?: { intent_id?: string };
+}
+
 function promisifyRefresh(
   client: grpc.Client,
-  req: { refresh_token: string }
-): Promise<AuthResponseProto> {
+  req: { refresh_token: string; device_fingerprint?: string }
+): Promise<RefreshResponseProto> {
   return new Promise((resolve, reject) => {
-    (client as grpc.Client & { Refresh: (r: unknown, c: (e: grpc.ServiceError | null, r: AuthResponseProto) => void) => void }).Refresh(
+    (client as grpc.Client & { Refresh: (r: unknown, c: (e: grpc.ServiceError | null, r: RefreshResponseProto) => void) => void }).Refresh(
       req,
-      (err: grpc.ServiceError | null, res: AuthResponseProto) => {
+      (err: grpc.ServiceError | null, res: RefreshResponseProto) => {
         if (err) reject({ code: err.code, message: err.details || err.message });
         else resolve(res ?? {});
       }
     );
   });
+}
+
+function refreshResponseToJson(res: RefreshResponseProto): LoginResponseJson {
+  if (res.mfa_required != null) {
+    return {
+      mfa_required: true,
+      challenge_id: res.mfa_required.challenge_id ?? "",
+      phone_mask: res.mfa_required.phone_mask ?? "",
+    };
+  }
+  if (res.phone_required != null) {
+    return {
+      phone_required: true,
+      intent_id: res.phone_required.intent_id ?? "",
+    };
+  }
+  if (res.tokens != null) {
+    return authResponseToJson(res.tokens);
+  }
+  return {};
 }
 
 function promisifyLogout(
@@ -261,12 +287,18 @@ export async function verifyMFA(challenge_id: string, otp: string): Promise<Auth
 }
 
 /**
- * Refresh returns new access and refresh tokens.
+ * Refresh returns new access and refresh tokens, or MFA required / phone required when device-trust policy requires it (same shape as LoginResponseJson).
  */
-export async function refresh(refresh_token: string): Promise<AuthResponseJson> {
+export async function refresh(
+  refresh_token: string,
+  device_fingerprint?: string
+): Promise<LoginResponseJson> {
   const client = getAuthClient();
-  const res = await promisifyRefresh(client, { refresh_token });
-  return authResponseToJson(res);
+  const res = await promisifyRefresh(client, {
+    refresh_token,
+    device_fingerprint: device_fingerprint ?? "password-login",
+  });
+  return refreshResponseToJson(res);
 }
 
 /**

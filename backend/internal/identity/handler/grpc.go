@@ -76,16 +76,16 @@ func (s *AuthServer) SubmitPhoneAndRequestMFA(ctx context.Context, req *authv1.S
 	}, nil
 }
 
-// Refresh issues new access and refresh tokens.
-func (s *AuthServer) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*authv1.AuthResponse, error) {
+// Refresh issues new access and refresh tokens, or returns MFA required / phone required when device-trust policy requires it.
+func (s *AuthServer) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*authv1.RefreshResponse, error) {
 	if s.auth == nil {
 		return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
 	}
-	res, err := s.auth.Refresh(ctx, req.GetRefreshToken())
+	res, err := s.auth.Refresh(ctx, req.GetRefreshToken(), req.GetDeviceFingerprint())
 	if err != nil {
 		return nil, authErr(err)
 	}
-	return authResultToProto(res), nil
+	return refreshResultToProto(res), nil
 }
 
 // Logout invalidates the session identified by the refresh token.
@@ -161,6 +161,37 @@ func loginResultToProto(r *service.LoginResult) *authv1.LoginResponse {
 		}
 	}
 	return &authv1.LoginResponse{}
+}
+
+func refreshResultToProto(r *service.RefreshResult) *authv1.RefreshResponse {
+	if r == nil {
+		return &authv1.RefreshResponse{}
+	}
+	if r.Tokens != nil {
+		return &authv1.RefreshResponse{
+			Result: &authv1.RefreshResponse_Tokens{Tokens: authResultToProto(r.Tokens)},
+		}
+	}
+	if r.MFARequired != nil {
+		return &authv1.RefreshResponse{
+			Result: &authv1.RefreshResponse_MfaRequired{
+				MfaRequired: &authv1.MFARequired{
+					ChallengeId: r.MFARequired.ChallengeID,
+					PhoneMask:   r.MFARequired.PhoneMask,
+				},
+			},
+		}
+	}
+	if r.PhoneRequired != nil {
+		return &authv1.RefreshResponse{
+			Result: &authv1.RefreshResponse_PhoneRequired{
+				PhoneRequired: &authv1.PhoneRequired{
+					IntentId: r.PhoneRequired.IntentID,
+				},
+			},
+		}
+	}
+	return &authv1.RefreshResponse{}
 }
 
 func authResultToProto(r *service.AuthResult) *authv1.AuthResponse {

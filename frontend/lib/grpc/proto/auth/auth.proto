@@ -20,6 +20,15 @@ message LoginRequest {
 
 message RefreshRequest {
   string refresh_token = 1;
+  string device_fingerprint = 2;
+}
+
+message RefreshResponse {
+  oneof result {
+    AuthResponse tokens = 1;
+    MFARequired mfa_required = 2;
+    PhoneRequired phone_required = 3;
+  }
 }
 
 message LogoutRequest {
@@ -82,7 +91,7 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc VerifyMFA(VerifyMFARequest) returns (AuthResponse);
   rpc SubmitPhoneAndRequestMFA(SubmitPhoneAndRequestMFARequest) returns (SubmitPhoneAndRequestMFAResponse);
-  rpc Refresh(RefreshRequest) returns (AuthResponse);
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);
 }

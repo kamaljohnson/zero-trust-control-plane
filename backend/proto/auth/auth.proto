@@ -22,9 +22,19 @@ message LoginRequest {
   string device_fingerprint = 4;  // optional; used to get-or-create device for session
 }
 
-// RefreshRequest carries the refresh token to obtain new access (and optionally refresh) tokens.
+// RefreshRequest carries the refresh token and optional device fingerprint for device-trust policy.
 message RefreshRequest {
   string refresh_token = 1;
+  string device_fingerprint = 2;  // optional; used to evaluate device-trust policy (same as Login)
+}
+
+// RefreshResponse is the result of Refresh: either tokens, MFA required, or phone required (device-trust policy).
+message RefreshResponse {
+  oneof result {
+    AuthResponse tokens = 1;
+    MFARequired mfa_required = 2;
+    PhoneRequired phone_required = 3;
+  }
 }
 
 // LogoutRequest identifies the session to terminate.
@@ -98,7 +108,7 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc VerifyMFA(VerifyMFARequest) returns (AuthResponse);
   rpc SubmitPhoneAndRequestMFA(SubmitPhoneAndRequestMFARequest) returns (SubmitPhoneAndRequestMFAResponse);
-  rpc Refresh(RefreshRequest) returns (AuthResponse);
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);
 }
