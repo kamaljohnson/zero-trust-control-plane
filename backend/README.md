@@ -37,7 +37,7 @@ Config is loaded from environment or `.env` (see [.env.example](.env.example)). 
 
 **Auth and database**: Auth (and the database) are enabled only when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server opens Postgres, builds the auth service and repos, and protects non-public RPCs with a Bearer access token. When any of the three is missing, the server runs without a DB and auth RPCs return Unimplemented. Full auth configuration and flows: [docs/auth.md](../docs/auth.md).
 
-**Telemetry**: When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the server exports traces, metrics, and logs via OTLP to an OpenTelemetry Collector. Use [backend/deploy/otelcol-config.yaml](deploy/otelcol-config.yaml) to run the Collector and export to Loki, Prometheus, and Tempo; add those as Grafana datasources. See [docs/telemetry.md](../docs/telemetry.md).
+**Telemetry**: When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the server exports traces, metrics, and logs via OTLP to an OpenTelemetry Collector. Use [../deploy/otelcol-config.yaml](../deploy/otelcol-config.yaml) to run the Collector and export to Loki, Prometheus, and Tempo; add those as Grafana datasources. For running the Collector and backends (Loki, Tempo, Prometheus, Grafana) locally or in production with Docker Compose, see [../deploy/README.md](../deploy/README.md). See [docs/telemetry.md](../docs/telemetry.md).
 
 ## Generating sqlc code
 

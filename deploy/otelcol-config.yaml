@@ -2,9 +2,10 @@
 # export traces to Tempo, metrics to Prometheus, and logs to Loki.
 # Use with the contrib distribution: otelcol-contrib (includes loki exporter).
 #
-# Example: otelcol-contrib --config deploy/otelcol-config.yaml
+# Docker Compose: use as-is (service names loki, tempo). Mount this file as the collector config.
+# Host/standalone: copy this file and set Loki endpoint to http://localhost:3100/loki/api/v1/push
+# and Tempo endpoint to localhost:4317 so the collector can reach backends on the same machine.
 #
-# Backends: run Loki (e.g. 3100), Prometheus (e.g. 9090), Tempo (e.g. 4317).
 # Set OTEL_EXPORTER_OTLP_ENDPOINT to the collector's gRPC address (e.g. localhost:4317).
 
 receivers:
@@ -21,7 +22,7 @@ processors:
     timeout: 10s
 
 exporters:
-  # Traces -> Tempo (OTLP gRPC). Use tempo:4317 when Tempo runs in another container.
+  # Traces -> Tempo (OTLP gRPC). Use tempo:4317 in Compose; localhost:4317 when running on host.
   otlp/tempo:
     endpoint: tempo:4317
     tls:
@@ -32,9 +33,9 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: ztcp
 
-  # Logs -> Loki. Requires otelcol-contrib (loki exporter).
+  # Logs -> Loki. Use loki:3100 in Compose; localhost:3100 when running on host.
   loki:
-    endpoint: http://localhost:3100/loki/api/v1/push
+    endpoint: http://loki:3100/loki/api/v1/push
     default_labels_enabled:
       exporter: true
       job: true

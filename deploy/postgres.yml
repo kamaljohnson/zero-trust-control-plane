@@ -1,0 +1,24 @@
+# PostgreSQL service for ZTCP local deployment.
+# Used by backend (DATABASE_URL=postgres://ztcp:ztcp@localhost:5432/ztcp?sslmode=disable).
+# Include from docker-compose.yml or run: docker compose -f postgres.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ztcp
+      POSTGRES_PASSWORD: ztcp
+      POSTGRES_DB: ztcp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ztcp"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

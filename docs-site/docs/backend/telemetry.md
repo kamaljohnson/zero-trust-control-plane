@@ -116,7 +116,7 @@ flowchart LR
   end
 ```
 
-The reference configuration is in [backend/deploy/otelcol-config.yaml](../../../backend/deploy/otelcol-config.yaml). The Collector runs three pipelines in parallel:
+The reference configuration is in [deploy/otelcol-config.yaml](../../../deploy/otelcol-config.yaml). The Collector runs three pipelines in parallel:
 
 - **Receivers**: A single **OTLP** receiver accepts gRPC on port **4317** and HTTP on **4318**. The gRPC server is configured to send to the gRPC endpoint (e.g. `http://localhost:4317`).
 

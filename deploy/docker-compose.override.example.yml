@@ -1,0 +1,14 @@
+# Copy to docker-compose.override.yml and edit. Compose merges it automatically when present.
+# Local overrides (ports, env, etc.) without editing committed compose files.
+#
+# Example: change Grafana host port
+# services:
+#   grafana:
+#     ports:
+#       - "3003:3000"
+#
+# Example: add env to postgres (not needed for default local deploy)
+# services:
+#   postgres:
+#     environment:
+#       POSTGRES_USER: myuser

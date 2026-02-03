@@ -81,6 +81,9 @@ config.local.*
 secrets.yaml
 secrets.yml
 
+# Local Compose overrides (use docker-compose.override.example.yml as template)
+deploy/docker-compose.override.yml
+
 .cursor/
 .nvmrc
 
