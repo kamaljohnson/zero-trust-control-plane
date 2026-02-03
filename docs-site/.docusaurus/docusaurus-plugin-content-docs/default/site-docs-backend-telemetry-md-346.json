@@ -1,7 +1,7 @@
 {
   "id": "backend/telemetry",
   "title": "Telemetry",
-  "description": "Telemetry events (gRPC request metrics and explicit TelemetryService emits) flow through Kafka to a worker that pushes logs to Loki for querying in Grafana.",
+  "description": "The telemetry system provides observability for the gRPC API and custom application events: traces for request flow and latency, metrics for rates and duration, and logs for explicit events emitted via the TelemetryService. All signals are produced by the gRPC server using the OpenTelemetry SDK, exported over OTLP to an OpenTelemetry Collector, which fans out to Loki (logs), Prometheus (metrics), and Tempo (traces) for querying and dashboards in Grafana.",
   "source": "@site/docs/backend/telemetry.md",
   "sourceDirName": "backend",
   "slug": "/backend/telemetry",

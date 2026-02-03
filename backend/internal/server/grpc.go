@@ -29,8 +29,8 @@ import (
 	policyhandler "zero-trust-control-plane/backend/internal/policy/handler"
 	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
 	sessionhandler "zero-trust-control-plane/backend/internal/session/handler"
+	"zero-trust-control-plane/backend/internal/telemetry"
 	telemetryhandler "zero-trust-control-plane/backend/internal/telemetry/handler"
-	telemetryproducer "zero-trust-control-plane/backend/internal/telemetry/producer"
 	userhandler "zero-trust-control-plane/backend/internal/user/handler"
 )
 
@@ -50,8 +50,8 @@ type Deps struct {
 	HealthPolicyChecker healthhandler.PolicyChecker
 	// DevOTPHandler is the dev-only DevService (GetOTP). If nil, DevService is not registered. Set only when dev OTP is enabled and not production.
 	DevOTPHandler devv1.DevServiceServer
-	// TelemetryProducer emits telemetry events (e.g. to Kafka). If nil, TelemetryService and interceptor no-op.
-	TelemetryProducer telemetryproducer.Producer
+	// TelemetryEmitter emits telemetry events (e.g. via OTel Logs). If nil, TelemetryService Emit RPCs no-op.
+	TelemetryEmitter telemetry.EventEmitter
 }
 
 // RegisterServices registers all proto gRPC services with the given server.
@@ -81,7 +81,7 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer())
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))
 	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer())
-	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer(deps.TelemetryProducer))
+	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer(deps.TelemetryEmitter))
 	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo))
 	healthv1.RegisterHealthServiceServer(s, healthhandler.NewServer(deps.HealthPinger, deps.HealthPolicyChecker))
 	if deps.DevOTPHandler != nil {

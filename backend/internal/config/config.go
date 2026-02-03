@@ -3,7 +3,6 @@ package config
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -42,16 +41,11 @@ type Config struct {
 	// Env is the application environment (e.g. "development", "production"). Used with OTPReturnToClient to panic if dev OTP is enabled in production.
 	Env string `mapstructure:"APP_ENV"`
 
-	// Telemetry (optional). When Kafka brokers are set, gRPC server emits telemetry to Kafka.
-	// TelemetryKafkaBrokers is a comma-separated list of Kafka broker addresses (e.g. "localhost:9092").
-	TelemetryKafkaBrokers string `mapstructure:"KAFKA_BROKERS"`
-	// TelemetryKafkaTopic is the Kafka topic for telemetry events (default ztcp-telemetry).
-	TelemetryKafkaTopic string `mapstructure:"TELEMETRY_KAFKA_TOPIC"`
-
-	// Worker-only: Loki URL for the telemetry worker to push logs (e.g. http://localhost:3100).
-	LokiURL string `mapstructure:"LOKI_URL"`
-	// KafkaGroupID is the consumer group ID for the telemetry worker.
-	KafkaGroupID string `mapstructure:"KAFKA_GROUP_ID"`
+	// OpenTelemetry (optional). When OTEL_EXPORTER_OTLP_ENDPOINT is set, the server exports traces, metrics, and logs via OTLP.
+	// OTELExporterOTLPEndpoint is the OTLP endpoint (e.g. http://localhost:4317 for gRPC). Standard env: OTEL_EXPORTER_OTLP_ENDPOINT.
+	OTELExporterOTLPEndpoint string `mapstructure:"OTEL_EXPORTER_OTLP_ENDPOINT"`
+	// OTELServiceName is the service name for resource attributes (e.g. ztcp-grpc). Standard env: OTEL_SERVICE_NAME.
+	OTELServiceName string `mapstructure:"OTEL_SERVICE_NAME"`
 }
 
 // Load reads .env (if present), then builds and validates Config from the environment via Viper.
@@ -76,10 +70,8 @@ func Load() (*Config, error) {
 	v.SetDefault("DEFAULT_TRUST_TTL_DAYS", 30)
 	v.SetDefault("OTP_RETURN_TO_CLIENT", false)
 	v.SetDefault("APP_ENV", "")
-	v.SetDefault("TELEMETRY_KAFKA_TOPIC", "ztcp-telemetry")
-	v.SetDefault("KAFKA_BROKERS", "")
-	v.SetDefault("LOKI_URL", "")
-	v.SetDefault("KAFKA_GROUP_ID", "ztcp-telemetry-worker")
+	v.SetDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+	v.SetDefault("OTEL_SERVICE_NAME", "ztcp-grpc")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -120,20 +112,4 @@ func (c *Config) RefreshTTL() time.Duration {
 		return 168 * time.Hour
 	}
 	return d
-}
-
-// TelemetryKafkaBrokersList returns Kafka broker addresses from the comma-separated config.
-// Used to decide if telemetry is enabled (non-empty list) and to create the producer.
-func (c *Config) TelemetryKafkaBrokersList() []string {
-	if c == nil || c.TelemetryKafkaBrokers == "" {
-		return nil
-	}
-	parts := strings.Split(c.TelemetryKafkaBrokers, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if s := strings.TrimSpace(p); s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
 }

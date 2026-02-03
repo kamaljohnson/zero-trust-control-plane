@@ -9,13 +9,13 @@ Welcome to the **Zero Trust Control Plane** documentation. This project is a pro
 
 ## What you'll find here
 
-- **Backend** — Authentication, audit logging, database schema, device trust, health checks, MFA, and telemetry (Kafka → Loki → Grafana).
+- **Backend** — Authentication, audit logging, database schema, device trust, health checks, MFA, and telemetry (OpenTelemetry → Collector → Loki / Prometheus / Tempo → Grafana).
 - **Contributing** — Planned documentation and how to extend the docs.
 
 ## Quick links
 
 - [Auth](/docs/backend/auth) — Register, login, refresh, logout, and JWT flows.
 - [Database](/docs/backend/database) — Schema, migrations, and codegen.
-- [Telemetry](/docs/backend/telemetry) — gRPC interceptor, Kafka, worker, Loki, Grafana.
+- [Telemetry](/docs/backend/telemetry) — OpenTelemetry SDK, Collector, Loki, Prometheus, Tempo, Grafana.
 
 Run the backend from `backend/`, the frontend from `frontend/`, and this docs site from `docs-site/` (see [docs-site README](../../docs-site/README.md)).

@@ -1,10 +1,10 @@
 # Zero Trust Control Plane — Backend
 
-gRPC API server and async worker for the zero-trust control plane.
+gRPC API server for the zero-trust control plane.
 
 ## Overview
 
-The backend is a **gRPC API server** (and optional async worker). The server registers multiple gRPC services: Admin, Auth, User, Organization, Membership, Device, Session, Policy, Telemetry, Audit, and Health. **Auth is optional**: when enabled (see [Configuration](#configuration)), the server opens the database, wires the auth service and repos, and registers an auth interceptor that validates Bearer tokens and sets identity in context for protected RPCs; when disabled, no database connection is opened and auth RPCs return Unimplemented. AuthService is implemented by the identity handler ([internal/identity/handler](internal/identity/handler)) and auth service ([internal/identity/service](internal/identity/service)); see [docs/auth.md](../docs/auth.md). When auth is enabled, **audit logging** is also enabled: an audit interceptor records who did what (org, user, action, resource, IP) after each protected RPC, and the auth service explicitly logs login success/failure, logout, and session created; see [docs/audit.md](../docs/audit.md). **MFA** (risk-based, challenge/OTP) and **device trust** (policy-driven, revocable, time-bound) influence when a second factor is required; see [docs/mfa.md](../docs/mfa.md) and [docs/device-trust.md](../docs/device-trust.md).
+The backend is a **gRPC API server**. The server registers multiple gRPC services: Admin, Auth, User, Organization, Membership, Device, Session, Policy, Telemetry, Audit, and Health. **Auth is optional**: when enabled (see [Configuration](#configuration)), the server opens the database, wires the auth service and repos, and registers an auth interceptor that validates Bearer tokens and sets identity in context for protected RPCs; when disabled, no database connection is opened and auth RPCs return Unimplemented. AuthService is implemented by the identity handler ([internal/identity/handler](internal/identity/handler)) and auth service ([internal/identity/service](internal/identity/service)); see [docs/auth.md](../docs/auth.md). When auth is enabled, **audit logging** is also enabled: an audit interceptor records who did what (org, user, action, resource, IP) after each protected RPC, and the auth service explicitly logs login success/failure, logout, and session created; see [docs/audit.md](../docs/audit.md). **MFA** (risk-based, challenge/OTP) and **device trust** (policy-driven, revocable, time-bound) influence when a second factor is required; see [docs/mfa.md](../docs/mfa.md) and [docs/device-trust.md](../docs/device-trust.md).
 
 ## Documentation
 
@@ -14,12 +14,11 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **[docs/device-trust.md](../docs/device-trust.md)** — Device trust: identifiable/revocable/time-bound devices, policy evaluation (OPA/Rego), when MFA is required and when trust is registered, configuration.
 - **[docs/health.md](../docs/health.md)** — Health checks: readiness RPC (HealthService.HealthCheck), behavior with and without database, how to call from Kubernetes or gRPC clients.
 - **[docs/mfa.md](../docs/mfa.md)** — MFA: risk-based MFA, when required, challenge/OTP flow, VerifyMFA and SubmitPhoneAndRequestMFA, API and configuration.
-- **[docs/telemetry.md](../docs/telemetry.md)** — Telemetry: gRPC interceptor and TelemetryService → Kafka → worker → Loki → Grafana; configuration, LogQL examples, and optional dashboard.
+- **[docs/telemetry.md](../docs/telemetry.md)** — Telemetry: OpenTelemetry SDK (traces, metrics, logs) → OTLP → Collector → Loki / Prometheus / Tempo → Grafana; configuration and reference Collector config.
 
 ## Layout
 
 - **cmd/server** — gRPC API server
-- **cmd/worker** — telemetry worker (Kafka → Loki); optional async jobs
 - **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
 - **cmd/seed** — Development data seeder (used by scripts/seed.sh)
 - **../docs/** — project documentation (repo root); see [Documentation](#documentation) above.
@@ -38,7 +37,7 @@ Config is loaded from environment or `.env` (see [.env.example](.env.example)). 
 
 **Auth and database**: Auth (and the database) are enabled only when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server opens Postgres, builds the auth service and repos, and protects non-public RPCs with a Bearer access token. When any of the three is missing, the server runs without a DB and auth RPCs return Unimplemented. Full auth configuration and flows: [docs/auth.md](../docs/auth.md).
 
-**Telemetry**: When `KAFKA_BROKERS` is set, the server emits telemetry events (per-RPC and via TelemetryService) to Kafka. Run the worker with `KAFKA_BROKERS`, `LOKI_URL`, and `GRPC_ADDR=:0` to consume from Kafka and push logs to Loki; then add Loki as a Grafana datasource and use [docs/telemetry.md](../docs/telemetry.md) for LogQL and dashboard import.
+**Telemetry**: When `OTEL_EXPORTER_OTLP_ENDPOINT` is set, the server exports traces, metrics, and logs via OTLP to an OpenTelemetry Collector. Use [backend/deploy/otelcol-config.yaml](deploy/otelcol-config.yaml) to run the Collector and export to Loki, Prometheus, and Tempo; add those as Grafana datasources. See [docs/telemetry.md](../docs/telemetry.md).
 
 ## Generating sqlc code
 
@@ -96,11 +95,7 @@ The gRPC API is defined in `proto/`. Generated Go and gRPC stubs go to `api/gene
 ## Build & run
 
 ```bash
-# Server
 go run ./cmd/server
-
-# Worker
-go run ./cmd/worker
 ```
 
 ## Database migrations
