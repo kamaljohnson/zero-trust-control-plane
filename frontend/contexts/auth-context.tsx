@@ -193,16 +193,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    const accessToken = state?.accessToken;
     const refreshToken = state?.refreshToken;
-    clearAuth();
-    if (refreshToken) {
+    if (accessToken || refreshToken) {
       try {
-        await authClient.logout(refreshToken);
+        await authClient.logout(accessToken, refreshToken);
       } catch {
         // ignore
       }
     }
-  }, [state?.refreshToken, clearAuth]);
+    clearAuth();
+  }, [state?.accessToken, state?.refreshToken, clearAuth]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

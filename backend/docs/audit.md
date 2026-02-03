@@ -8,7 +8,7 @@ This document describes the audit logging system for the zero-trust control plan
 
 Audit logging provides a **compliance and security trail** of who did what, when, and from where. Each auditable gRPC call results in a row in the `audit_logs` table with org, user, action, resource, client IP, and timestamp. Entries are written **best-effort**: failure to persist an audit log does not fail the RPC.
 
-**Scope**: When auth is enabled, every protected RPC (after the auth interceptor sets identity) is audited except methods in the audit skip set (e.g. HealthCheck). Unauthenticated RPCs (e.g. Login, Register) are not written to the audit log because `org_id` is required in the schema; only calls with a valid token and org context produce audit rows.
+**Scope**: When auth is enabled, (1) every protected RPC (after the auth interceptor sets identity) is audited except methods in the audit skip set (e.g. HealthCheck), and (2) authentication and session lifecycle events are written explicitly from the auth service (login success/failure, logout, session created). For events that have no org (e.g. login failure before org is known, logout with invalid token), the sentinel org `_system` is used so `org_id` remains non-null.
 
 ### When audit is enabled
 
@@ -22,7 +22,7 @@ When auth is disabled, `deps.AuditRepo` is nil. ListAuditLogs returns **Unimplem
 
 ## Architecture
 
-**Layers**: gRPC request → AuthUnary (set identity in context) → AuditUnary (after handler, optionally Create) → Handler (e.g. UserService, AuditService) → AuditRepo (write/read) → database.
+**Layers**: gRPC request → AuthUnary (set identity in context) → AuditUnary (after handler, optionally Create) → Handler (e.g. UserService, AuditService) → AuditRepo (write/read) → database. In addition, the auth service uses an **AuditLogger** to write explicit events (login_success, login_failure, logout, session_created) that do not go through the interceptor with identity.
 
 ### Component diagram
 
@@ -49,8 +49,9 @@ When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the
 
 1. Opens the database and creates repos (user, identity, session, device, membership, policy, etc.).
 2. Creates the audit repo with `auditrepo.NewPostgresRepository(database)` and sets `deps.AuditRepo`.
-3. Builds `auditSkipMethods` with at least `HealthService_HealthCheck_FullMethodName`.
-4. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`.
+3. Builds the audit logger with `audit.NewLogger(auditRepo, interceptors.ClientIP)` and passes it into `NewAuthService(..., auditLogger)` so login/logout and session_created are audited.
+4. Builds `auditSkipMethods` with at least `HealthService_HealthCheck_FullMethodName`.
+5. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`.
 
 [internal/server/grpc.go](../internal/server/grpc.go) `RegisterServices` passes `deps.AuditRepo` into `audithandler.NewServer(deps.AuditRepo)`. If `deps.AuditRepo == nil` (auth disabled), the audit handler returns Unimplemented for ListAuditLogs and no RPCs are audited.
 
@@ -142,8 +143,24 @@ The mapping logic lives in [internal/audit/mapping.go](../internal/audit/mapping
 | DeviceService | RegisterDevice, GetDevice, ListDevices, RevokeDevice | register, get, list, revoke | device |
 | PolicyService | CreatePolicy, UpdatePolicy, DeletePolicy, ListPolicies | create, update, delete, list | policy |
 | SessionService | RevokeSession, ListSessions, GetSession | revoke, list, get | session |
-| MembershipService | AddMember, RemoveMember, UpdateRole, ListMembers | add, remove, update, list | membership |
+| MembershipService | AddMember, RemoveMember, UpdateRole | user_added, user_removed, role_changed | user |
+| MembershipService | ListMembers | list | membership |
 | AuditService | ListAuditLogs | list | audit |
+
+### Explicit audit events (AuthService)
+
+The auth service logs the following via [internal/audit/logger.go](../internal/audit/logger.go) (best-effort; failures do not fail the RPC):
+
+| action | resource | When |
+|--------|----------|------|
+| login_success | authentication | Login returns tokens or MFA required; metadata may include `{"role":"owner"}` or `{"role":"admin"}` for admin login. |
+| login_failure | authentication | Login fails (invalid credentials, not org member, etc.); org_id from request or sentinel. |
+| logout | authentication | Logout revokes a session; org_id/user_id from the revoked session or sentinel if unknown. |
+| session_created | session | A session is created (Login, VerifyMFA, or Refresh issues tokens). |
+
+**Sentinel org**: Events that have no org (e.g. login_failure when org is empty, logout with invalid token) use `org_id = "_system"`. The sentinel organization is created by migration [007_system_org.up.sql](../internal/db/migrations/007_system_org.up.sql). ListAuditLogs for `org_id = "_system"` returns these system-level auth events.
+
+**Critical config**: Policy create/update/delete are audited by the interceptor (action create, update, delete; resource policy) and count as critical config changes. MFA policy, device trust, and domain allow/block changes are covered when they are performed via PolicyService or future org/platform settings RPCs. Per-user MFA enabled/disabled (resource security, actions mfa_enabled/mfa_disabled) should be audited when that feature is implemented.
 
 ---
 

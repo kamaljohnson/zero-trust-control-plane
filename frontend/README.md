@@ -78,7 +78,7 @@ frontend/
   - **Register**: email, password, optional name → backend creates user; no tokens until the user is in an org and logs in.
   - **Login**: email (trimmed and lowercased, format validated), password, org ID → returns access + refresh tokens, user_id, org_id.
   - **Refresh**: The auth context refreshes the access token before it expires (5‑minute margin). The client sends **device_fingerprint** (from [lib/fingerprint.ts](lib/fingerprint.ts)) with `POST /api/auth/refresh` (body: `refresh_token`, optional `device_fingerprint`). The backend may return new tokens or, when device-trust policy requires MFA, **mfa_required** or **phone_required**. In the MFA case, the app clears auth state, stores the challenge/intent in sessionStorage, and redirects to `/login`, where the user completes the same MFA flow (OTP or phone then OTP); after VerifyMFA, the new tokens are stored and the user is redirected home.
-  - **Logout**: `POST /api/auth/logout` with refresh_token → session revoked; client clears storage.
+  - **Logout**: `POST /api/auth/logout` with **access_token** and optional **refresh_token** in the body. The BFF forwards the access token as `Authorization: Bearer` to the backend so the call is authorized and logout is audited; the backend revokes the session, then the client clears storage.
 
 Password policy (backend): 12+ characters, at least one uppercase, one lowercase, one number, one symbol. The register form validates this on the client.
 

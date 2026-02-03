@@ -8,10 +8,26 @@ type ActionResource struct {
 	Resource string
 }
 
+// Membership method overrides: audit as user_added, user_removed, role_changed on resource "user".
+const (
+	membershipAddMember    = "/ztcp.membership.v1.MembershipService/AddMember"
+	membershipRemoveMember = "/ztcp.membership.v1.MembershipService/RemoveMember"
+	membershipUpdateRole   = "/ztcp.membership.v1.MembershipService/UpdateRole"
+)
+
 // ParseFullMethod returns action and resource for a gRPC full method (e.g. /ztcp.user.v1.UserService/GetUser).
 // Action is a verb: get, list, create, update, delete, or a lowercase method name for others.
 // Resource is derived from the service name (e.g. UserService -> user).
+// MembershipService AddMember/RemoveMember/UpdateRole are mapped to user_added, user_removed, role_changed on resource "user".
 func ParseFullMethod(fullMethod string) ActionResource {
+	switch fullMethod {
+	case membershipAddMember:
+		return ActionResource{Action: "user_added", Resource: "user"}
+	case membershipRemoveMember:
+		return ActionResource{Action: "user_removed", Resource: "user"}
+	case membershipUpdateRole:
+		return ActionResource{Action: "role_changed", Resource: "user"}
+	}
 	// fullMethod format: /ztcp.package.v1.ServiceName/MethodName
 	slash := strings.LastIndex(fullMethod, "/")
 	if slash < 0 {

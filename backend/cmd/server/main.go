@@ -13,6 +13,7 @@ import (
 	authv1 "zero-trust-control-plane/backend/api/generated/auth/v1"
 	devv1 "zero-trust-control-plane/backend/api/generated/dev/v1"
 	healthv1 "zero-trust-control-plane/backend/api/generated/health/v1"
+	"zero-trust-control-plane/backend/internal/audit"
 	auditrepo "zero-trust-control-plane/backend/internal/audit/repository"
 	"zero-trust-control-plane/backend/internal/config"
 	"zero-trust-control-plane/backend/internal/db"
@@ -96,6 +97,9 @@ func main() {
 			devOTPStore = devStore
 			deps.DevOTPHandler = devotphandler.NewServer(devStore)
 		}
+		auditRepo := auditrepo.NewPostgresRepository(database)
+		deps.AuditRepo = auditRepo
+		auditLogger := audit.NewLogger(auditRepo, interceptors.ClientIP)
 		authService := identityservice.NewAuthService(
 			userRepo,
 			identityRepo,
@@ -116,12 +120,11 @@ func main() {
 			10*time.Minute,
 			cfg.OTPReturnToClient,
 			devOTPStore,
+			auditLogger,
 		)
 		deps.Auth = authService
 		deps.DeviceRepo = deviceRepo
 		deps.PolicyRepo = policyRepo
-		auditRepo := auditrepo.NewPostgresRepository(database)
-		deps.AuditRepo = auditRepo
 		deps.HealthPinger = database
 		deps.HealthPolicyChecker = policyEvaluator
 	}

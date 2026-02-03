@@ -138,13 +138,16 @@ export async function refresh(
 }
 
 /**
- * Logout revokes the session.
+ * Logout revokes the session. Sends access_token so the BFF can authorize the backend call and audit is written.
  */
-export async function logout(refreshToken?: string): Promise<void> {
+export async function logout(accessToken?: string, refreshToken?: string): Promise<void> {
   const res = await fetch(`${API}/logout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken ?? "" }),
+    body: JSON.stringify({
+      access_token: accessToken ?? "",
+      refresh_token: refreshToken ?? "",
+    }),
   });
   if (!res.ok) {
     const data = await res.json();

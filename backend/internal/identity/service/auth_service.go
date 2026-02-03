@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"zero-trust-control-plane/backend/internal/audit"
 	devicedomain "zero-trust-control-plane/backend/internal/device/domain"
 	identitydomain "zero-trust-control-plane/backend/internal/identity/domain"
 	membershipdomain "zero-trust-control-plane/backend/internal/membership/domain"
@@ -172,9 +173,11 @@ type AuthService struct {
 	mfaChallengeTTL      time.Duration
 	otpReturnToClient    bool
 	devOTPStore          DevOTPStore
+	auditLogger          audit.AuditLogger
 }
 
 // NewAuthService returns an AuthService with the given dependencies.
+// auditLogger is optional; when non-nil, login/logout and session_created are audited.
 func NewAuthService(
 	userRepo UserRepo,
 	identityRepo IdentityRepo,
@@ -194,6 +197,7 @@ func NewAuthService(
 	mfaChallengeTTL time.Duration,
 	otpReturnToClient bool,
 	devOTPStore DevOTPStore,
+	auditLogger audit.AuditLogger,
 ) *AuthService {
 	if mfaChallengeTTL <= 0 {
 		mfaChallengeTTL = 10 * time.Minute
@@ -218,6 +222,7 @@ func NewAuthService(
 		mfaChallengeTTL:      mfaChallengeTTL,
 		otpReturnToClient:    otpReturnToClient,
 		devOTPStore:          devOTPStore,
+		auditLogger:          auditLogger,
 	}
 }
 
@@ -278,30 +283,42 @@ func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceF
 	email = strings.TrimSpace(strings.ToLower(email))
 	orgID = strings.TrimSpace(orgID)
 	if email == "" || password == "" || orgID == "" {
+		s.logLoginFailure(ctx, orgID, "")
 		return nil, ErrInvalidCredentials
 	}
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
+		s.logLoginFailure(ctx, orgID, "")
 		return nil, err
 	}
 	if user == nil || user.Status != userdomain.UserStatusActive {
+		userID := ""
+		if user != nil {
+			userID = user.ID
+		}
+		s.logLoginFailure(ctx, orgID, userID)
 		return nil, ErrInvalidCredentials
 	}
 	ident, err := s.identityRepo.GetByUserAndProvider(ctx, user.ID, identitydomain.IdentityProviderLocal)
 	if err != nil {
+		s.logLoginFailure(ctx, orgID, user.ID)
 		return nil, err
 	}
 	if ident == nil || ident.PasswordHash == "" {
+		s.logLoginFailure(ctx, orgID, user.ID)
 		return nil, ErrInvalidCredentials
 	}
 	if err := s.hasher.Compare(ident.PasswordHash, []byte(password)); err != nil {
+		s.logLoginFailure(ctx, orgID, user.ID)
 		return nil, ErrInvalidCredentials
 	}
 	membership, err := s.membershipRepo.GetMembershipByUserAndOrg(ctx, user.ID, orgID)
 	if err != nil {
+		s.logLoginFailure(ctx, orgID, user.ID)
 		return nil, err
 	}
 	if membership == nil {
+		s.logLoginFailure(ctx, orgID, user.ID)
 		return nil, ErrNotOrgMember
 	}
 	fp := strings.TrimSpace(deviceFingerprint)
@@ -365,6 +382,7 @@ func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceF
 		if phone == "" {
 			// User has no phone: return intent so client can collect phone, then call SubmitPhoneAndRequestMFA.
 			if s.mfaIntentRepo == nil {
+				s.logLoginFailure(ctx, orgID, user.ID)
 				return nil, ErrPhoneRequiredForMFA
 			}
 			intentID := uuid.New().String()
@@ -378,14 +396,17 @@ func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceF
 				ExpiresAt: expiresAt,
 			}
 			if err := s.mfaIntentRepo.Create(ctx, intent); err != nil {
+				s.logLoginFailure(ctx, orgID, user.ID)
 				return nil, err
 			}
+			s.logLoginSuccess(ctx, orgID, user.ID, membership.Role)
 			return &LoginResult{
 				PhoneRequired: &PhoneRequiredResult{IntentID: intentID},
 			}, nil
 		}
 		otp, err := mfa.GenerateOTP()
 		if err != nil {
+			s.logLoginFailure(ctx, orgID, user.ID)
 			return nil, err
 		}
 		challengeID := uuid.New().String()
@@ -402,6 +423,7 @@ func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceF
 			CreatedAt: now,
 		}
 		if err := s.mfaChallengeRepo.Create(ctx, challenge); err != nil {
+			s.logLoginFailure(ctx, orgID, user.ID)
 			return nil, err
 		}
 		if s.otpReturnToClient && s.devOTPStore != nil {
@@ -409,15 +431,18 @@ func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceF
 		} else if s.smsSender != nil {
 			if err := s.smsSender.SendOTP(phone, otp); err != nil {
 				_ = s.mfaChallengeRepo.Delete(ctx, challengeID)
+				s.logLoginFailure(ctx, orgID, user.ID)
 				return nil, err
 			}
 		}
 		phoneMask := maskPhone(phone)
+		s.logLoginSuccess(ctx, orgID, user.ID, membership.Role)
 		return &LoginResult{
 			MFARequired: &MFARequiredResult{ChallengeID: challengeID, PhoneMask: phoneMask},
 		}, nil
 	}
 	// MFA not required: create session without changing device trust (trust only set after MFA).
+	s.logLoginSuccess(ctx, orgID, user.ID, membership.Role)
 	return s.createSessionAndResult(ctx, user.ID, orgID, dev.ID, false, 0)
 }
 
@@ -445,6 +470,9 @@ func (s *AuthService) createSessionAndResult(ctx context.Context, userID, orgID,
 	}
 	if err := s.sessionRepo.Create(ctx, sess); err != nil {
 		return nil, err
+	}
+	if s.auditLogger != nil {
+		s.auditLogger.LogEvent(ctx, orgID, userID, "session_created", "session", "")
 	}
 	if registerTrust && trustTTLDays > 0 {
 		trustedUntil := time.Now().UTC().AddDate(0, 0, trustTTLDays)
@@ -769,18 +797,61 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken, deviceFingerpri
 // If refreshToken is empty and the auth interceptor set session_id in context (Bearer access token), revokes that session.
 // Otherwise no-op.
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	var sessionID string
 	if refreshToken != "" {
-		sessionID, _, _, _, err := s.tokens.ValidateRefresh(refreshToken)
+		var err error
+		sessionID, _, _, _, err = s.tokens.ValidateRefresh(refreshToken)
 		if err != nil {
+			if s.auditLogger != nil {
+				s.auditLogger.LogEvent(ctx, audit.SentinelOrgID, "", "logout", "authentication", "")
+			}
 			return nil
 		}
-		return s.sessionRepo.Revoke(ctx, sessionID)
+	} else {
+		var ok bool
+		sessionID, ok = interceptors.GetSessionID(ctx)
+		if !ok {
+			if s.auditLogger != nil {
+				s.auditLogger.LogEvent(ctx, audit.SentinelOrgID, "", "logout", "authentication", "")
+			}
+			return nil
+		}
 	}
-	sessionID, ok := interceptors.GetSessionID(ctx)
-	if !ok {
-		return nil
+	sess, _ := s.sessionRepo.GetByID(ctx, sessionID)
+	orgID := audit.SentinelOrgID
+	userID := ""
+	if sess != nil {
+		orgID = sess.OrgID
+		userID = sess.UserID
 	}
-	return s.sessionRepo.Revoke(ctx, sessionID)
+	if err := s.sessionRepo.Revoke(ctx, sessionID); err != nil {
+		return err
+	}
+	if s.auditLogger != nil {
+		s.auditLogger.LogEvent(ctx, orgID, userID, "logout", "authentication", "")
+	}
+	return nil
+}
+
+func (s *AuthService) logLoginFailure(ctx context.Context, orgID, userID string) {
+	if s.auditLogger == nil {
+		return
+	}
+	if orgID == "" {
+		orgID = audit.SentinelOrgID
+	}
+	s.auditLogger.LogEvent(ctx, orgID, userID, "login_failure", "authentication", "")
+}
+
+func (s *AuthService) logLoginSuccess(ctx context.Context, orgID, userID string, role membershipdomain.Role) {
+	if s.auditLogger == nil {
+		return
+	}
+	metadata := ""
+	if role != "" {
+		metadata = `{"role":"` + string(role) + `"}`
+	}
+	s.auditLogger.LogEvent(ctx, orgID, userID, "login_success", "authentication", metadata)
 }
 
 func validateEmail(email string) error {

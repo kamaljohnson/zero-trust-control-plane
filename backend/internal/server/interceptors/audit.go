@@ -33,7 +33,7 @@ func AuditUnary(auditRepo auditrepo.Repository, skipMethods map[string]bool) grp
 		}
 		userID, _ := GetUserID(ctx)
 		ar := audit.ParseFullMethod(info.FullMethod)
-		ip := clientIP(ctx)
+		ip := ClientIP(ctx)
 		entry := &domain.AuditLog{
 			ID:        uuid.New().String(),
 			OrgID:     orgID,
@@ -51,8 +51,8 @@ func AuditUnary(auditRepo auditrepo.Repository, skipMethods map[string]bool) grp
 	}
 }
 
-// clientIP returns the client IP from gRPC metadata (x-forwarded-for, x-real-ip) or peer, or "unknown".
-func clientIP(ctx context.Context) string {
+// ClientIP returns the client IP from gRPC metadata (x-forwarded-for, x-real-ip) or peer, or "unknown".
+func ClientIP(ctx context.Context) string {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if vals := md.Get("x-forwarded-for"); len(vals) > 0 {
 			if s := strings.TrimSpace(vals[0]); s != "" {

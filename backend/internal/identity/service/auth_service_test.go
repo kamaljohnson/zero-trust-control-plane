@@ -380,6 +380,7 @@ func newTestAuthServiceOpt(t *testing.T, otpReturnToClient bool) (*AuthService, 
 		10*time.Minute, // mfaChallengeTTL
 		otpReturnToClient,
 		nil, // devOTPStore
+		nil, // auditLogger
 	)
 	return svc, sessionRepo
 }
@@ -607,6 +608,7 @@ func TestAuthService_LoginOTPReturnToClient(t *testing.T) {
 		10*time.Minute,
 		true, // otpReturnToClient
 		devStore,
+		nil, // auditLogger
 	)
 	ctx := context.Background()
 

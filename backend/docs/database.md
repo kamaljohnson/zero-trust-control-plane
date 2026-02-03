@@ -63,7 +63,7 @@ Links a user to an authentication provider (local password, OIDC, or SAML). One 
 
 ### organizations
 
-Tenant/organization. Referenced by memberships, devices, sessions, policies, and audit_logs.
+Tenant/organization. Referenced by memberships, devices, sessions, policies, and audit_logs. Migration **007_system_org** inserts a sentinel row `id = '_system'` used only for audit logs when org is unknown; it is not used for normal tenant data.
 
 | Column | Type | Constraints |
 |--------|------|-------------|
@@ -311,6 +311,7 @@ Migrations are applied in order from [internal/db/migrations/](../internal/db/mi
 | **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |
 | **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](mfa.md) and [device-trust.md](device-trust.md). |
 | **006_mfa_intent** | Creates `mfa_intents` table (one-time phone-collect binding); adds `users.phone_verified` (BOOLEAN NOT NULL DEFAULT false). See [mfa.md](mfa.md). |
+| **007_system_org** | Inserts sentinel organization _system (id = '_system') for audit events that have no org (e.g. login_failure, logout with invalid token). See [audit.md](audit.md). |
 
 The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti`, `refresh_token_hash`, MFA/device-trust columns and tables, `mfa_intents`, and `users.phone_verified` (and does not include telemetry). Migrations 003–006 are for databases that were created from migration 001 before those columns and tables were added. New deployments run all ups; existing DBs may need 003–006 when adding auth and MFA/device trust.
 
@@ -326,7 +327,7 @@ To apply migrations, run `./scripts/migrate.sh` from the backend root (or `./scr
 
 ### Migrations (applied to database)
 
-Migrations are applied in order (001, 002, 003, 004, 005). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
+Migrations are applied in order (001 through 007). Up/down scripts live in [internal/db/migrations/](../internal/db/migrations/). After changing schema, add or update migrations (up/down) and apply them to the database.
 
 ### Connection
 

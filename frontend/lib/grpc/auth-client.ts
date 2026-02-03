@@ -167,16 +167,22 @@ function refreshResponseToJson(res: RefreshResponseProto): LoginResponseJson {
 
 function promisifyLogout(
   client: grpc.Client,
-  req: { refresh_token?: string }
+  req: { refresh_token?: string },
+  metadata?: grpc.Metadata
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    (client as grpc.Client & { Logout: (r: unknown, c: (e: grpc.ServiceError | null) => void) => void }).Logout(
-      req,
-      (err: grpc.ServiceError | null) => {
-        if (err) reject({ code: err.code, message: err.details || err.message });
-        else resolve();
-      }
-    );
+    const callback = (err: grpc.ServiceError | null) => {
+      if (err) reject({ code: err.code, message: err.details || err.message });
+      else resolve();
+    };
+    const c = client as grpc.Client & {
+      Logout: (r: unknown, m: grpc.Metadata | ((e: grpc.ServiceError | null) => void), cb?: (e: grpc.ServiceError | null) => void) => void;
+    };
+    if (metadata) {
+      c.Logout(req, metadata, callback);
+    } else {
+      c.Logout(req, callback);
+    }
   });
 }
 
@@ -302,9 +308,14 @@ export async function refresh(
 }
 
 /**
- * Logout revokes the session. Pass refresh_token or leave empty if revoking from context (not used from BFF).
+ * Logout revokes the session. Pass access_token so the backend authorizes the call and audits logout; optional refresh_token for revoking by token.
  */
-export async function logout(refresh_token?: string): Promise<void> {
+export async function logout(refresh_token?: string, access_token?: string): Promise<void> {
   const client = getAuthClient();
-  await promisifyLogout(client, { refresh_token: refresh_token ?? "" });
+  let metadata: grpc.Metadata | undefined;
+  if (access_token && access_token.trim() !== "") {
+    metadata = new grpc.Metadata();
+    metadata.add("authorization", `Bearer ${access_token.trim()}`);
+  }
+  await promisifyLogout(client, { refresh_token: refresh_token ?? "" }, metadata);
 }

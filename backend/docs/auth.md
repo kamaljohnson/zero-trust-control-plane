@@ -32,9 +32,9 @@ When `authEnabled` is true, [cmd/server/main.go](../cmd/server/main.go) does the
 2. Creates the hasher with `security.NewHasher(cfg.BcryptCost)`.
 3. Parses JWT keys via [internal/security/keys.go](../internal/security/keys.go) `ParsePrivateKey` and `ParsePublicKey` (supports inline PEM or file path; see `LoadPEM`).
 4. Builds `TokenProvider` with issuer, audience, and TTLs from config.
-5. Creates the five repos (user, identity, session, device, membership) and `NewAuthService(...)`, then sets `deps.Auth`.
+5. Creates the five repos (user, identity, session, device, membership) and other repos (platform settings, org MFA settings, MFA challenge/intent, policy). Creates the audit repo and audit logger; see [audit.md](audit.md). Calls `NewAuthService(..., auditLogger)` and sets `deps.Auth`, `deps.DeviceRepo`, `deps.PolicyRepo`, `deps.AuditRepo`, `deps.HealthPinger`, `deps.HealthPolicyChecker`.
 6. Builds `publicMethods` with the five full method names: AuthService Register, Login, VerifyMFA, Refresh; HealthService HealthCheck.
-7. Creates the gRPC server with `grpc.NewServer(grpc.UnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods)))`.
+7. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`. See [audit.md](audit.md) for the audit skip set and when audit is written.
 
 [internal/server/grpc.go](../internal/server/grpc.go) `RegisterServices` passes `deps.Auth` into `identityhandler.NewAuthServer(authSvc)`. If `deps.Auth == nil` (auth disabled), the handler returns Unimplemented for all auth RPCs.
 
@@ -233,12 +233,14 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 
 ### Logout
 
+**Logout is a protected method**: the client must send a valid Bearer (access) token so the interceptor sets identity and the handler (and audit logger) run. Clients such as the BFF should send `Authorization: Bearer <access_token>` when calling Logout.
+
 Two paths:
 
 1. **refresh_token provided**: Validate refresh JWT and parse session_id; revoke that session (set revoked_at). If validation fails, the handler returns success anyway (no error to caller).
 2. **refresh_token empty**: If the auth interceptor set session_id in context (client sent a valid Bearer access token), revoke that session via `interceptors.GetSessionID(ctx)`; otherwise no-op.
 
-In both cases the RPC returns Empty.
+In both cases the RPC returns Empty. The auth service logs a logout audit event with the session's org_id and user_id when the session is revoked.
 
 ---
 
