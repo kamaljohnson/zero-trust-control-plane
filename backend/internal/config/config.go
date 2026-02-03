@@ -42,10 +42,12 @@ type Config struct {
 	Env string `mapstructure:"APP_ENV"`
 
 	// OpenTelemetry (optional). When OTEL_EXPORTER_OTLP_ENDPOINT is set, the server exports traces, metrics, and logs via OTLP.
-	// OTELExporterOTLPEndpoint is the OTLP endpoint (e.g. http://localhost:4317 for gRPC). Standard env: OTEL_EXPORTER_OTLP_ENDPOINT.
+	// OTELExporterOTLPEndpoint is the OTLP endpoint (e.g. http://localhost:4317 or https://collector:4317 for gRPC). Standard env: OTEL_EXPORTER_OTLP_ENDPOINT.
 	OTELExporterOTLPEndpoint string `mapstructure:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 	// OTELServiceName is the service name for resource attributes (e.g. ztcp-grpc). Standard env: OTEL_SERVICE_NAME.
 	OTELServiceName string `mapstructure:"OTEL_SERVICE_NAME"`
+	// OTELExporterOTLPInsecure when true disables TLS for OTLP gRPC (plaintext). When false, https endpoints use TLS. Standard env: OTEL_EXPORTER_OTLP_INSECURE.
+	OTELExporterOTLPInsecure bool `mapstructure:"OTEL_EXPORTER_OTLP_INSECURE"`
 }
 
 // Load reads .env (if present), then builds and validates Config from the environment via Viper.
@@ -72,6 +74,7 @@ func Load() (*Config, error) {
 	v.SetDefault("APP_ENV", "")
 	v.SetDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 	v.SetDefault("OTEL_SERVICE_NAME", "ztcp-grpc")
+	v.SetDefault("OTEL_EXPORTER_OTLP_INSECURE", false)
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

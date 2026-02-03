@@ -4,7 +4,9 @@ package otel
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -28,9 +30,9 @@ type Providers struct {
 }
 
 // NewProviders creates TracerProvider, MeterProvider, and LoggerProvider that export via OTLP to the given endpoint.
-// endpoint is the OTLP gRPC endpoint (e.g. localhost:4317 or http://localhost:4317). If empty, no-op providers are returned and Shutdown is a no-op.
-// serviceName is used as the service.name resource attribute (e.g. ztcp-grpc).
-func NewProviders(ctx context.Context, endpoint, serviceName string) (*Providers, error) {
+// endpoint may be a URL with optional path (e.g. http://localhost:4317 or https://collector:4317/v1/traces); path is ignored and only host:port is used for the gRPC dial.
+// If empty, no-op providers are returned and Shutdown is a no-op. https endpoints use TLS unless insecureOverride is true (standard OTEL_EXPORTER_OTLP_INSECURE behavior).
+func NewProviders(ctx context.Context, endpoint, serviceName string, insecureOverride bool) (*Providers, error) {
 	endpoint = strings.TrimSpace(endpoint)
 	if endpoint == "" {
 		return &Providers{
@@ -41,13 +43,19 @@ func NewProviders(ctx context.Context, endpoint, serviceName string) (*Providers
 		}, nil
 	}
 
-	// Normalize endpoint: OTLP gRPC expects host:port; strip scheme for WithEndpoint.
-	grpcTarget := endpoint
-	if strings.HasPrefix(endpoint, "http://") {
-		grpcTarget = strings.TrimPrefix(endpoint, "http://")
-	} else if strings.HasPrefix(endpoint, "https://") {
-		grpcTarget = strings.TrimPrefix(endpoint, "https://")
+	// Normalize endpoint: OTLP gRPC expects host:port; parse as URL and use Host only so paths are dropped.
+	if !strings.Contains(endpoint, "://") {
+		endpoint = "http://" + endpoint
 	}
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("invalid OTLP endpoint %q: %w", endpoint, err)
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("invalid OTLP endpoint %q: missing host", endpoint)
+	}
+	grpcTarget := u.Host
+	insecure := insecureOverride || (u.Scheme != "https")
 
 	res, err := resource.Merge(
 		resource.Default(),
@@ -62,8 +70,11 @@ func NewProviders(ctx context.Context, endpoint, serviceName string) (*Providers
 
 	var shutdownFns []func(context.Context) error
 
-	// Trace
-	traceExp, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint(grpcTarget), otlptracegrpc.WithInsecure())
+	traceOpts := []otlptracegrpc.Option{otlptracegrpc.WithEndpoint(grpcTarget)}
+	if insecure {
+		traceOpts = append(traceOpts, otlptracegrpc.WithInsecure())
+	}
+	traceExp, err := otlptracegrpc.New(ctx, traceOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +84,11 @@ func NewProviders(ctx context.Context, endpoint, serviceName string) (*Providers
 	)
 	shutdownFns = append(shutdownFns, tp.Shutdown)
 
-	// Metric
-	metricExp, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithEndpoint(grpcTarget), otlpmetricgrpc.WithInsecure())
+	metricOpts := []otlpmetricgrpc.Option{otlpmetricgrpc.WithEndpoint(grpcTarget)}
+	if insecure {
+		metricOpts = append(metricOpts, otlpmetricgrpc.WithInsecure())
+	}
+	metricExp, err := otlpmetricgrpc.New(ctx, metricOpts...)
 	if err != nil {
 		_ = tp.Shutdown(ctx)
 		return nil, err
@@ -86,8 +100,11 @@ func NewProviders(ctx context.Context, endpoint, serviceName string) (*Providers
 	)
 	shutdownFns = append(shutdownFns, mp.Shutdown)
 
-	// Log
-	logExp, err := otlploggrpc.New(ctx, otlploggrpc.WithEndpoint(grpcTarget), otlploggrpc.WithInsecure())
+	logOpts := []otlploggrpc.Option{otlploggrpc.WithEndpoint(grpcTarget)}
+	if insecure {
+		logOpts = append(logOpts, otlploggrpc.WithInsecure())
+	}
+	logExp, err := otlploggrpc.New(ctx, logOpts...)
 	if err != nil {
 		_ = tp.Shutdown(ctx)
 		_ = mp.Shutdown(ctx)

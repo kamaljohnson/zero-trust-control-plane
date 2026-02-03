@@ -2,7 +2,6 @@ package otel
 
 import (
 	"context"
-	"log"
 	"time"
 
 	otellog "go.opentelemetry.io/otel/log"
@@ -11,6 +10,11 @@ import (
 	telemetryv1 "zero-trust-control-plane/backend/api/generated/telemetry/v1"
 	"zero-trust-control-plane/backend/internal/telemetry"
 )
+
+// loggerEmit is the subset of the OTel Logger interface used to emit records. Used so tests can inject a mock.
+type loggerEmit interface {
+	Emit(context.Context, otellog.Record)
+}
 
 // NewEventEmitter returns an EventEmitter that sends events as OTel log records via the given LoggerProvider.
 // If provider is nil, returns a no-op emitter.
@@ -21,12 +25,17 @@ func NewEventEmitter(provider *sdklog.LoggerProvider) telemetry.EventEmitter {
 	return &otelEmitter{logger: provider.Logger("ztcp.telemetry")}
 }
 
+// NewEventEmitterWithLogger returns an EventEmitter that uses the given logger (for tests).
+func NewEventEmitterWithLogger(l loggerEmit) telemetry.EventEmitter {
+	return &otelEmitter{logger: l}
+}
+
 type noopEmitter struct{}
 
 func (noopEmitter) Emit(context.Context, *telemetryv1.TelemetryEvent) error { return nil }
 
 type otelEmitter struct {
-	logger otellog.Logger
+	logger loggerEmit
 }
 
 // Emit converts the telemetry event to an OTel log record and emits it. Best-effort; errors are logged.
@@ -40,6 +49,7 @@ func (e *otelEmitter) Emit(ctx context.Context, event *telemetryv1.TelemetryEven
 			rec.SetTimestamp(t)
 		}
 	}
+	// Body is set only when metadata is non-empty; when empty the record has no body. In Loki/LogQL query by attributes (org_id, event_type, source), not by body.
 	if len(event.Metadata) > 0 {
 		rec.SetBody(otellog.BytesValue(event.Metadata))
 	}
@@ -66,18 +76,4 @@ func (e *otelEmitter) Emit(ctx context.Context, event *telemetryv1.TelemetryEven
 	}
 	e.logger.Emit(ctx, rec)
 	return nil
-}
-
-// EmitAsync runs Emit in a goroutine with a short timeout so the RPC is not blocked. Logs errors.
-func EmitAsync(emitter telemetry.EventEmitter, ctx context.Context, event *telemetryv1.TelemetryEvent) {
-	if emitter == nil || event == nil {
-		return
-	}
-	go func() {
-		emitCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := emitter.Emit(emitCtx, event); err != nil {
-			log.Printf("telemetry: async emit failed: %v", err)
-		}
-	}()
 }

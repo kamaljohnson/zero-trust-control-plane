@@ -36,6 +36,7 @@ import (
 	"zero-trust-control-plane/backend/internal/server"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
 	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
+	"zero-trust-control-plane/backend/internal/telemetry"
 	"zero-trust-control-plane/backend/internal/telemetry/otel"
 	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 
@@ -60,7 +61,7 @@ func main() {
 
 	// OpenTelemetry: TracerProvider, MeterProvider, LoggerProvider (OTLP to Collector). When endpoint is empty, no-op providers are used.
 	otelCtx := context.Background()
-	otelProviders, err := otel.NewProviders(otelCtx, cfg.OTELExporterOTLPEndpoint, cfg.OTELServiceName)
+	otelProviders, err := otel.NewProviders(otelCtx, cfg.OTELExporterOTLPEndpoint, cfg.OTELServiceName, cfg.OTELExporterOTLPInsecure)
 	if err != nil {
 		log.Fatalf("telemetry: otel setup: %v", err)
 	}
@@ -201,6 +202,8 @@ func main() {
 
 	log.Println("shutting down gRPC server...")
 	s.GracefulStop()
+	log.Println("draining in-flight telemetry emits...")
+	time.Sleep(telemetry.ShutdownDrainDuration)
 	if err := otelProviders.Shutdown(context.Background()); err != nil {
 		log.Printf("telemetry: otel shutdown: %v", err)
 	}

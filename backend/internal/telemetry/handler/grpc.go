@@ -7,7 +7,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	telemetryv1 "zero-trust-control-plane/backend/api/generated/telemetry/v1"
+	"zero-trust-control-plane/backend/internal/telemetry"
 )
+
+// maxBatchSize is the maximum number of events processed per BatchEmitTelemetry request; excess are dropped.
+const maxBatchSize = 500
 
 // Server implements TelemetryService (proto server) for telemetry events.
 // Proto: telemetry/telemetry.proto → internal/telemetry/handler.
@@ -27,27 +31,27 @@ func (s *Server) EmitTelemetryEvent(ctx context.Context, req *telemetryv1.EmitTe
 		return &telemetryv1.EmitTelemetryEventResponse{}, nil
 	}
 	event := requestToEvent(req)
-	if s.emitter != nil {
-		if err := s.emitter.Emit(ctx, event); err != nil {
-			log.Printf("telemetry: EmitTelemetryEvent failed: %v", err)
-		}
-	}
+	telemetry.EmitAsync(s.emitter, ctx, event)
 	return &telemetryv1.EmitTelemetryEventResponse{}, nil
 }
 
 // BatchEmitTelemetry records multiple telemetry events. Best-effort; always returns empty success.
+// At most maxBatchSize events are processed per request; excess are dropped and a log line is written.
 func (s *Server) BatchEmitTelemetry(ctx context.Context, req *telemetryv1.BatchEmitTelemetryRequest) (*telemetryv1.BatchEmitTelemetryResponse, error) {
-	if req == nil || s.emitter == nil {
+	// Guard nil request first, consistent with EmitTelemetryEvent; emitter may be nil (EmitAsync no-ops).
+	if req == nil {
 		return &telemetryv1.BatchEmitTelemetryResponse{}, nil
 	}
-	for _, e := range req.Events {
+	events := req.Events
+	if len(events) > maxBatchSize {
+		log.Printf("telemetry: BatchEmitTelemetry truncated to %d events (received %d)", maxBatchSize, len(req.Events))
+		events = events[:maxBatchSize]
+	}
+	for _, e := range events {
 		if e == nil {
 			continue
 		}
-		event := requestToEvent(e)
-		if err := s.emitter.Emit(ctx, event); err != nil {
-			log.Printf("telemetry: BatchEmitTelemetry emit failed: %v", err)
-		}
+		telemetry.EmitAsync(s.emitter, ctx, requestToEvent(e))
 	}
 	return &telemetryv1.BatchEmitTelemetryResponse{}, nil
 }

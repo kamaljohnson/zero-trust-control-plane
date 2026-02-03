@@ -82,7 +82,7 @@ flowchart TB
 
 **OTel providers**
 
-At startup, the server calls `otel.NewProviders()` with `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME`. Providers are created in [internal/telemetry/otel/setup.go](../../../backend/internal/telemetry/otel/setup.go): a **TracerProvider** (with OTLP trace exporter and batch span processor), a **MeterProvider** (with OTLP metric exporter and a periodic reader), and a **LoggerProvider** (with OTLP log exporter and batch processor). When the endpoint is empty, no-op providers are returned so the server runs without a Collector. `SetGlobal()` is called so the tracer and meter are used by instrumentation (e.g. the gRPC StatsHandler).
+At startup, the server calls `otel.NewProviders()` with `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, and `OTEL_EXPORTER_OTLP_INSECURE`. Providers are created in [internal/telemetry/otel/setup.go](../../../backend/internal/telemetry/otel/setup.go): a **TracerProvider** (with OTLP trace exporter and batch span processor), a **MeterProvider** (with OTLP metric exporter and a periodic reader), and a **LoggerProvider** (with OTLP log exporter and batch processor). When the endpoint is empty, no-op providers are returned so the server runs without a Collector. The endpoint URL may include a path (e.g. `https://collector:4317/v1/traces`); the path is ignored and only host:port is used for the gRPC dial. Use `https://host:4317` for TLS; set `OTEL_EXPORTER_OTLP_INSECURE=true` to disable TLS (e.g. for local dev). `SetGlobal()` is called so the tracer and meter are used by instrumentation (e.g. the gRPC StatsHandler).
 
 **StatsHandler**
 
@@ -90,7 +90,7 @@ The gRPC server is created with `grpc.StatsHandler(otelgrpc.NewServerHandler(...
 
 **TelemetryService**
 
-[internal/telemetry/handler/grpc.go](../../../backend/internal/telemetry/handler/grpc.go) implements `EmitTelemetryEvent` and `BatchEmitTelemetry`. Each request is converted to a `TelemetryEvent` (with `CreatedAt` set server-side) and passed to the **EventEmitter** dependency. The emitter is implemented in [internal/telemetry/otel/adapter.go](../../../backend/internal/telemetry/otel/adapter.go): it builds an OTel log record (attributes from the event fields, body from `metadata` bytes) and calls `Logger.Emit()`. Emission is best-effort; the RPC always returns success and any emit failure is only logged.
+[internal/telemetry/handler/grpc.go](../../../backend/internal/telemetry/handler/grpc.go) implements `EmitTelemetryEvent` and `BatchEmitTelemetry`. Each request is converted to a `TelemetryEvent` (with `CreatedAt` set server-side) and passed to the **EventEmitter** dependency. Batches are capped at 500 events per request; if more are sent, only the first 500 are processed and excess are dropped. The emitter is implemented in [internal/telemetry/otel/adapter.go](../../../backend/internal/telemetry/otel/adapter.go): it builds an OTel log record (attributes from the event fields, body from `metadata` bytes) and calls `Logger.Emit()`. Emission is best-effort; the RPC always returns success and any emit failure is only logged.
 
 ## OpenTelemetry Collector
 
@@ -156,7 +156,7 @@ flowchart LR
   created_at --> Timestamp
 ```
 
-The [telemetry.proto](../../../backend/proto/telemetry/telemetry.proto) message **TelemetryEvent** has: `org_id`, `user_id`, `device_id`, `session_id`, `event_type`, `source`, `metadata` (bytes, typically JSON), and `created_at` (timestamp). When TelemetryService emits an event, the adapter maps these to an OTel log record: each of the identity and classification fields becomes a **log attribute**, `metadata` becomes the log **body**, and `created_at` becomes the log **timestamp** (or the current time if unset). This keeps querying in Loki simple by org, event type, and source.
+The [telemetry.proto](../../../backend/proto/telemetry/telemetry.proto) message **TelemetryEvent** has: `org_id`, `user_id`, `device_id`, `session_id`, `event_type`, `source`, `metadata` (bytes, typically JSON), and `created_at` (timestamp). When TelemetryService emits an event, the adapter maps these to an OTel log record: each of the identity and classification fields becomes a **log attribute**, non-empty `metadata` is set as the log **body** (when empty the body is not set), and `created_at` becomes the log **timestamp** (or the current time if unset). For dashboards and LogQL, query by **attributes** (org_id, event_type, source) rather than by body, since the body may be empty.
 
 ## When telemetry is enabled or disabled
 
@@ -179,7 +179,7 @@ The endpoint can be given as `host:port` or `http://host:port` / `https://host:p
 1. **Datasources**: Add Loki (e.g. `http://loki:3100`), Prometheus (e.g. `http://prometheus:9090`), and Tempo (e.g. `http://tempo:3200` or the OTLP endpoint). Point them at the same instances the Collector exports to.
 
 2. **Example queries**:
-   - **Logs (LogQL)**:
+   - **Logs (LogQL)**: Telemetry log lines may have an empty body when the event has no metadata. Filter by attributes (e.g. `org_id`, `event_type`, `source` in JSON or structured metadata) for reliable querying.
      - `{job="ztcp"}` — All log lines from the ztcp service.
      - `{job="ztcp"} | json | org_id="org1"` — Logs for a specific org (after parsing JSON).
      - Filter by `event_type` or `source` in the JSON to narrow to custom event types.

@@ -33,6 +33,7 @@ message EmitTelemetryEventRequest {
 message EmitTelemetryEventResponse {}
 
 // BatchEmitTelemetryRequest records multiple telemetry events.
+// Batch is capped at 500 events per request; if more are sent, only the first 500 are processed and excess are dropped.
 message BatchEmitTelemetryRequest {
   repeated EmitTelemetryEventRequest events = 1;
 }
@@ -43,5 +44,6 @@ message BatchEmitTelemetryResponse {}
 // TelemetryService handles observability and analytics. High-volume, async, best-effort.
 service TelemetryService {
   rpc EmitTelemetryEvent(EmitTelemetryEventRequest) returns (EmitTelemetryEventResponse);
+  // Batch is capped at 500 events; excess events are dropped.
   rpc BatchEmitTelemetry(BatchEmitTelemetryRequest) returns (BatchEmitTelemetryResponse);
 }
