@@ -14,11 +14,12 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 - **[docs/device-trust.md](docs/device-trust.md)** — Device trust: identifiable/revocable/time-bound devices, policy evaluation (OPA/Rego), when MFA is required and when trust is registered, configuration.
 - **[docs/health.md](docs/health.md)** — Health checks: readiness RPC (HealthService.HealthCheck), behavior with and without database, how to call from Kubernetes or gRPC clients.
 - **[docs/mfa.md](docs/mfa.md)** — MFA: risk-based MFA, when required, challenge/OTP flow, VerifyMFA and SubmitPhoneAndRequestMFA, API and configuration.
+- **[docs/telemetry.md](docs/telemetry.md)** — Telemetry: gRPC interceptor and TelemetryService → Kafka → worker → Loki → Grafana; configuration, LogQL examples, and optional dashboard.
 
 ## Layout
 
 - **cmd/server** — gRPC API server
-- **cmd/worker** — async jobs (audit, cleanup)
+- **cmd/worker** — telemetry worker (Kafka → Loki); optional async jobs
 - **cmd/migrate** — DB migration runner (used by scripts/migrate.sh when CLI not installed)
 - **cmd/seed** — Development data seeder (used by scripts/seed.sh)
 - **docs/** — documentation: `auth.md`, `audit.md`, `database.md`, `device-trust.md`, `health.md`, `mfa.md`
@@ -36,6 +37,8 @@ The backend is a **gRPC API server** (and optional async worker). The server reg
 Config is loaded from environment or `.env` (see [.env.example](.env.example)). `GRPC_ADDR` (default `:8080`) is the listen address.
 
 **Auth and database**: Auth (and the database) are enabled only when `DATABASE_URL` and **both** `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are set. When enabled, the server opens Postgres, builds the auth service and repos, and protects non-public RPCs with a Bearer access token. When any of the three is missing, the server runs without a DB and auth RPCs return Unimplemented. Full auth configuration and flows: [docs/auth.md](docs/auth.md).
+
+**Telemetry**: When `KAFKA_BROKERS` is set, the server emits telemetry events (per-RPC and via TelemetryService) to Kafka. Run the worker with `KAFKA_BROKERS`, `LOKI_URL`, and `GRPC_ADDR=:0` to consume from Kafka and push logs to Loki; then add Loki as a Grafana datasource and use [docs/telemetry.md](docs/telemetry.md) for LogQL and dashboard import.
 
 ## Generating sqlc code
 

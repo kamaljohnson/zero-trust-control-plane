@@ -34,6 +34,7 @@ import (
 	"zero-trust-control-plane/backend/internal/server"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
 	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
+	telemetryproducer "zero-trust-control-plane/backend/internal/telemetry/producer"
 	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 )
 
@@ -52,6 +53,22 @@ func main() {
 	var s *grpc.Server
 	var tokens *security.TokenProvider
 	deps := server.Deps{}
+
+	// Optional telemetry producer (Kafka). When brokers are set, emit telemetry after each RPC and from TelemetryService.
+	var telemetryProducer telemetryproducer.Producer
+	if brokers := cfg.TelemetryKafkaBrokersList(); len(brokers) > 0 {
+		topic := cfg.TelemetryKafkaTopic
+		if topic == "" {
+			topic = "ztcp-telemetry"
+		}
+		if p, err := telemetryproducer.NewKafkaProducer(brokers, topic); err != nil {
+			log.Printf("telemetry: kafka producer disabled: %v", err)
+		} else if p != nil {
+			telemetryProducer = p
+			defer func() { _ = p.Close() }()
+		}
+	}
+	deps.TelemetryProducer = telemetryProducer
 
 	authEnabled := cfg.DatabaseURL != "" && cfg.JWTPrivateKey != "" && cfg.JWTPublicKey != ""
 	if authEnabled {
@@ -144,13 +161,23 @@ func main() {
 		auditSkipMethods := map[string]bool{
 			healthv1.HealthService_HealthCheck_FullMethodName: true,
 		}
+		telemetrySkipMethods := map[string]bool{
+			healthv1.HealthService_HealthCheck_FullMethodName: true,
+			devv1.DevService_GetOTP_FullMethodName:            true,
+		}
 		// tokens and deps.AuditRepo are in scope from authEnabled block
 		s = grpc.NewServer(grpc.ChainUnaryInterceptor(
 			interceptors.AuthUnary(tokens, publicMethods),
 			interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods),
+			interceptors.TelemetryUnary(telemetryProducer, telemetrySkipMethods),
 		))
 	} else {
-		s = grpc.NewServer()
+		telemetrySkipMethods := map[string]bool{
+			healthv1.HealthService_HealthCheck_FullMethodName: true,
+		}
+		s = grpc.NewServer(grpc.ChainUnaryInterceptor(
+			interceptors.TelemetryUnary(telemetryProducer, telemetrySkipMethods),
+		))
 	}
 
 	server.RegisterServices(s, deps)
