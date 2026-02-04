@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DomainListEditor } from "@/components/domain-list-editor";
 
 interface AuthMfa {
   mfa_requirement?: number;
@@ -418,30 +419,18 @@ export default function DashboardPolicyPage() {
           {/* 4. Access Control (Browser) */}
           <div className="space-y-3 rounded-lg border p-4">
             <h3 className="font-medium">Access Control (Browser)</h3>
-            <div>
-              <Label>Allowed domains (one per line)</Label>
-              <textarea
-                className="mt-1 w-full min-h-[80px] rounded border bg-background px-3 py-2 font-mono text-sm"
-                value={(access.allowed_domains ?? []).join("\n")}
-                onChange={(e) =>
-                  updateAccessControl({
-                    allowed_domains: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label>Blocked domains (one per line)</Label>
-              <textarea
-                className="mt-1 w-full min-h-[80px] rounded border bg-background px-3 py-2 font-mono text-sm"
-                value={(access.blocked_domains ?? []).join("\n")}
-                onChange={(e) =>
-                  updateAccessControl({
-                    blocked_domains: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
-                  })
-                }
-              />
-            </div>
+            <DomainListEditor
+              label="Allowed domains"
+              value={access.allowed_domains ?? []}
+              onChange={(allowed_domains) => updateAccessControl({ allowed_domains })}
+              aria-label="Allowed domains list"
+            />
+            <DomainListEditor
+              label="Blocked domains"
+              value={access.blocked_domains ?? []}
+              onChange={(blocked_domains) => updateAccessControl({ blocked_domains })}
+              aria-label="Blocked domains list"
+            />
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2">
                 <input
