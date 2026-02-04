@@ -95,6 +95,21 @@ export function getUserClient(): grpc.Client {
   return userClient;
 }
 
+// OrgPolicyConfig
+const orgPolicyConfigDef = protoLoader.loadSync(path.join(PROTO_ROOT, "orgpolicyconfig", "orgpolicyconfig.proto"), loadOptions);
+const orgPolicyConfigPkg = grpc.loadPackageDefinition(orgPolicyConfigDef) as unknown as {
+  ztcp: { orgpolicyconfig: { v1: { OrgPolicyConfigService: ServiceClientConstructor } } };
+};
+const OrgPolicyConfigServiceClient = orgPolicyConfigPkg.ztcp.orgpolicyconfig.v1.OrgPolicyConfigService;
+
+let orgPolicyConfigClient: grpc.Client | null = null;
+function getOrgPolicyConfigClient(): grpc.Client {
+  if (!orgPolicyConfigClient) {
+    orgPolicyConfigClient = new OrgPolicyConfigServiceClient(getChannel(), getCredentials());
+  }
+  return orgPolicyConfigClient;
+}
+
 function promisifyWithMeta<TReq, TRes>(
   client: grpc.Client,
   method: string,
@@ -218,6 +233,27 @@ export async function listAuditLogs(
 // User RPCs
 export async function getUserByEmail(accessToken: string, email: string) {
   return promisifyWithMeta(getUserClient(), "GetUserByEmail", { email }, metadataWithAuth(accessToken));
+}
+
+// OrgPolicyConfig RPCs
+export async function getOrgPolicyConfig(accessToken: string, orgId: string) {
+  const res = await promisifyWithMeta<{ org_id: string }, { config: unknown }>(
+    getOrgPolicyConfigClient(),
+    "GetOrgPolicyConfig",
+    { org_id: orgId },
+    metadataWithAuth(accessToken)
+  );
+  return res;
+}
+
+export async function updateOrgPolicyConfig(accessToken: string, orgId: string, config: unknown) {
+  const res = await promisifyWithMeta<{ org_id: string; config: unknown }, { config: unknown }>(
+    getOrgPolicyConfigClient(),
+    "UpdateOrgPolicyConfig",
+    { org_id: orgId, config },
+    metadataWithAuth(accessToken)
+  );
+  return res;
 }
 
 // Re-export for API routes; client components should use @/lib/api/membership-roles

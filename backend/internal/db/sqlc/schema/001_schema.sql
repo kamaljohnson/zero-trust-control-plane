@@ -123,6 +123,13 @@ CREATE TABLE mfa_intents (
 
 CREATE INDEX idx_mfa_intents_expires_at ON mfa_intents(expires_at);
 
+-- Org policy config (structured JSON per org; one row per org)
+CREATE TABLE org_policy_config (
+    org_id      VARCHAR PRIMARY KEY REFERENCES organizations(id),
+    config_json TEXT NOT NULL DEFAULT '{}',
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Audit logs (ref organizations, users)
 CREATE TABLE audit_logs (
     id         VARCHAR PRIMARY KEY,

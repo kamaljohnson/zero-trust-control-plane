@@ -11,6 +11,7 @@ import (
 	healthv1 "zero-trust-control-plane/backend/api/generated/health/v1"
 	membershipv1 "zero-trust-control-plane/backend/api/generated/membership/v1"
 	organizationv1 "zero-trust-control-plane/backend/api/generated/organization/v1"
+	orgpolicyconfigv1 "zero-trust-control-plane/backend/api/generated/orgpolicyconfig/v1"
 	policyv1 "zero-trust-control-plane/backend/api/generated/policy/v1"
 	sessionv1 "zero-trust-control-plane/backend/api/generated/session/v1"
 	telemetryv1 "zero-trust-control-plane/backend/api/generated/telemetry/v1"
@@ -28,6 +29,9 @@ import (
 	membershiphandler "zero-trust-control-plane/backend/internal/membership/handler"
 	membershiprepo "zero-trust-control-plane/backend/internal/membership/repository"
 	organizationhandler "zero-trust-control-plane/backend/internal/organization/handler"
+	orgmfasettingsrepo "zero-trust-control-plane/backend/internal/orgmfasettings/repository"
+	orgpolicyconfighandler "zero-trust-control-plane/backend/internal/orgpolicyconfig/handler"
+	orgpolicyconfigrepo "zero-trust-control-plane/backend/internal/orgpolicyconfig/repository"
 	policyhandler "zero-trust-control-plane/backend/internal/policy/handler"
 	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
 	sessionhandler "zero-trust-control-plane/backend/internal/session/handler"
@@ -64,6 +68,10 @@ type Deps struct {
 	UserRepo userrepo.Repository
 	// AuditLogger logs org-admin actions (membership/session). If nil, admin actions are not audited.
 	AuditLogger audit.AuditLogger
+	// OrgPolicyConfigRepo is used by OrgPolicyConfigService. If nil, org policy config RPCs return Unimplemented.
+	OrgPolicyConfigRepo orgpolicyconfigrepo.Repository
+	// OrgMFASettingsRepo is used by OrgPolicyConfigService to sync auth_mfa and device_trust on update. If nil, sync is skipped.
+	OrgMFASettingsRepo orgmfasettingsrepo.Repository
 }
 
 // RegisterServices registers all proto gRPC services with the given server.
@@ -92,6 +100,7 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	devicev1.RegisterDeviceServiceServer(s, devicehandler.NewServer(deps.DeviceRepo))
 	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer(deps.MembershipRepo, deps.UserRepo, deps.AuditLogger))
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))
+	orgpolicyconfigv1.RegisterOrgPolicyConfigServiceServer(s, orgpolicyconfighandler.NewServer(deps.OrgPolicyConfigRepo, deps.MembershipRepo, deps.OrgMFASettingsRepo))
 	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer(deps.SessionRepo, deps.MembershipRepo, deps.AuditLogger))
 	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer(deps.TelemetryEmitter))
 	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo, deps.MembershipRepo))

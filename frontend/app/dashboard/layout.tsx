@@ -39,6 +39,7 @@ export default function DashboardLayout({
   const nav = [
     { href: "/dashboard", label: "Members" },
     { href: "/dashboard/audit", label: "Audit log" },
+    { href: "/dashboard/policy", label: "Policy" },
     { href: "/dashboard/telemetry", label: "Telemetry" },
   ];
 

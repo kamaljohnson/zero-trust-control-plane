@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"zero-trust-control-plane/backend/internal/db/sqlc/gen"
 	"zero-trust-control-plane/backend/internal/orgmfasettings/domain"
@@ -37,4 +38,30 @@ func (r *PostgresRepository) GetByOrgID(ctx context.Context, orgID string) (*dom
 		CreatedAt:               row.CreatedAt,
 		UpdatedAt:               row.UpdatedAt,
 	}, nil
+}
+
+// Upsert creates or updates org MFA settings for the given org.
+func (r *PostgresRepository) Upsert(ctx context.Context, settings *domain.OrgMFASettings) error {
+	now := settings.UpdatedAt
+	if now.IsZero() {
+		now = settings.CreatedAt
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	created := settings.CreatedAt
+	if created.IsZero() {
+		created = now
+	}
+	_, err := r.queries.UpsertOrgMFASettings(ctx, gen.UpsertOrgMFASettingsParams{
+		OrgID:                   settings.OrgID,
+		MfaRequiredForNewDevice: settings.MFARequiredForNewDevice,
+		MfaRequiredForUntrusted: settings.MFARequiredForUntrusted,
+		MfaRequiredAlways:       settings.MFARequiredAlways,
+		RegisterTrustAfterMfa:   settings.RegisterTrustAfterMFA,
+		TrustTtlDays:            int32(settings.TrustTTLDays),
+		CreatedAt:               created,
+		UpdatedAt:               now,
+	})
+	return err
 }

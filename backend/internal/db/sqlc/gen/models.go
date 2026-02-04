@@ -251,6 +251,12 @@ type OrgMfaSetting struct {
 	UpdatedAt               time.Time
 }
 
+type OrgPolicyConfig struct {
+	OrgID      string
+	ConfigJson string
+	UpdatedAt  time.Time
+}
+
 type Organization struct {
 	ID        string
 	Name      string

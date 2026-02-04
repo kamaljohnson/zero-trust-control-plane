@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package ztcp.orgpolicyconfig.v1;
+
+// MFA requirement mode for the org.
+enum MfaRequirement {
+  MFA_REQUIREMENT_UNSPECIFIED = 0;
+  MFA_REQUIREMENT_ALWAYS = 1;
+  MFA_REQUIREMENT_NEW_DEVICE = 2;
+  MFA_REQUIREMENT_UNTRUSTED = 3;
+}
+
+// Default action for access control when no rule matches.
+enum DefaultAction {
+  DEFAULT_ACTION_UNSPECIFIED = 0;
+  DEFAULT_ACTION_ALLOW = 1;
+  DEFAULT_ACTION_DENY = 2;
+}
+
+// Authentication and MFA section.
+message AuthMfa {
+  MfaRequirement mfa_requirement = 1;
+  repeated string allowed_mfa_methods = 2;
+  bool step_up_sensitive_actions = 3;
+  bool step_up_policy_violation = 4;
+}
+
+// Device Trust section.
+message DeviceTrust {
+  bool device_registration_allowed = 1;
+  bool auto_trust_after_mfa = 2;
+  int32 max_trusted_devices_per_user = 3;
+  int32 reverify_interval_days = 4;
+  bool admin_revoke_allowed = 5;
+}
+
+// Session Management section.
+message SessionMgmt {
+  string session_max_ttl = 1;
+  string idle_timeout = 2;
+  int32 concurrent_session_limit = 3;
+  bool admin_forced_logout = 4;
+  bool reauth_on_policy_change = 5;
+}
+
+// Access Control (browser) section.
+message AccessControl {
+  repeated string allowed_domains = 1;
+  repeated string blocked_domains = 2;
+  bool wildcard_supported = 3;
+  DefaultAction default_action = 4;
+}
+
+// Action Restrictions section.
+message ActionRestrictions {
+  repeated string allowed_actions = 1;
+  bool read_only_mode = 2;
+}
+
+// Org policy config: all five sections. Stored per org.
+message OrgPolicyConfig {
+  AuthMfa auth_mfa = 1;
+  DeviceTrust device_trust = 2;
+  SessionMgmt session_mgmt = 3;
+  AccessControl access_control = 4;
+  ActionRestrictions action_restrictions = 5;
+}
+
+message GetOrgPolicyConfigRequest {
+  string org_id = 1;
+}
+
+message GetOrgPolicyConfigResponse {
+  OrgPolicyConfig config = 1;
+}
+
+message UpdateOrgPolicyConfigRequest {
+  string org_id = 1;
+  OrgPolicyConfig config = 2;
+}
+
+message UpdateOrgPolicyConfigResponse {
+  OrgPolicyConfig config = 1;
+}
+
+service OrgPolicyConfigService {
+  rpc GetOrgPolicyConfig(GetOrgPolicyConfigRequest) returns (GetOrgPolicyConfigResponse);
+  rpc UpdateOrgPolicyConfig(UpdateOrgPolicyConfigRequest) returns (UpdateOrgPolicyConfigResponse);
+}

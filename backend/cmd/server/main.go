@@ -29,6 +29,7 @@ import (
 	"zero-trust-control-plane/backend/internal/mfa/sms"
 	mfaintentrepo "zero-trust-control-plane/backend/internal/mfaintent/repository"
 	orgmfasettingsrepo "zero-trust-control-plane/backend/internal/orgmfasettings/repository"
+	orgpolicyconfigrepo "zero-trust-control-plane/backend/internal/orgpolicyconfig/repository"
 	platformsettingsrepo "zero-trust-control-plane/backend/internal/platformsettings/repository"
 	policyengine "zero-trust-control-plane/backend/internal/policy/engine"
 	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
@@ -94,6 +95,7 @@ func main() {
 		membershipRepo := membershiprepo.NewPostgresRepository(database)
 		platformSettingsRepo := platformsettingsrepo.NewPostgresRepository(database)
 		orgMFASettingsRepo := orgmfasettingsrepo.NewPostgresRepository(database)
+		orgPolicyConfigRepo := orgpolicyconfigrepo.NewPostgresRepository(database)
 		mfaChallengeRepo := mfarepo.NewPostgresRepository(database)
 		mfaIntentRepo := mfaintentrepo.NewPostgresRepository(database)
 		policyRepo := policyrepo.NewPostgresRepository(database)
@@ -146,6 +148,8 @@ func main() {
 		deps.SessionRepo = sessionRepo
 		deps.UserRepo = userRepo
 		deps.AuditLogger = auditLogger
+		deps.OrgPolicyConfigRepo = orgPolicyConfigRepo
+		deps.OrgMFASettingsRepo = orgMFASettingsRepo
 	}
 
 	if authEnabled {
