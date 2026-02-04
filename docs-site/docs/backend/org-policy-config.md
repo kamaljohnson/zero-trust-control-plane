@@ -54,23 +54,23 @@ Session lifetime, idle timeout, and concurrent-session limits. Stored for future
 
 ### 4. Access Control
 
-Allowed/blocked domains and default action for browser. Stored for future enforcement.
+Allowed/blocked domains and default action for the browser. **Enforced by the user browser** via GetBrowserPolicy and CheckUrlAccess; see [User Browser](/docs/frontend/user-browser).
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| allowed_domains | repeated string | [] | Allowed domains (browser). Stored for future. |
-| blocked_domains | repeated string | [] | Blocked domains. Stored for future. |
-| wildcard_supported | bool | false | Whether wildcards are supported. Stored for future. |
-| default_action | enum/string | allow | allow or deny when no rule matches. Stored for future. |
+| allowed_domains | repeated string | [] | Allowed domains (browser). |
+| blocked_domains | repeated string | [] | Blocked domains. |
+| wildcard_supported | bool | false | Whether wildcards are supported. |
+| default_action | enum/string | allow | allow or deny when no rule matches. |
 
 ### 5. Action Restrictions
 
-Allowed actions and read-only mode. Stored for future enforcement.
+Allowed actions and read-only mode. **Enforced by the user browser**; see [User Browser](/docs/frontend/user-browser).
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| allowed_actions | repeated string | navigate, download, upload, copy_paste | Allowed actions. Stored for future. |
-| read_only_mode | bool | false | Restrict to read-only. Stored for future. |
+| allowed_actions | repeated string | navigate, download, upload, copy_paste | Allowed actions. |
+| read_only_mode | bool | false | Restrict to read-only. |
 
 ## API
 
@@ -126,7 +126,7 @@ When a section is absent (nil), the handler and domain use these defaults (from 
 
 **Dashboard**: The org admin dashboard [Policy page](/docs/frontend/dashboard) loads config via GET and saves via PUT. Clients may need to normalize proto enums (e.g. mfa_requirement, default_action) when they are returned as strings.
 
-**Enforcement**: Auth & MFA and Device Trust are effectively enforced today because they are synced to org_mfa_settings and used by auth_service and the policy engine. Session Management, Access Control, and Action Restrictions are stored for future enforcement (e.g. session service, browser/agent); the current implementation does not enforce them.
+**Enforcement**: Auth & MFA and Device Trust are effectively enforced today because they are synced to org_mfa_settings and used by auth_service and the policy engine. Session Management is still for future enforcement. **Access Control and Action Restrictions are enforced by the user browser** (see [User Browser](/docs/frontend/user-browser)) via GetBrowserPolicy and CheckUrlAccess; org admins configure these in the Policy page.
 
 ## Wiring
 

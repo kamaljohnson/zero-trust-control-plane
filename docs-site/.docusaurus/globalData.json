@@ -76,6 +76,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "frontend/user-browser",
+              "path": "/docs/frontend/user-browser",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "intro",
               "path": "/docs/intro",
               "sidebar": "docsSidebar"

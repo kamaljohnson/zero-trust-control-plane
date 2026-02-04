@@ -33,7 +33,7 @@ const sidebars: SidebarsConfig = {
         title: "Frontend",
         description: "Web client and org admin dashboard.",
       },
-      items: ["frontend/dashboard"],
+      items: ["frontend/dashboard", "frontend/user-browser"],
     },
     {
       type: "category",

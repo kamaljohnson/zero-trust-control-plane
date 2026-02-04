@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -104,6 +106,145 @@ func (s *Server) UpdateOrgPolicyConfig(ctx context.Context, req *orgpolicyconfig
 		Config: domainToProto(updated),
 	}, nil
 }
+
+// GetBrowserPolicy returns only access_control and action_restrictions for the caller's org. Caller must be an org member (any role).
+func (s *Server) GetBrowserPolicy(ctx context.Context, req *orgpolicyconfigv1.GetBrowserPolicyRequest) (*orgpolicyconfigv1.GetBrowserPolicyResponse, error) {
+	if s.repo == nil {
+		return nil, status.Error(codes.Unimplemented, "method GetBrowserPolicy not implemented")
+	}
+	orgID, _, err := rbac.RequireOrgMember(ctx, s.membershipRepo)
+	if err != nil {
+		return nil, err
+	}
+	requestOrgID := req.GetOrgId()
+	if requestOrgID != "" && requestOrgID != orgID {
+		return nil, status.Error(codes.PermissionDenied, "org_id does not match your organization")
+	}
+	useOrgID := orgID
+	if useOrgID == "" {
+		useOrgID = requestOrgID
+	}
+	if useOrgID == "" {
+		return nil, status.Error(codes.InvalidArgument, "org_id required")
+	}
+	config, err := s.repo.GetByOrgID(ctx, useOrgID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	merged := domain.MergeWithDefaults(config)
+	out := &orgpolicyconfigv1.GetBrowserPolicyResponse{}
+	if merged.AccessControl != nil {
+		out.AccessControl = &orgpolicyconfigv1.AccessControl{
+			AllowedDomains:    append([]string(nil), merged.AccessControl.AllowedDomains...),
+			BlockedDomains:    append([]string(nil), merged.AccessControl.BlockedDomains...),
+			WildcardSupported: merged.AccessControl.WildcardSupported,
+			DefaultAction:     defaultActionToProto(merged.AccessControl.DefaultAction),
+		}
+	}
+	if merged.ActionRestrictions != nil {
+		out.ActionRestrictions = &orgpolicyconfigv1.ActionRestrictions{
+			AllowedActions: append([]string(nil), merged.ActionRestrictions.AllowedActions...),
+			ReadOnlyMode:   merged.ActionRestrictions.ReadOnlyMode,
+		}
+	}
+	return out, nil
+}
+
+// CheckUrlAccess evaluates url against the org's access control policy and returns whether access is allowed.
+// Caller must be an org member (any role).
+func (s *Server) CheckUrlAccess(ctx context.Context, req *orgpolicyconfigv1.CheckUrlAccessRequest) (*orgpolicyconfigv1.CheckUrlAccessResponse, error) {
+	if s.repo == nil {
+		return nil, status.Error(codes.Unimplemented, "method CheckUrlAccess not implemented")
+	}
+	orgID, _, err := rbac.RequireOrgMember(ctx, s.membershipRepo)
+	if err != nil {
+		return nil, err
+	}
+	requestOrgID := req.GetOrgId()
+	if requestOrgID != "" && requestOrgID != orgID {
+		return nil, status.Error(codes.PermissionDenied, "org_id does not match your organization")
+	}
+	useOrgID := orgID
+	if useOrgID == "" {
+		useOrgID = requestOrgID
+	}
+	if useOrgID == "" {
+		return nil, status.Error(codes.InvalidArgument, "org_id required")
+	}
+	rawURL := strings.TrimSpace(req.GetUrl())
+	if rawURL == "" {
+		return &orgpolicyconfigv1.CheckUrlAccessResponse{Allowed: false, Reason: "URL is required."}, nil
+	}
+	config, err := s.repo.GetByOrgID(ctx, useOrgID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	merged := domain.MergeWithDefaults(config)
+	ac := merged.AccessControl
+	if ac == nil {
+		ac = ptr(domain.DefaultAccessControl())
+	}
+	allowed, reason := evaluateURLAccess(rawURL, ac)
+	return &orgpolicyconfigv1.CheckUrlAccessResponse{Allowed: allowed, Reason: reason}, nil
+}
+
+// evaluateURLAccess returns (allowed, reason). reason is set when allowed is false.
+func evaluateURLAccess(rawURL string, ac *domain.AccessControl) (allowed bool, reason string) {
+	host, err := extractHost(rawURL)
+	if err != nil || host == "" {
+		return false, "Invalid URL: could not determine host."
+	}
+	host = strings.ToLower(host)
+	blocked := ac.BlockedDomains
+	for _, d := range blocked {
+		if strings.ToLower(d) == host || (ac.WildcardSupported && matchWildcard(host, strings.ToLower(d))) {
+			return false, "Access denied by organization policy: this domain is blocked."
+		}
+	}
+	allowedList := ac.AllowedDomains
+	defaultDeny := ac.DefaultAction == "deny"
+	if len(allowedList) == 0 {
+		if defaultDeny {
+			return false, "Access denied by organization policy."
+		}
+		return true, ""
+	}
+	for _, d := range allowedList {
+		if strings.ToLower(d) == host || (ac.WildcardSupported && matchWildcard(host, strings.ToLower(d))) {
+			return true, ""
+		}
+	}
+	if defaultDeny {
+		return false, "Access denied by organization policy: this domain is not allowed."
+	}
+	return true, ""
+}
+
+func extractHost(rawURL string) (string, error) {
+	if rawURL != "" && !strings.Contains(rawURL, "://") {
+		rawURL = "https://" + rawURL
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	h := u.Hostname()
+	if h == "" {
+		return "", nil
+	}
+	return h, nil
+}
+
+// matchWildcard returns true if host matches pattern (e.g. "sub.example.com" matches "*.example.com").
+func matchWildcard(host, pattern string) bool {
+	if !strings.HasPrefix(pattern, "*.") {
+		return false
+	}
+	suffix := pattern[1:]
+	return host == suffix || strings.HasSuffix(host, suffix)
+}
+
+func ptr[T any](v T) *T { return &v }
 
 // domainToOrgMFASettings maps policy config auth_mfa and device_trust to OrgMFASettings for upsert.
 func domainToOrgMFASettings(orgID string, c *domain.OrgPolicyConfig) *orgmfasettingsdomain.OrgMFASettings {

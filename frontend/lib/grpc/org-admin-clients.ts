@@ -256,5 +256,25 @@ export async function updateOrgPolicyConfig(accessToken: string, orgId: string, 
   return res;
 }
 
+/** GetBrowserPolicy returns access_control and action_restrictions for the browser UI. Callable by any org member. */
+export async function getBrowserPolicy(accessToken: string, orgId: string) {
+  return promisifyWithMeta<{ org_id: string }, { access_control?: unknown; action_restrictions?: unknown }>(
+    getOrgPolicyConfigClient(),
+    "GetBrowserPolicy",
+    { org_id: orgId },
+    metadataWithAuth(accessToken)
+  );
+}
+
+/** CheckUrlAccess returns whether the URL is allowed by org policy. Callable by any org member. */
+export async function checkUrlAccess(accessToken: string, orgId: string, url: string) {
+  return promisifyWithMeta<{ org_id: string; url: string }, { allowed: boolean; reason?: string }>(
+    getOrgPolicyConfigClient(),
+    "CheckUrlAccess",
+    { org_id: orgId, url },
+    metadataWithAuth(accessToken)
+  );
+}
+
 // Re-export for API routes; client components should use @/lib/api/membership-roles
 export { MembershipRole } from "@/lib/api/membership-roles";

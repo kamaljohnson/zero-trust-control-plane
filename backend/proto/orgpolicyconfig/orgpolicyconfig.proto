@@ -85,8 +85,34 @@ message UpdateOrgPolicyConfigResponse {
   OrgPolicyConfig config = 1;
 }
 
+// GetBrowserPolicyRequest requests browser-relevant policy for the caller's org.
+message GetBrowserPolicyRequest {
+  string org_id = 1;
+}
+
+// GetBrowserPolicyResponse returns only access_control and action_restrictions for the browser UI.
+message GetBrowserPolicyResponse {
+  AccessControl access_control = 1;
+  ActionRestrictions action_restrictions = 2;
+}
+
+// CheckUrlAccessRequest asks whether a URL is allowed by org access control policy.
+message CheckUrlAccessRequest {
+  string org_id = 1;
+  string url = 2;
+}
+
+// CheckUrlAccessResponse returns whether the URL is allowed and an optional reason when denied.
+message CheckUrlAccessResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
 // OrgPolicyConfigService allows org admins to get/update org policy config.
+// GetBrowserPolicy and CheckUrlAccess are callable by any org member.
 service OrgPolicyConfigService {
   rpc GetOrgPolicyConfig(GetOrgPolicyConfigRequest) returns (GetOrgPolicyConfigResponse);
   rpc UpdateOrgPolicyConfig(UpdateOrgPolicyConfigRequest) returns (UpdateOrgPolicyConfigResponse);
+  rpc GetBrowserPolicy(GetBrowserPolicyRequest) returns (GetBrowserPolicyResponse);
+  rpc CheckUrlAccess(CheckUrlAccessRequest) returns (CheckUrlAccessResponse);
 }

@@ -730,6 +730,210 @@ func (x *UpdateOrgPolicyConfigResponse) GetConfig() *OrgPolicyConfig {
 	return nil
 }
 
+// GetBrowserPolicyRequest requests browser-relevant policy for the caller's org.
+type GetBrowserPolicyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBrowserPolicyRequest) Reset() {
+	*x = GetBrowserPolicyRequest{}
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrowserPolicyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrowserPolicyRequest) ProtoMessage() {}
+
+func (x *GetBrowserPolicyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrowserPolicyRequest.ProtoReflect.Descriptor instead.
+func (*GetBrowserPolicyRequest) Descriptor() ([]byte, []int) {
+	return file_orgpolicyconfig_orgpolicyconfig_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetBrowserPolicyRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+// GetBrowserPolicyResponse returns only access_control and action_restrictions for the browser UI.
+type GetBrowserPolicyResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	AccessControl      *AccessControl         `protobuf:"bytes,1,opt,name=access_control,json=accessControl,proto3" json:"access_control,omitempty"`
+	ActionRestrictions *ActionRestrictions    `protobuf:"bytes,2,opt,name=action_restrictions,json=actionRestrictions,proto3" json:"action_restrictions,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GetBrowserPolicyResponse) Reset() {
+	*x = GetBrowserPolicyResponse{}
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrowserPolicyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrowserPolicyResponse) ProtoMessage() {}
+
+func (x *GetBrowserPolicyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrowserPolicyResponse.ProtoReflect.Descriptor instead.
+func (*GetBrowserPolicyResponse) Descriptor() ([]byte, []int) {
+	return file_orgpolicyconfig_orgpolicyconfig_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetBrowserPolicyResponse) GetAccessControl() *AccessControl {
+	if x != nil {
+		return x.AccessControl
+	}
+	return nil
+}
+
+func (x *GetBrowserPolicyResponse) GetActionRestrictions() *ActionRestrictions {
+	if x != nil {
+		return x.ActionRestrictions
+	}
+	return nil
+}
+
+// CheckUrlAccessRequest asks whether a URL is allowed by org access control policy.
+type CheckUrlAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUrlAccessRequest) Reset() {
+	*x = CheckUrlAccessRequest{}
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUrlAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUrlAccessRequest) ProtoMessage() {}
+
+func (x *CheckUrlAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUrlAccessRequest.ProtoReflect.Descriptor instead.
+func (*CheckUrlAccessRequest) Descriptor() ([]byte, []int) {
+	return file_orgpolicyconfig_orgpolicyconfig_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CheckUrlAccessRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *CheckUrlAccessRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+// CheckUrlAccessResponse returns whether the URL is allowed and an optional reason when denied.
+type CheckUrlAccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Allowed       bool                   `protobuf:"varint,1,opt,name=allowed,proto3" json:"allowed,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUrlAccessResponse) Reset() {
+	*x = CheckUrlAccessResponse{}
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUrlAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUrlAccessResponse) ProtoMessage() {}
+
+func (x *CheckUrlAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUrlAccessResponse.ProtoReflect.Descriptor instead.
+func (*CheckUrlAccessResponse) Descriptor() ([]byte, []int) {
+	return file_orgpolicyconfig_orgpolicyconfig_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CheckUrlAccessResponse) GetAllowed() bool {
+	if x != nil {
+		return x.Allowed
+	}
+	return false
+}
+
+func (x *CheckUrlAccessResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 var File_orgpolicyconfig_orgpolicyconfig_proto protoreflect.FileDescriptor
 
 const file_orgpolicyconfig_orgpolicyconfig_proto_rawDesc = "" +
@@ -774,7 +978,18 @@ const file_orgpolicyconfig_orgpolicyconfig_proto_rawDesc = "" +
 	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12@\n" +
 	"\x06config\x18\x02 \x01(\v2(.ztcp.orgpolicyconfig.v1.OrgPolicyConfigR\x06config\"a\n" +
 	"\x1dUpdateOrgPolicyConfigResponse\x12@\n" +
-	"\x06config\x18\x01 \x01(\v2(.ztcp.orgpolicyconfig.v1.OrgPolicyConfigR\x06config*\x8c\x01\n" +
+	"\x06config\x18\x01 \x01(\v2(.ztcp.orgpolicyconfig.v1.OrgPolicyConfigR\x06config\"0\n" +
+	"\x17GetBrowserPolicyRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\"\xc7\x01\n" +
+	"\x18GetBrowserPolicyResponse\x12M\n" +
+	"\x0eaccess_control\x18\x01 \x01(\v2&.ztcp.orgpolicyconfig.v1.AccessControlR\raccessControl\x12\\\n" +
+	"\x13action_restrictions\x18\x02 \x01(\v2+.ztcp.orgpolicyconfig.v1.ActionRestrictionsR\x12actionRestrictions\"@\n" +
+	"\x15CheckUrlAccessRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\"J\n" +
+	"\x16CheckUrlAccessResponse\x12\x18\n" +
+	"\aallowed\x18\x01 \x01(\bR\aallowed\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason*\x8c\x01\n" +
 	"\x0eMfaRequirement\x12\x1f\n" +
 	"\x1bMFA_REQUIREMENT_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16MFA_REQUIREMENT_ALWAYS\x10\x01\x12\x1e\n" +
@@ -783,10 +998,12 @@ const file_orgpolicyconfig_orgpolicyconfig_proto_rawDesc = "" +
 	"\rDefaultAction\x12\x1e\n" +
 	"\x1aDEFAULT_ACTION_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14DEFAULT_ACTION_ALLOW\x10\x01\x12\x17\n" +
-	"\x13DEFAULT_ACTION_DENY\x10\x022\xa0\x02\n" +
+	"\x13DEFAULT_ACTION_DENY\x10\x022\x8c\x04\n" +
 	"\x16OrgPolicyConfigService\x12}\n" +
 	"\x12GetOrgPolicyConfig\x122.ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigRequest\x1a3.ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigResponse\x12\x86\x01\n" +
-	"\x15UpdateOrgPolicyConfig\x125.ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest\x1a6.ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponseBUZSzero-trust-control-plane/backend/api/generated/orgpolicyconfig/v1;orgpolicyconfigv1b\x06proto3"
+	"\x15UpdateOrgPolicyConfig\x125.ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest\x1a6.ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponse\x12w\n" +
+	"\x10GetBrowserPolicy\x120.ztcp.orgpolicyconfig.v1.GetBrowserPolicyRequest\x1a1.ztcp.orgpolicyconfig.v1.GetBrowserPolicyResponse\x12q\n" +
+	"\x0eCheckUrlAccess\x12..ztcp.orgpolicyconfig.v1.CheckUrlAccessRequest\x1a/.ztcp.orgpolicyconfig.v1.CheckUrlAccessResponseBUZSzero-trust-control-plane/backend/api/generated/orgpolicyconfig/v1;orgpolicyconfigv1b\x06proto3"
 
 var (
 	file_orgpolicyconfig_orgpolicyconfig_proto_rawDescOnce sync.Once
@@ -801,7 +1018,7 @@ func file_orgpolicyconfig_orgpolicyconfig_proto_rawDescGZIP() []byte {
 }
 
 var file_orgpolicyconfig_orgpolicyconfig_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_orgpolicyconfig_orgpolicyconfig_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_orgpolicyconfig_orgpolicyconfig_proto_goTypes = []any{
 	(MfaRequirement)(0),                   // 0: ztcp.orgpolicyconfig.v1.MfaRequirement
 	(DefaultAction)(0),                    // 1: ztcp.orgpolicyconfig.v1.DefaultAction
@@ -815,6 +1032,10 @@ var file_orgpolicyconfig_orgpolicyconfig_proto_goTypes = []any{
 	(*GetOrgPolicyConfigResponse)(nil),    // 9: ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigResponse
 	(*UpdateOrgPolicyConfigRequest)(nil),  // 10: ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest
 	(*UpdateOrgPolicyConfigResponse)(nil), // 11: ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponse
+	(*GetBrowserPolicyRequest)(nil),       // 12: ztcp.orgpolicyconfig.v1.GetBrowserPolicyRequest
+	(*GetBrowserPolicyResponse)(nil),      // 13: ztcp.orgpolicyconfig.v1.GetBrowserPolicyResponse
+	(*CheckUrlAccessRequest)(nil),         // 14: ztcp.orgpolicyconfig.v1.CheckUrlAccessRequest
+	(*CheckUrlAccessResponse)(nil),        // 15: ztcp.orgpolicyconfig.v1.CheckUrlAccessResponse
 }
 var file_orgpolicyconfig_orgpolicyconfig_proto_depIdxs = []int32{
 	0,  // 0: ztcp.orgpolicyconfig.v1.AuthMfa.mfa_requirement:type_name -> ztcp.orgpolicyconfig.v1.MfaRequirement
@@ -827,15 +1048,21 @@ var file_orgpolicyconfig_orgpolicyconfig_proto_depIdxs = []int32{
 	7,  // 7: ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigResponse.config:type_name -> ztcp.orgpolicyconfig.v1.OrgPolicyConfig
 	7,  // 8: ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest.config:type_name -> ztcp.orgpolicyconfig.v1.OrgPolicyConfig
 	7,  // 9: ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponse.config:type_name -> ztcp.orgpolicyconfig.v1.OrgPolicyConfig
-	8,  // 10: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetOrgPolicyConfig:input_type -> ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigRequest
-	10, // 11: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.UpdateOrgPolicyConfig:input_type -> ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest
-	9,  // 12: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetOrgPolicyConfig:output_type -> ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigResponse
-	11, // 13: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.UpdateOrgPolicyConfig:output_type -> ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponse
-	12, // [12:14] is the sub-list for method output_type
-	10, // [10:12] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	5,  // 10: ztcp.orgpolicyconfig.v1.GetBrowserPolicyResponse.access_control:type_name -> ztcp.orgpolicyconfig.v1.AccessControl
+	6,  // 11: ztcp.orgpolicyconfig.v1.GetBrowserPolicyResponse.action_restrictions:type_name -> ztcp.orgpolicyconfig.v1.ActionRestrictions
+	8,  // 12: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetOrgPolicyConfig:input_type -> ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigRequest
+	10, // 13: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.UpdateOrgPolicyConfig:input_type -> ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigRequest
+	12, // 14: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetBrowserPolicy:input_type -> ztcp.orgpolicyconfig.v1.GetBrowserPolicyRequest
+	14, // 15: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.CheckUrlAccess:input_type -> ztcp.orgpolicyconfig.v1.CheckUrlAccessRequest
+	9,  // 16: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetOrgPolicyConfig:output_type -> ztcp.orgpolicyconfig.v1.GetOrgPolicyConfigResponse
+	11, // 17: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.UpdateOrgPolicyConfig:output_type -> ztcp.orgpolicyconfig.v1.UpdateOrgPolicyConfigResponse
+	13, // 18: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.GetBrowserPolicy:output_type -> ztcp.orgpolicyconfig.v1.GetBrowserPolicyResponse
+	15, // 19: ztcp.orgpolicyconfig.v1.OrgPolicyConfigService.CheckUrlAccess:output_type -> ztcp.orgpolicyconfig.v1.CheckUrlAccessResponse
+	16, // [16:20] is the sub-list for method output_type
+	12, // [12:16] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_orgpolicyconfig_orgpolicyconfig_proto_init() }
@@ -849,7 +1076,7 @@ func file_orgpolicyconfig_orgpolicyconfig_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orgpolicyconfig_orgpolicyconfig_proto_rawDesc), len(file_orgpolicyconfig_orgpolicyconfig_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

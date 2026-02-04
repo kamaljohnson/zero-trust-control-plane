@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '416'),
+    component: ComponentCreator('/docs', '712'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '7b0'),
+        component: ComponentCreator('/docs', '72d'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', 'ebf'),
+            component: ComponentCreator('/docs', 'd25'),
             routes: [
               {
                 path: '/docs/backend/audit',
@@ -136,6 +136,12 @@ export default [
               {
                 path: '/docs/frontend/dashboard',
                 component: ComponentCreator('/docs/frontend/dashboard', 'd4a'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/frontend/user-browser',
+                component: ComponentCreator('/docs/frontend/user-browser', '894'),
                 exact: true,
                 sidebar: "docsSidebar"
               },

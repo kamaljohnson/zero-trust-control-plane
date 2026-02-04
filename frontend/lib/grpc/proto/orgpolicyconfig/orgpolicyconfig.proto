@@ -83,7 +83,28 @@ message UpdateOrgPolicyConfigResponse {
   OrgPolicyConfig config = 1;
 }
 
+message GetBrowserPolicyRequest {
+  string org_id = 1;
+}
+
+message GetBrowserPolicyResponse {
+  AccessControl access_control = 1;
+  ActionRestrictions action_restrictions = 2;
+}
+
+message CheckUrlAccessRequest {
+  string org_id = 1;
+  string url = 2;
+}
+
+message CheckUrlAccessResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
 service OrgPolicyConfigService {
   rpc GetOrgPolicyConfig(GetOrgPolicyConfigRequest) returns (GetOrgPolicyConfigResponse);
   rpc UpdateOrgPolicyConfig(UpdateOrgPolicyConfigRequest) returns (UpdateOrgPolicyConfigResponse);
+  rpc GetBrowserPolicy(GetBrowserPolicyRequest) returns (GetBrowserPolicyResponse);
+  rpc CheckUrlAccess(CheckUrlAccessRequest) returns (CheckUrlAccessResponse);
 }

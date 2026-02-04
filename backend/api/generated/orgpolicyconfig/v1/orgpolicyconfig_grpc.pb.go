@@ -21,6 +21,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	OrgPolicyConfigService_GetOrgPolicyConfig_FullMethodName    = "/ztcp.orgpolicyconfig.v1.OrgPolicyConfigService/GetOrgPolicyConfig"
 	OrgPolicyConfigService_UpdateOrgPolicyConfig_FullMethodName = "/ztcp.orgpolicyconfig.v1.OrgPolicyConfigService/UpdateOrgPolicyConfig"
+	OrgPolicyConfigService_GetBrowserPolicy_FullMethodName      = "/ztcp.orgpolicyconfig.v1.OrgPolicyConfigService/GetBrowserPolicy"
+	OrgPolicyConfigService_CheckUrlAccess_FullMethodName        = "/ztcp.orgpolicyconfig.v1.OrgPolicyConfigService/CheckUrlAccess"
 )
 
 // OrgPolicyConfigServiceClient is the client API for OrgPolicyConfigService service.
@@ -28,9 +30,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // OrgPolicyConfigService allows org admins to get/update org policy config.
+// GetBrowserPolicy and CheckUrlAccess are callable by any org member.
 type OrgPolicyConfigServiceClient interface {
 	GetOrgPolicyConfig(ctx context.Context, in *GetOrgPolicyConfigRequest, opts ...grpc.CallOption) (*GetOrgPolicyConfigResponse, error)
 	UpdateOrgPolicyConfig(ctx context.Context, in *UpdateOrgPolicyConfigRequest, opts ...grpc.CallOption) (*UpdateOrgPolicyConfigResponse, error)
+	GetBrowserPolicy(ctx context.Context, in *GetBrowserPolicyRequest, opts ...grpc.CallOption) (*GetBrowserPolicyResponse, error)
+	CheckUrlAccess(ctx context.Context, in *CheckUrlAccessRequest, opts ...grpc.CallOption) (*CheckUrlAccessResponse, error)
 }
 
 type orgPolicyConfigServiceClient struct {
@@ -61,14 +66,37 @@ func (c *orgPolicyConfigServiceClient) UpdateOrgPolicyConfig(ctx context.Context
 	return out, nil
 }
 
+func (c *orgPolicyConfigServiceClient) GetBrowserPolicy(ctx context.Context, in *GetBrowserPolicyRequest, opts ...grpc.CallOption) (*GetBrowserPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBrowserPolicyResponse)
+	err := c.cc.Invoke(ctx, OrgPolicyConfigService_GetBrowserPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orgPolicyConfigServiceClient) CheckUrlAccess(ctx context.Context, in *CheckUrlAccessRequest, opts ...grpc.CallOption) (*CheckUrlAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckUrlAccessResponse)
+	err := c.cc.Invoke(ctx, OrgPolicyConfigService_CheckUrlAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrgPolicyConfigServiceServer is the server API for OrgPolicyConfigService service.
 // All implementations must embed UnimplementedOrgPolicyConfigServiceServer
 // for forward compatibility.
 //
 // OrgPolicyConfigService allows org admins to get/update org policy config.
+// GetBrowserPolicy and CheckUrlAccess are callable by any org member.
 type OrgPolicyConfigServiceServer interface {
 	GetOrgPolicyConfig(context.Context, *GetOrgPolicyConfigRequest) (*GetOrgPolicyConfigResponse, error)
 	UpdateOrgPolicyConfig(context.Context, *UpdateOrgPolicyConfigRequest) (*UpdateOrgPolicyConfigResponse, error)
+	GetBrowserPolicy(context.Context, *GetBrowserPolicyRequest) (*GetBrowserPolicyResponse, error)
+	CheckUrlAccess(context.Context, *CheckUrlAccessRequest) (*CheckUrlAccessResponse, error)
 	mustEmbedUnimplementedOrgPolicyConfigServiceServer()
 }
 
@@ -84,6 +112,12 @@ func (UnimplementedOrgPolicyConfigServiceServer) GetOrgPolicyConfig(context.Cont
 }
 func (UnimplementedOrgPolicyConfigServiceServer) UpdateOrgPolicyConfig(context.Context, *UpdateOrgPolicyConfigRequest) (*UpdateOrgPolicyConfigResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateOrgPolicyConfig not implemented")
+}
+func (UnimplementedOrgPolicyConfigServiceServer) GetBrowserPolicy(context.Context, *GetBrowserPolicyRequest) (*GetBrowserPolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBrowserPolicy not implemented")
+}
+func (UnimplementedOrgPolicyConfigServiceServer) CheckUrlAccess(context.Context, *CheckUrlAccessRequest) (*CheckUrlAccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckUrlAccess not implemented")
 }
 func (UnimplementedOrgPolicyConfigServiceServer) mustEmbedUnimplementedOrgPolicyConfigServiceServer() {
 }
@@ -143,6 +177,42 @@ func _OrgPolicyConfigService_UpdateOrgPolicyConfig_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrgPolicyConfigService_GetBrowserPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBrowserPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgPolicyConfigServiceServer).GetBrowserPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgPolicyConfigService_GetBrowserPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgPolicyConfigServiceServer).GetBrowserPolicy(ctx, req.(*GetBrowserPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrgPolicyConfigService_CheckUrlAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckUrlAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrgPolicyConfigServiceServer).CheckUrlAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrgPolicyConfigService_CheckUrlAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrgPolicyConfigServiceServer).CheckUrlAccess(ctx, req.(*CheckUrlAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrgPolicyConfigService_ServiceDesc is the grpc.ServiceDesc for OrgPolicyConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -157,6 +227,14 @@ var OrgPolicyConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateOrgPolicyConfig",
 			Handler:    _OrgPolicyConfigService_UpdateOrgPolicyConfig_Handler,
+		},
+		{
+			MethodName: "GetBrowserPolicy",
+			Handler:    _OrgPolicyConfigService_GetBrowserPolicy_Handler,
+		},
+		{
+			MethodName: "CheckUrlAccess",
+			Handler:    _OrgPolicyConfigService_CheckUrlAccess_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

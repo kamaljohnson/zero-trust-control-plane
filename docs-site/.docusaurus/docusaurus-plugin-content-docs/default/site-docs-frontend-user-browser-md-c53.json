@@ -1,0 +1,26 @@
+{
+  "id": "frontend/user-browser",
+  "title": "User Browser",
+  "description": "This document describes the policy-enforced user browser: layout, URL flow, action buttons, BFF API routes, backend RPCs, and how Access Control and Action Restrictions are applied. The browser lives under app/browser/.",
+  "source": "@site/docs/frontend/user-browser.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/user-browser",
+  "permalink": "/docs/frontend/user-browser",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "User Browser",
+    "sidebar_label": "User Browser"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Dashboard",
+    "permalink": "/docs/frontend/dashboard"
+  },
+  "next": {
+    "title": "Pending",
+    "permalink": "/docs/contributing/pending"
+  }
+}
