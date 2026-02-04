@@ -187,10 +187,13 @@ A unary gRPC interceptor ([internal/server/interceptors/auth.go](../../../backen
 - **Public methods**: If the RPC is in `publicMethods`, the request is allowed through even when the token is missing or invalid; identity is not set in context.
 - **Protected methods**: If the RPC is not public and the client does not send a valid Bearer token (missing or `TokenProvider.ValidateAccess` fails), the interceptor returns `Unauthenticated` immediately and the handler is not called.
 - **Valid token**: On successful `ValidateAccess`, the interceptor calls `WithIdentity(ctx, userID, orgID, sessionID)`. Handlers and the auth service read identity via [internal/server/interceptors/context.go](../../../backend/internal/server/interceptors/context.go) `GetUserID`, `GetOrgID`, and `GetSessionID`. Logout with empty `refresh_token` revokes the session from context when the caller sent a valid Bearer token.
+- **SessionValidator (optional)**: When auth is enabled, the interceptor may be given a **SessionValidator** function. After `ValidateAccess(token)` succeeds, the interceptor calls the validator with the extracted `session_id`. If the validator returns false (session missing or revoked) or an error, the interceptor returns **Unauthenticated** and the handler is not called. The validator is wired in [cmd/server/main.go](../../../backend/cmd/server/main.go) from `SessionRepo.GetByID` and `session.RevokedAt`. So access tokens for revoked sessions are rejected immediately (no need to wait for expiry). See [sessions.md](./sessions) for token invalidation details.
 
-### Session binding
+### Session binding and revocation
 
 The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`. See [internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql) and migrations 003 and 004. Apply migrations 003 and 004 when adding auth to an existing database.
+
+**Session revocation**: Revoking a session (SessionService [RevokeSession](./sessions) or RevokeAllSessionsForUser) sets `sessions.revoked_at`. **Refresh** already rejects revoked sessions (ErrInvalidRefreshToken). With the optional **SessionValidator**, protected RPCs also reject requests that carry an access token for a revoked session (Unauthenticated → 401). Clients (e.g. web dashboard) should treat 401 as session invalid and clear auth state and redirect to login. See [sessions.md](./sessions) for full details.
 
 ### Validation
 
@@ -293,9 +296,10 @@ Auth uses the **users**, **identities**, **memberships**, **devices**, **session
 | **devices** | user_id, org_id, fingerprint, **trusted**, **trusted_until**, **revoked_at**; get-or-create per Login and per Refresh (when device_fingerprint sent); used for MFA/device-trust policy and optional trust registration after VerifyMFA. |
 | **sessions** | user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, **refresh_jti**, **refresh_token_hash**; created on Login or after VerifyMFA; refreshed via UpdateRefreshToken; revoked on Logout, reuse, or when Refresh returns MFA required. |
 | **platform_settings** | key-value; platform-wide MFA/device-trust settings (e.g. mfa_required_always, default_trust_ttl_days) used by policy evaluation. |
-| **org_mfa_settings** | one row per org; org-level MFA/device-trust settings (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.) used by policy evaluation. |
+| **org_mfa_settings** | one row per org; org-level MFA/device-trust settings (mfa_required_for_new_device, mfa_required_for_untrusted, register_trust_after_mfa, trust_ttl_days, etc.) used by policy evaluation. Auth & MFA and Device Trust sections of **org_policy_config** are synced here on update (see [org-policy-config](./org-policy-config)). |
 | **mfa_intents** | one-time intents (id, user_id, org_id, device_id, expires_at); created when Login or Refresh returns phone_required (user has no phone); consumed by SubmitPhoneAndRequestMFA. |
 | **mfa_challenges** | ephemeral MFA challenges (id, user_id, org_id, device_id, phone, code_hash, expires_at); created when Login or Refresh returns mfa_required or after SubmitPhoneAndRequestMFA; deleted after successful VerifyMFA or expiry. |
+| **org_policy_config** | one row per org; JSON config for policy UI (five sections). Not used directly by auth; Auth & MFA and Device Trust sections sync to org_mfa_settings. See [org-policy-config](./org-policy-config). |
 
 ---
 
@@ -312,4 +316,4 @@ Unit tests cover:
 ## Future
 
 - **LinkIdentity**: Implement for OIDC/SAML; link external identity to user and store provider_id/id_token or assertion.
-- **MembershipService.AddMember**: Implementing AddMember (and related membership RPCs) would provide an in-app way to add a registered user to an organization, instead of creating memberships manually (e.g. direct DB or admin tool).
+- **Membership**: AddMember, RemoveMember, UpdateRole, and ListMembers are implemented and used by the org admin dashboard. See [Web dashboard (org admin)](/docs/frontend/dashboard) and [sessions](./sessions) for how the dashboard manages members and sessions.

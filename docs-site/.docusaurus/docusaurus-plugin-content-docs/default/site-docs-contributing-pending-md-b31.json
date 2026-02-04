@@ -16,7 +16,7 @@
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Telemetry",
-    "permalink": "/docs/backend/telemetry"
+    "title": "Dashboard",
+    "permalink": "/docs/frontend/dashboard"
   }
 }

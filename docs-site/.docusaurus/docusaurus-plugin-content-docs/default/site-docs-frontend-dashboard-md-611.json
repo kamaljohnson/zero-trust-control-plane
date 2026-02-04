@@ -1,0 +1,26 @@
+{
+  "id": "frontend/dashboard",
+  "title": "Web Dashboard (Org Admin)",
+  "description": "This document describes the authenticated org admin dashboard: layout, Members, Audit log, Policy, and Telemetry pages, API route pattern, and 401 handling. The dashboard lives under app/dashboard/.",
+  "source": "@site/docs/frontend/dashboard.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/dashboard",
+  "permalink": "/docs/frontend/dashboard",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Web Dashboard (Org Admin)",
+    "sidebar_label": "Dashboard"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Frontend",
+    "permalink": "/docs/category/frontend"
+  },
+  "next": {
+    "title": "Pending",
+    "permalink": "/docs/contributing/pending"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "backend/org-policy-config",
+  "title": "Org Policy Config",
+  "description": "This document describes the OrgPolicyConfigService: per-org structured policy configuration with five sections, Get/Update API, storage in orgpolicyconfig, and sync of Auth & MFA and Device Trust sections to orgmfasettings. The canonical proto is orgpolicyconfig/orgpolicyconfig.proto; the handler is internal/orgpolicyconfig/handler/grpc.go.",
+  "source": "@site/docs/backend/org-policy-config.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/org-policy-config",
+  "permalink": "/docs/backend/org-policy-config",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Org Policy Config",
+    "sidebar_label": "Org Policy Config"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "MFA",
+    "permalink": "/docs/backend/mfa"
+  },
+  "next": {
+    "title": "Policy engine",
+    "permalink": "/docs/backend/policy-engine"
+  }
+}

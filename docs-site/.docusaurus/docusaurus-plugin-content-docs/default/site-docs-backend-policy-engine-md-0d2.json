@@ -1,0 +1,26 @@
+{
+  "id": "backend/policy-engine",
+  "title": "Policy Engine (OPA/Rego)",
+  "description": "This document describes the policy engine in the zero-trust control plane backend: OPA/Rego integration, policy structure (database, domain, API, Rego contract), default policy, and the full evaluation flow. The policy engine is used only for device-trust / MFA decisions (when to require MFA, whether to register trust after MFA, and trust TTL in days). For device-trust semantics and MFA flows, see device-trust.md and mfa.md.",
+  "source": "@site/docs/backend/policy-engine.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/policy-engine",
+  "permalink": "/docs/backend/policy-engine",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Policy Engine (OPA/Rego)",
+    "sidebar_label": "Policy engine"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Org Policy Config",
+    "permalink": "/docs/backend/org-policy-config"
+  },
+  "next": {
+    "title": "Sessions",
+    "permalink": "/docs/backend/sessions"
+  }
+}

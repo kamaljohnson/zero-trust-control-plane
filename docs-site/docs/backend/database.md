@@ -11,7 +11,7 @@ This document describes the current PostgreSQL schema for the zero-trust control
 
 ## Overview
 
-The schema is organized around **users**, **organizations** (tenants), and **identity**. Users belong to organizations through **memberships**; they authenticate via **identities** (local, OIDC, or SAML). **Devices** and **sessions** are scoped to a user and org. **Policies** are org-scoped. **Audit logs** record org-level activity.
+The schema is organized around **users**, **organizations** (tenants), and **identity**. Users belong to organizations through **memberships**; they authenticate via **identities** (local, OIDC, or SAML). **Devices** and **sessions** are scoped to a user and org. **Policies** are org-scoped. **Audit logs** record org-level activity. **org_policy_config** holds per-org policy UI config (five sections) and syncs Auth & MFA and Device Trust to org_mfa_settings; see [org-policy-config](./org-policy-config).
 
 All timestamps use `TIMESTAMPTZ`. Primary keys for core entities are `VARCHAR` (e.g. UUIDs).
 
@@ -208,6 +208,18 @@ There is an index `idx_mfa_challenges_expires_at` on `expires_at` for cleanup of
 
 ---
 
+### org_policy_config
+
+Per-org policy configuration (five sections: Auth & MFA, Device Trust, Session Management, Access Control, Action Restrictions). One row per org; JSON holds the full config. Auth & MFA and Device Trust sections are synced to **org_mfa_settings** on update. See [org-policy-config](./org-policy-config).
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| `org_id` | VARCHAR | PRIMARY KEY, REFERENCES organizations(id) |
+| `config_json` | TEXT | NOT NULL, default `'{}'` |
+| `updated_at` | TIMESTAMPTZ | NOT NULL |
+
+---
+
 ### audit_logs
 
 Immutable log of actions per org. `user_id` may be null for system actions.
@@ -317,6 +329,7 @@ Migrations are applied in order from [internal/db/migrations/](../../../backend/
 | **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](./mfa) and [device-trust.md](./device-trust). |
 | **006_mfa_intent** | Creates `mfa_intents` table (one-time phone-collect binding); adds `users.phone_verified` (BOOLEAN NOT NULL DEFAULT false). See [mfa.md](./mfa). |
 | **007_system_org** | Inserts sentinel organization _system (id = '_system') for audit events that have no org (e.g. login_failure, logout with invalid token). See [audit.md](./audit). |
+| **008_org_policy_config** | Creates table **org_policy_config** (org_id, config_json, updated_at). Down: DROP TABLE org_policy_config. See [org-policy-config](./org-policy-config). |
 
 The **canonical schema** for sqlc ([internal/db/sqlc/schema/001_schema.sql](../../../backend/internal/db/sqlc/schema/001_schema.sql)) is the single source of truth for codegen and already includes `refresh_jti`, `refresh_token_hash`, MFA/device-trust columns and tables, `mfa_intents`, and `users.phone_verified` (and does not include telemetry). Migrations 003–006 are for databases that were created from migration 001 before those columns and tables were added. New deployments run all ups; existing DBs may need 003–006 when adding auth and MFA/device trust.
 
@@ -340,7 +353,7 @@ Migrations are applied in order (001 through 007). Up/down scripts live in [inte
 
 ### Queries and codegen
 
-SQL queries live in [internal/db/sqlc/queries/](../../../backend/internal/db/sqlc/queries/) (one file per domain: user, identity, organization, membership, device, session, policy, audit_log). [internal/db/sqlc/sqlc.yaml](../../../backend/internal/db/sqlc/sqlc.yaml) configures the schema path, queries path, and Go output to `gen/`. Generated Go is in [internal/db/sqlc/gen/](../../../backend/internal/db/sqlc/gen/); do not edit.
+SQL queries live in [internal/db/sqlc/queries/](../../../backend/internal/db/sqlc/queries/) (one file per domain: user, identity, organization, membership, device, session, policy, org_policy_config, audit_log). The orgpolicyconfig repository uses org_policy_config queries. [internal/db/sqlc/sqlc.yaml](../../../backend/internal/db/sqlc/sqlc.yaml) configures the schema path, queries path, and Go output to `gen/`. Generated Go is in [internal/db/sqlc/gen/](../../../backend/internal/db/sqlc/gen/); do not edit.
 
 ### Repositories
 

@@ -42,17 +42,17 @@
       "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/docs-a46": {
+  "/docs-416": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/docs-ef5": {
+  "/docs-7b0": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---docs-005-788"
   },
-  "/docs-204": {
+  "/docs-ebf": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
   "/docs/backend/audit-642": {
@@ -79,6 +79,22 @@
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-backend-mfa-526-90c"
   },
+  "/docs/backend/org-policy-config-42a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-backend-org-policy-config-7-b-4-673"
+  },
+  "/docs/backend/policy-engine-0d3": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-backend-policy-engine-0-d-2-e03"
+  },
+  "/docs/backend/session-lifecycle-c43": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-backend-session-lifecycleaf-7-43e"
+  },
+  "/docs/backend/sessions-d82": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-backend-sessions-79-e-bab"
+  },
   "/docs/backend/telemetry-cfd": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-backend-telemetry-346-ba2"
@@ -87,9 +103,17 @@
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
     "__props": "__props---docs-category-backend-43-b-57d"
   },
+  "/docs/category/frontend-7e5": {
+    "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
+    "__props": "__props---docs-category-frontendc-9-c-83c"
+  },
   "/docs/contributing/pending-a62": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---docs-contributing-pendingb-31-d5a"
+  },
+  "/docs/frontend/dashboard-d4a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-frontend-dashboard-611-92a"
   },
   "/docs/intro-058": {
     "__comp": "__comp---theme-doc-item-178-a40",

@@ -18,8 +18,22 @@ const sidebars: SidebarsConfig = {
         "backend/device-trust",
         "backend/health",
         "backend/mfa",
+        "backend/org-policy-config",
+        "backend/policy-engine",
+        "backend/sessions",
+        "backend/session-lifecycle",
         "backend/telemetry",
       ],
+    },
+    {
+      type: "category",
+      label: "Frontend",
+      link: {
+        type: "generated-index",
+        title: "Frontend",
+        description: "Web client and org admin dashboard.",
+      },
+      items: ["frontend/dashboard"],
     },
     {
       type: "category",

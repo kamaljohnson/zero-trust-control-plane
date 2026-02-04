@@ -1,0 +1,26 @@
+{
+  "id": "backend/session-lifecycle",
+  "title": "Session Lifecycle",
+  "description": "This document describes the session lifecycle in the zero-trust control plane: when and how sessions are created, how heartbeats (lastseenat) work, how sessions end (revocation), and how clients behave (proactive refresh, 401 handling, logout). For SessionService RPCs and token invalidation details, see sessions.md.",
+  "source": "@site/docs/backend/session-lifecycle.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/session-lifecycle",
+  "permalink": "/docs/backend/session-lifecycle",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Session Lifecycle",
+    "sidebar_label": "Session lifecycle"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Sessions",
+    "permalink": "/docs/backend/sessions"
+  },
+  "next": {
+    "title": "Telemetry",
+    "permalink": "/docs/backend/telemetry"
+  }
+}

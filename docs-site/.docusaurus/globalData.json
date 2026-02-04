@@ -41,6 +41,26 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "backend/org-policy-config",
+              "path": "/docs/backend/org-policy-config",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/policy-engine",
+              "path": "/docs/backend/policy-engine",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/session-lifecycle",
+              "path": "/docs/backend/session-lifecycle",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/sessions",
+              "path": "/docs/backend/sessions",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "backend/telemetry",
               "path": "/docs/backend/telemetry",
               "sidebar": "docsSidebar"
@@ -51,6 +71,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "frontend/dashboard",
+              "path": "/docs/frontend/dashboard",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "intro",
               "path": "/docs/intro",
               "sidebar": "docsSidebar"
@@ -58,6 +83,11 @@
             {
               "id": "/category/backend",
               "path": "/docs/category/backend",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "/category/frontend",
+              "path": "/docs/category/frontend",
               "sidebar": "docsSidebar"
             }
           ],

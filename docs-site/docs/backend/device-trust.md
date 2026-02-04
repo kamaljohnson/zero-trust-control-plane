@@ -62,14 +62,7 @@ The default implementation is **OPAEvaluator** ([internal/policy/engine/opa_eval
 
 ### Default Rego policy
 
-When no org-specific policies are present, the engine uses this logic (equivalent to the embedded default in `opa_evaluator.go`):
-
-- **mfa_required** is true if any of:
-  - `input.platform.mfa_required_always`
-  - `input.device.is_new` and `input.org.mfa_required_for_new_device`
-  - `!input.device.is_effectively_trusted` and `input.org.mfa_required_for_untrusted`
-- **register_trust_after_mfa**: from `input.org.register_trust_after_mfa` (default true).
-- **trust_ttl_days**: from `input.org.trust_ttl_days` if &gt; 0; else from `input.platform.default_trust_ttl_days`.
+When no org-specific policies are present, the engine uses an embedded default Rego policy: **mfa_required** is true if platform mandates always, or (device is new and org requires MFA for new devices), or (device is not effectively trusted and org requires MFA for untrusted). **register_trust_after_mfa** and **trust_ttl_days** come from org/platform settings. For the full default policy text and explanation, see [Policy engine (OPA/Rego)](./policy-engine).
 
 ### Input/output shape (OPA)
 
@@ -101,6 +94,8 @@ When no org-specific policies are present, the engine uses this logic (equivalen
 
 - **Platform**: [internal/platformsettings/domain/settings.go](../../../backend/internal/platformsettings/domain/settings.go) `PlatformDeviceTrustSettings` — `MFARequiredAlways`, `DefaultTrustTTLDays`. Stored in `platform_settings` (key-value; keys e.g. `mfa_required_always`, `default_trust_ttl_days`). Repository: [internal/platformsettings/repository/](../../../backend/internal/platformsettings/repository/).
 - **Org**: [internal/orgmfasettings/domain/settings.go](../../../backend/internal/orgmfasettings/domain/settings.go) `OrgMFASettings` — `MFARequiredForNewDevice`, `MFARequiredForUntrusted`, `MFARequiredAlways`, `RegisterTrustAfterMFA`, `TrustTTLDays`. One row per org in `org_mfa_settings`. Repository: [internal/orgmfasettings/repository/](../../../backend/internal/orgmfasettings/repository/).
+
+For full detail on OPA/Rego integration, policy structure, default policy text, and evaluation flow, see [Policy engine (OPA/Rego)](./policy-engine).
 
 ---
 
@@ -142,3 +137,4 @@ For SMS and MFA challenge TTL configuration, see [mfa.md](mfa.md#configuration).
 - [auth.md](auth.md) — Authentication overview, Register, Login, Refresh, Logout, and public methods.
 - [database.md](./database) — Schema for platform_settings, org_mfa_settings, devices, and policies.
 - [mfa.md](./mfa) — MFA flows, challenge/OTP, API, and SMS configuration.
+- [policy-engine.md](./policy-engine) — OPA/Rego integration, policy structure, evaluation flow.

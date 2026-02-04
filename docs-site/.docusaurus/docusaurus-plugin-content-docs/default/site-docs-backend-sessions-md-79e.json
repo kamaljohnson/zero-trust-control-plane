@@ -1,0 +1,26 @@
+{
+  "id": "backend/sessions",
+  "title": "Session Management",
+  "description": "This document describes the SessionService: listing and revoking sessions for an organization, and how revocation invalidates both refresh and access tokens. The canonical proto is session/session.proto; the handler is internal/session/handler/grpc.go.",
+  "source": "@site/docs/backend/sessions.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/sessions",
+  "permalink": "/docs/backend/sessions",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Session Management",
+    "sidebar_label": "Sessions"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Policy engine",
+    "permalink": "/docs/backend/policy-engine"
+  },
+  "next": {
+    "title": "Session lifecycle",
+    "permalink": "/docs/backend/session-lifecycle"
+  }
+}

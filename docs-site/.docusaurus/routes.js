@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'a46'),
+    component: ComponentCreator('/docs', '416'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'ef5'),
+        component: ComponentCreator('/docs', '7b0'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '204'),
+            component: ComponentCreator('/docs', 'ebf'),
             routes: [
               {
                 path: '/docs/backend/audit',
@@ -86,6 +86,30 @@ export default [
                 sidebar: "docsSidebar"
               },
               {
+                path: '/docs/backend/org-policy-config',
+                component: ComponentCreator('/docs/backend/org-policy-config', '42a'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/backend/policy-engine',
+                component: ComponentCreator('/docs/backend/policy-engine', '0d3'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/backend/session-lifecycle',
+                component: ComponentCreator('/docs/backend/session-lifecycle', 'c43'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/backend/sessions',
+                component: ComponentCreator('/docs/backend/sessions', 'd82'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
                 path: '/docs/backend/telemetry',
                 component: ComponentCreator('/docs/backend/telemetry', 'cfd'),
                 exact: true,
@@ -98,8 +122,20 @@ export default [
                 sidebar: "docsSidebar"
               },
               {
+                path: '/docs/category/frontend',
+                component: ComponentCreator('/docs/category/frontend', '7e5'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
                 path: '/docs/contributing/pending',
                 component: ComponentCreator('/docs/contributing/pending', 'a62'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/frontend/dashboard',
+                component: ComponentCreator('/docs/frontend/dashboard', 'd4a'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
