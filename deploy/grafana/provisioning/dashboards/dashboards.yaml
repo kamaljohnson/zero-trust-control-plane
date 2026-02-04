@@ -1,4 +1,4 @@
-# Provision ZTCP dashboards from the ztcp folder. Dashboard JSON is synced from docs/grafana/ztcp-telemetry-dashboard.json.
+# Provision ZTCP dashboards from the ztcp folder. Dashboard JSON is synced from dashboards/ztcp-telemetry-dashboard.json.
 apiVersion: 1
 providers:
   - name: "ztcp"

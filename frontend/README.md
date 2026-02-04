@@ -108,4 +108,4 @@ See [.env.example](.env.example).
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [shadcn/ui](https://ui.shadcn.com)
-- Backend auth: [docs/auth.md](../docs/auth.md)
+- Backend auth: [Auth documentation](../docs-site/docs/backend/auth.md) (Docusaurus docs site)

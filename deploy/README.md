@@ -121,7 +121,7 @@ Open [http://localhost:3000](http://localhost:3000). The app talks to the backen
 
 1. Open **Grafana**: http://localhost:3002.
 2. If not already done: add datasources (Prometheus `http://prometheus:9090`, Loki `http://loki:3100`, Tempo `http://tempo:3200`) as described in [Step 5: Open Grafana and add datasources](#step-5-open-grafana-and-add-datasources) in the Observability stack section.
-3. The ZTCP Telemetry dashboard is auto-provisioned when using the Compose stack; open **Dashboards** and select **ZTCP Telemetry** (if prompted for a datasource, choose Loki). To import manually: **Dashboards → New → Import → Upload JSON file** and choose `docs/grafana/ztcp-telemetry-dashboard.json` from the repo.
+3. The ZTCP Telemetry dashboard is auto-provisioned when using the Compose stack; open **Dashboards** and select **ZTCP Telemetry** (if prompted for a datasource, choose Loki). To import manually: **Dashboards → New → Import → Upload JSON file** and choose `deploy/grafana/dashboards/ztcp-telemetry-dashboard.json` from the repo.
 
 ### Optional: Makefile (one-command setup)
 
@@ -227,7 +227,7 @@ Send traffic or call TelemetryService (`EmitTelemetryEvent` / `BatchEmitTelemetr
 
 Save & test each.
 
-3. **ZTCP telemetry dashboard**: The stack auto-provisions the ZTCP Telemetry dashboard (from `docs/grafana/ztcp-telemetry-dashboard.json`). Open Dashboards and select **ZTCP Telemetry**; if prompted for a datasource, choose Loki. To import manually instead: Dashboards → New → Import → Upload JSON file → **`docs/grafana/ztcp-telemetry-dashboard.json`**, then select the Loki datasource. The dashboard shows telemetry logs, gRPC request/error rates, and related panels for the ZTCP backend.
+3. **ZTCP telemetry dashboard**: The stack auto-provisions the ZTCP Telemetry dashboard (from `deploy/grafana/dashboards/ztcp-telemetry-dashboard.json`). Open Dashboards and select **ZTCP Telemetry**; if prompted for a datasource, choose Loki. To import manually instead: Dashboards → New → Import → Upload JSON file → **`deploy/grafana/dashboards/ztcp-telemetry-dashboard.json`**, then select the Loki datasource. The dashboard shows telemetry logs, gRPC request/error rates, and related panels for the ZTCP backend.
 
 You can also build custom dashboards or use Explore to query logs (LogQL), metrics (PromQL), and traces (Tempo).
 
@@ -238,7 +238,7 @@ If you run the collector binary (e.g. `otelcol-contrib`) on the same machine as 
 ### Step 7: Optional links
 
 - **Telemetry overview**: [Telemetry doc](../docs-site/docs/backend/telemetry.md) and [Backend README](../backend/README.md) (Configuration → Telemetry) for server-side config.
-- **Grafana dashboard**: ZTCP telemetry dashboard: import [docs/grafana/ztcp-telemetry-dashboard.json](../docs/grafana/ztcp-telemetry-dashboard.json) as in Step 5 above.
+- **Grafana dashboard**: ZTCP telemetry dashboard: import [deploy/grafana/dashboards/ztcp-telemetry-dashboard.json](grafana/dashboards/ztcp-telemetry-dashboard.json) as in Step 5 above.
 
 ---
 
