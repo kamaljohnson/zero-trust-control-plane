@@ -16,8 +16,8 @@
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Org Policy Config",
-    "permalink": "/docs/backend/org-policy-config"
+    "title": "Organization and membership",
+    "permalink": "/docs/backend/organization-membership"
   },
   "next": {
     "title": "Sessions",

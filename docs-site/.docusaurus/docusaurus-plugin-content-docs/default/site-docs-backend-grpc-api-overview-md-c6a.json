@@ -1,0 +1,26 @@
+{
+  "id": "backend/grpc-api-overview",
+  "title": "gRPC API Overview",
+  "description": "This document summarizes the gRPC API of the zero-trust control plane: a single gRPC server, all services and their main RPCs, and how callers use it (backend in-process, frontend via Next.js API routes). For auth, sessions, policy, and other topics, see the linked backend docs.",
+  "source": "@site/docs/backend/grpc-api-overview.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/grpc-api-overview",
+  "permalink": "/docs/backend/grpc-api-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "gRPC API Overview",
+    "sidebar_label": "gRPC API overview"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Backend",
+    "permalink": "/docs/category/backend"
+  },
+  "next": {
+    "title": "Auth",
+    "permalink": "/docs/backend/auth"
+  }
+}

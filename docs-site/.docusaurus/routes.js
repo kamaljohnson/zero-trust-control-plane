@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '712'),
+    component: ComponentCreator('/docs', 'e41'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '72d'),
+        component: ComponentCreator('/docs', '17e'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', 'd25'),
+            component: ComponentCreator('/docs', '87d'),
             routes: [
               {
                 path: '/docs/backend/audit',
@@ -74,6 +74,12 @@ export default [
                 sidebar: "docsSidebar"
               },
               {
+                path: '/docs/backend/grpc-api-overview',
+                component: ComponentCreator('/docs/backend/grpc-api-overview', 'c64'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
                 path: '/docs/backend/health',
                 component: ComponentCreator('/docs/backend/health', 'aca'),
                 exact: true,
@@ -88,6 +94,12 @@ export default [
               {
                 path: '/docs/backend/org-policy-config',
                 component: ComponentCreator('/docs/backend/org-policy-config', '42a'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/backend/organization-membership',
+                component: ComponentCreator('/docs/backend/organization-membership', '53e'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
@@ -128,8 +140,19 @@ export default [
                 sidebar: "docsSidebar"
               },
               {
+                path: '/docs/category/operations',
+                component: ComponentCreator('/docs/category/operations', '15e'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
                 path: '/docs/contributing/pending',
-                component: ComponentCreator('/docs/contributing/pending', 'a62'),
+                component: ComponentCreator('/docs/contributing/pending', '9b4'),
+                exact: true
+              },
+              {
+                path: '/docs/frontend/architecture',
+                component: ComponentCreator('/docs/frontend/architecture', '0ae'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
@@ -148,6 +171,12 @@ export default [
               {
                 path: '/docs/intro',
                 component: ComponentCreator('/docs/intro', '058'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/operations/deployment',
+                component: ComponentCreator('/docs/operations/deployment', 'b82'),
                 exact: true,
                 sidebar: "docsSidebar"
               }

@@ -13,10 +13,5 @@
   "frontMatter": {
     "title": "Pending documentation",
     "sidebar_label": "Pending"
-  },
-  "sidebar": "docsSidebar",
-  "previous": {
-    "title": "User Browser",
-    "permalink": "/docs/frontend/user-browser"
   }
 }

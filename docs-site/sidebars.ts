@@ -12,6 +12,7 @@ const sidebars: SidebarsConfig = {
         description: "Backend services, auth, database, and observability.",
       },
       items: [
+        "backend/grpc-api-overview",
         "backend/auth",
         "backend/audit",
         "backend/database",
@@ -19,6 +20,7 @@ const sidebars: SidebarsConfig = {
         "backend/health",
         "backend/mfa",
         "backend/org-policy-config",
+        "backend/organization-membership",
         "backend/policy-engine",
         "backend/sessions",
         "backend/session-lifecycle",
@@ -33,12 +35,17 @@ const sidebars: SidebarsConfig = {
         title: "Frontend",
         description: "Web client and org admin dashboard.",
       },
-      items: ["frontend/dashboard", "frontend/user-browser"],
+      items: ["frontend/architecture", "frontend/dashboard", "frontend/user-browser"],
     },
     {
       type: "category",
-      label: "Contributing",
-      items: ["contributing/pending"],
+      label: "Operations",
+      link: {
+        type: "generated-index",
+        title: "Operations",
+        description: "Deployment, environment, and production.",
+      },
+      items: ["operations/deployment"],
     },
   ],
 };

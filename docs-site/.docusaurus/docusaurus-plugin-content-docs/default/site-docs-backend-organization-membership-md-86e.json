@@ -1,0 +1,26 @@
+{
+  "id": "backend/organization-membership",
+  "title": "Organization and Membership",
+  "description": "This document describes organizations (tenants) and membership (users in orgs with roles): OrganizationService and MembershipService, protos, handlers, and how they relate to the dashboard and RBAC. For auth and session behavior, see auth and sessions.",
+  "source": "@site/docs/backend/organization-membership.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/organization-membership",
+  "permalink": "/docs/backend/organization-membership",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Organization and Membership",
+    "sidebar_label": "Organization and membership"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Org Policy Config",
+    "permalink": "/docs/backend/org-policy-config"
+  },
+  "next": {
+    "title": "Policy engine",
+    "permalink": "/docs/backend/policy-engine"
+  }
+}

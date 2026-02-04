@@ -16,8 +16,8 @@
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Frontend",
-    "permalink": "/docs/category/frontend"
+    "title": "Architecture",
+    "permalink": "/docs/frontend/architecture"
   },
   "next": {
     "title": "User Browser",

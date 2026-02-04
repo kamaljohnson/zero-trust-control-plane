@@ -16,8 +16,8 @@
   },
   "sidebar": "docsSidebar",
   "previous": {
-    "title": "Backend",
-    "permalink": "/docs/category/backend"
+    "title": "gRPC API overview",
+    "permalink": "/docs/backend/grpc-api-overview"
   },
   "next": {
     "title": "Audit",

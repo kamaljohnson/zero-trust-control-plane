@@ -1,0 +1,26 @@
+{
+  "id": "frontend/architecture",
+  "title": "Frontend Architecture",
+  "description": "This document describes the frontend architecture of the zero-trust control plane: Next.js App Router structure, auth context, gRPC/HTTP bridge, and session handling. For dashboard pages and browser flows, see Dashboard and User Browser.",
+  "source": "@site/docs/frontend/architecture.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/architecture",
+  "permalink": "/docs/frontend/architecture",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Frontend Architecture",
+    "sidebar_label": "Architecture"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Frontend",
+    "permalink": "/docs/category/frontend"
+  },
+  "next": {
+    "title": "Dashboard",
+    "permalink": "/docs/frontend/dashboard"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "operations/deployment",
+  "title": "Deployment and Operations",
+  "description": "This document describes how to run the backend and frontend (locally and in production), environment variables, and optional observability. For the full local Docker Compose stack (PostgreSQL, OpenTelemetry Collector, Loki, Tempo, Prometheus, Grafana), see deploy/README.md.",
+  "source": "@site/docs/operations/deployment.md",
+  "sourceDirName": "operations",
+  "slug": "/operations/deployment",
+  "permalink": "/docs/operations/deployment",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Deployment and Operations",
+    "sidebar_label": "Deployment"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Operations",
+    "permalink": "/docs/category/operations"
+  }
+}

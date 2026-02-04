@@ -31,6 +31,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "backend/grpc-api-overview",
+              "path": "/docs/backend/grpc-api-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "backend/health",
               "path": "/docs/backend/health",
               "sidebar": "docsSidebar"
@@ -43,6 +48,11 @@
             {
               "id": "backend/org-policy-config",
               "path": "/docs/backend/org-policy-config",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/organization-membership",
+              "path": "/docs/backend/organization-membership",
               "sidebar": "docsSidebar"
             },
             {
@@ -67,7 +77,11 @@
             },
             {
               "id": "contributing/pending",
-              "path": "/docs/contributing/pending",
+              "path": "/docs/contributing/pending"
+            },
+            {
+              "id": "frontend/architecture",
+              "path": "/docs/frontend/architecture",
               "sidebar": "docsSidebar"
             },
             {
@@ -86,6 +100,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "operations/deployment",
+              "path": "/docs/operations/deployment",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "/category/backend",
               "path": "/docs/category/backend",
               "sidebar": "docsSidebar"
@@ -93,6 +112,11 @@
             {
               "id": "/category/frontend",
               "path": "/docs/category/frontend",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "/category/operations",
+              "path": "/docs/category/operations",
               "sidebar": "docsSidebar"
             }
           ],
