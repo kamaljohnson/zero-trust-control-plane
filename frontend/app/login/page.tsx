@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
@@ -23,10 +23,12 @@ const DEV_OTP_ENABLED = process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || pr
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, verifyMFA, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgId, setOrgId] = useState(DEFAULT_ORG_ID);
+  const orgIdFromQuery = searchParams?.get("org_id") ?? "";
+  const [orgId, setOrgId] = useState(orgIdFromQuery || DEFAULT_ORG_ID);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [phoneIntentId, setPhoneIntentId] = useState<string | null>(null);
@@ -44,6 +46,14 @@ export default function LoginPage() {
       router.replace("/");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Sync orgId from query params
+  useEffect(() => {
+    const orgIdFromQuery = searchParams?.get("org_id") ?? "";
+    if (orgIdFromQuery) {
+      setOrgId(orgIdFromQuery);
+    }
+  }, [searchParams]);
 
   // On mount: if we were redirected from refresh with MFA required, restore challenge/intent from sessionStorage
   useEffect(() => {
@@ -350,6 +360,12 @@ export default function LoginPage() {
               Don&apos;t have an account?{" "}
               <Link href="/register" className="text-primary underline-offset-4 hover:underline">
                 Register
+              </Link>
+            </p>
+            <p className="text-center text-sm text-muted-foreground">
+              Need to create an organization?{" "}
+              <Link href="/register" className="text-primary underline-offset-4 hover:underline">
+                Register and create one
               </Link>
             </p>
           </CardFooter>

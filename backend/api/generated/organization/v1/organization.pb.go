@@ -146,6 +146,7 @@ func (x *Organization) GetCreatedAt() *timestamppb.Timestamp {
 type CreateOrganizationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -183,6 +184,13 @@ func (*CreateOrganizationRequest) Descriptor() ([]byte, []int) {
 func (x *CreateOrganizationRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateOrganizationRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -512,9 +520,10 @@ const file_organization_organization_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12@\n" +
 	"\x06status\x18\x03 \x01(\x0e2(.ztcp.organization.v1.OrganizationStatusR\x06status\x129\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"/\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"H\n" +
 	"\x19CreateOrganizationRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"d\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"d\n" +
 	"\x1aCreateOrganizationResponse\x12F\n" +
 	"\forganization\x18\x01 \x01(\v2\".ztcp.organization.v1.OrganizationR\forganization\"/\n" +
 	"\x16GetOrganizationRequest\x12\x15\n" +

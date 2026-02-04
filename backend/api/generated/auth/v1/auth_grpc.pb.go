@@ -33,7 +33,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
+// AuthService handles authentication and identity resolution. Used by Browser and Admin UI.
 type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
@@ -126,7 +126,7 @@ func (c *authServiceClient) LinkIdentity(ctx context.Context, in *LinkIdentityRe
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
 //
-// AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
+// AuthService handles authentication and identity resolution. Used by Browser and Admin UI.
 type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*AuthResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)

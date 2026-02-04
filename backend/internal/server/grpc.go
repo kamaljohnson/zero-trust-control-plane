@@ -99,7 +99,7 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	}
 	authv1.RegisterAuthServiceServer(s, identityhandler.NewAuthServer(authSvc))
 	userv1.RegisterUserServiceServer(s, userhandler.NewServer(deps.UserRepo))
-	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer(deps.OrgRepo))
+	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer(deps.OrgRepo, deps.UserRepo, deps.MembershipRepo))
 	devicev1.RegisterDeviceServiceServer(s, devicehandler.NewServer(deps.DeviceRepo))
 	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer(deps.MembershipRepo, deps.UserRepo, deps.AuditLogger))
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))

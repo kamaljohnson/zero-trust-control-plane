@@ -23,6 +23,7 @@ message Organization {
 // CreateOrganizationRequest creates a new organization.
 message CreateOrganizationRequest {
   string name = 1;
+  string user_id = 2;
 }
 
 // CreateOrganizationResponse returns the created organization.

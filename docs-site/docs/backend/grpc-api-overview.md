@@ -21,7 +21,7 @@ This document summarizes the **gRPC API** of the zero-trust control plane: a sin
 | **AdminService** | System admin | GetSystemStats |
 | **AuthService** | Auth, MFA, tokens | Register, Login, VerifyMFA, SubmitPhoneAndRequestMFA, Refresh, Logout, LinkIdentity |
 | **UserService** | User lookup and lifecycle | GetUser, GetUserByEmail, ListUsers, DisableUser, EnableUser |
-| **OrganizationService** | Orgs (tenants) | CreateOrganization, GetOrganization, ListOrganizations, SuspendOrganization |
+| **OrganizationService** | Orgs (tenants) | CreateOrganization (public), GetOrganization, ListOrganizations, SuspendOrganization |
 | **MembershipService** | Org membership and roles | AddMember, RemoveMember, UpdateRole, ListMembers |
 | **DeviceService** | Device trust | RegisterDevice, GetDevice, ListDevices, RevokeDevice |
 | **SessionService** | Sessions | RevokeSession, ListSessions, GetSession, RevokeAllSessionsForUser |
@@ -33,6 +33,12 @@ This document summarizes the **gRPC API** of the zero-trust control plane: a sin
 | **DevService** | Dev-only (e.g. OTP) | GetOTP |
 
 Details: [auth](./auth), [sessions](./sessions), [session-lifecycle](./session-lifecycle), [mfa](./mfa), [device-trust](./device-trust), [policy-engine](./policy-engine), [org-policy-config](./org-policy-config), [audit](./audit), [organization-membership](./organization-membership), [health](./health), [telemetry](./telemetry).
+
+**Public Endpoints**: Most RPCs require a Bearer access token (obtained via Login or Refresh). Public endpoints that do not require authentication include:
+- `AuthService.Register`, `AuthService.Login`, `AuthService.VerifyMFA`, `AuthService.SubmitPhoneAndRequestMFA`, `AuthService.Refresh`
+- `OrganizationService.CreateOrganization` (allows newly registered users to create organizations before login)
+- `HealthService.HealthCheck`
+- `DevService.GetOTP` (dev-only)
 
 ## Calling the API
 

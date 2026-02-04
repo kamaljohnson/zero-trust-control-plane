@@ -15,6 +15,7 @@ import (
 	authv1 "zero-trust-control-plane/backend/api/generated/auth/v1"
 	devv1 "zero-trust-control-plane/backend/api/generated/dev/v1"
 	healthv1 "zero-trust-control-plane/backend/api/generated/health/v1"
+	organizationv1 "zero-trust-control-plane/backend/api/generated/organization/v1"
 	"zero-trust-control-plane/backend/internal/audit"
 	auditrepo "zero-trust-control-plane/backend/internal/audit/repository"
 	"zero-trust-control-plane/backend/internal/config"
@@ -163,6 +164,7 @@ func main() {
 			authv1.AuthService_SubmitPhoneAndRequestMFA_FullMethodName: true,
 			authv1.AuthService_Refresh_FullMethodName:                  true,
 			healthv1.HealthService_HealthCheck_FullMethodName:          true,
+			organizationv1.OrganizationService_CreateOrganization_FullMethodName: true,
 		}
 		if deps.DevOTPHandler != nil {
 			publicMethods[devv1.DevService_GetOTP_FullMethodName] = true

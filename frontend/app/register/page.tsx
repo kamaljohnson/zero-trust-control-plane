@@ -49,6 +49,11 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState("");
+  const [creatingOrg, setCreatingOrg] = useState(false);
+  const [orgCreated, setOrgCreated] = useState(false);
+  const [createdOrgId, setCreatedOrgId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -78,8 +83,13 @@ export default function RegisterPage() {
     }
     setSubmitting(true);
     try {
-      await authClient.register(trimmedEmail, password, name.trim() || undefined);
-      setSuccess(true);
+      const res = await authClient.register(trimmedEmail, password, name.trim() || undefined);
+      if (res.user_id) {
+        setUserId(res.user_id);
+        setSuccess(true);
+      } else {
+        setError("Registration succeeded but user_id was not returned.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -87,22 +97,116 @@ export default function RegisterPage() {
     }
   }
 
-  if (success) {
+  async function handleCreateOrganization(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId || !orgName.trim()) {
+      setError("Organization name is required.");
+      return;
+    }
+    setError(null);
+    setCreatingOrg(true);
+    try {
+      const res = await fetch("/api/organization/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: orgName.trim(), user_id: userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Organization creation failed.");
+      }
+      if (data.organization?.id) {
+        setCreatedOrgId(data.organization.id);
+        setOrgCreated(true);
+      } else {
+        setError("Organization created but ID was not returned.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Organization creation failed.");
+    } finally {
+      setCreatingOrg(false);
+    }
+  }
+
+  if (orgCreated && createdOrgId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Organization created</CardTitle>
+            <CardDescription>
+              Your organization has been created. You can now sign in with your organization ID.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border border-muted bg-muted/50 p-3">
+              <p className="text-sm font-medium">Organization ID:</p>
+              <p className="text-sm font-mono text-muted-foreground break-all">{createdOrgId}</p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button
+              asChild
+              className="w-full"
+              onClick={() => {
+                router.push(`/login?org_id=${encodeURIComponent(createdOrgId)}`);
+              }}
+            >
+              <Link href={`/login?org_id=${encodeURIComponent(createdOrgId)}`}>
+                Go to sign in
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (success && userId) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle>Account created</CardTitle>
             <CardDescription>
-              You must be added to an organization before you can log in. Contact your
-              administrator, then sign in.
+              Create an organization to get started, or sign in to an existing organization.
             </CardDescription>
           </CardHeader>
-          <CardFooter>
-            <Button asChild className="w-full">
-              <Link href="/login">Go to sign in</Link>
-            </Button>
-          </CardFooter>
+          <form onSubmit={handleCreateOrganization}>
+            <CardContent className="space-y-4">
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="org-name">Organization name</Label>
+                <Input
+                  id="org-name"
+                  type="text"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  required
+                  placeholder="My Organization"
+                  disabled={creatingOrg}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={creatingOrg || !orgName.trim()}>
+                {creatingOrg ? "Creating organization…" : "Create organization"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={creatingOrg}
+                asChild
+              >
+                <Link href="/login">Sign in to existing organization</Link>
+              </Button>
+            </CardFooter>
+          </form>
         </Card>
       </div>
     );

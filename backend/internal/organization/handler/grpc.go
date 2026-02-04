@@ -3,31 +3,104 @@ package handler
 import (
 	"context"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	organizationv1 "zero-trust-control-plane/backend/api/generated/organization/v1"
-	"zero-trust-control-plane/backend/internal/organization/domain"
+	membershipdomain "zero-trust-control-plane/backend/internal/membership/domain"
+	membershiprepo "zero-trust-control-plane/backend/internal/membership/repository"
+	organizationdomain "zero-trust-control-plane/backend/internal/organization/domain"
 	organizationrepo "zero-trust-control-plane/backend/internal/organization/repository"
+	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 )
 
 // Server implements OrganizationService (proto server) for multi-tenancy and org management.
 // Proto: organization/organization.proto → internal/organization/handler.
 type Server struct {
 	organizationv1.UnimplementedOrganizationServiceServer
-	orgRepo organizationrepo.Repository
+	orgRepo        organizationrepo.Repository
+	userRepo       userrepo.Repository
+	membershipRepo membershiprepo.Repository
 }
 
-// NewServer returns a new Organization gRPC server. orgRepo may be nil; then all RPCs return Unimplemented.
-func NewServer(orgRepo organizationrepo.Repository) *Server {
-	return &Server{orgRepo: orgRepo}
+// NewServer returns a new Organization gRPC server.
+// If orgRepo, userRepo, or membershipRepo is nil, CreateOrganization returns Unimplemented.
+// Other RPCs may return Unimplemented if orgRepo is nil.
+func NewServer(orgRepo organizationrepo.Repository, userRepo userrepo.Repository, membershipRepo membershiprepo.Repository) *Server {
+	return &Server{
+		orgRepo:        orgRepo,
+		userRepo:       userRepo,
+		membershipRepo: membershipRepo,
+	}
 }
 
-// CreateOrganization creates a new organization. TODO: implement.
+// CreateOrganization creates a new organization with the given name and assigns the user as owner.
+// The organization is auto-activated (status=active) for PoC. Requires user_id and name.
 func (s *Server) CreateOrganization(ctx context.Context, req *organizationv1.CreateOrganizationRequest) (*organizationv1.CreateOrganizationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateOrganization not implemented")
+	if s.orgRepo == nil || s.userRepo == nil || s.membershipRepo == nil {
+		return nil, status.Error(codes.Unimplemented, "method CreateOrganization not implemented")
+	}
+
+	name := strings.TrimSpace(req.GetName())
+	userID := strings.TrimSpace(req.GetUserId())
+
+	if name == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+	if userID == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	// Verify user exists
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to look up user")
+	}
+	if user == nil {
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+
+	// Generate org ID and create organization
+	orgID := uuid.New().String()
+	now := time.Now().UTC()
+	org := &organizationdomain.Org{
+		ID:        orgID,
+		Name:      name,
+		Status:    organizationdomain.OrgStatusActive,
+		CreatedAt: now,
+	}
+	if err := org.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if err := s.orgRepo.CreateOrganization(ctx, org); err != nil {
+		return nil, status.Error(codes.Internal, "failed to create organization")
+	}
+
+	// Create membership with owner role
+	membershipID := uuid.New().String()
+	membership := &membershipdomain.Membership{
+		ID:        membershipID,
+		UserID:    userID,
+		OrgID:     orgID,
+		Role:      membershipdomain.RoleOwner,
+		CreatedAt: now,
+	}
+
+	if err := s.membershipRepo.CreateMembership(ctx, membership); err != nil {
+		// If membership creation fails, we should ideally rollback org creation,
+		// but for simplicity in PoC, we'll just return an error.
+		// In production, this should be a transaction.
+		return nil, status.Error(codes.Internal, "failed to create membership")
+	}
+
+	return &organizationv1.CreateOrganizationResponse{
+		Organization: domainOrgToProto(org),
+	}, nil
 }
 
 // GetOrganization returns an organization by ID.
@@ -61,15 +134,15 @@ func (s *Server) SuspendOrganization(ctx context.Context, req *organizationv1.Su
 	return nil, status.Error(codes.Unimplemented, "method SuspendOrganization not implemented")
 }
 
-func domainOrgToProto(o *domain.Org) *organizationv1.Organization {
+func domainOrgToProto(o *organizationdomain.Org) *organizationv1.Organization {
 	if o == nil {
 		return nil
 	}
 	var status organizationv1.OrganizationStatus
 	switch o.Status {
-	case domain.OrgStatusActive:
+	case organizationdomain.OrgStatusActive:
 		status = organizationv1.OrganizationStatus_ORGANIZATION_STATUS_ACTIVE
-	case domain.OrgStatusSuspended:
+	case organizationdomain.OrgStatusSuspended:
 		status = organizationv1.OrganizationStatus_ORGANIZATION_STATUS_SUSPENDED
 	default:
 		status = organizationv1.OrganizationStatus_ORGANIZATION_STATUS_UNSPECIFIED

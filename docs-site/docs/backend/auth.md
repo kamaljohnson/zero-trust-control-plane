@@ -209,7 +209,19 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 1. Validate email format and password strength (via `validateEmail` and `validatePassword` in [auth_service.go](../../../backend/internal/identity/service/auth_service.go)).
 2. Ensure no user exists with the given email (return AlreadyExists if so).
 3. Create user (status active) and local identity (provider `local`, provider_id = email, bcrypt-hashed password).
-4. Return AuthResponse with `user_id` only (no tokens or org_id). **No organization or membership is created.** To obtain tokens, the user must later be added to an org (a row in **memberships**). **MembershipService.AddMember is currently unimplemented**; in practice, membership is created manually (e.g. direct DB insert or admin tool) until AddMember is implemented. After membership exists, the client calls Login with that `org_id`.
+4. Return AuthResponse with `user_id` only (no tokens or org_id). **No organization or membership is created.**
+
+After registration, the user has two options to obtain access:
+
+**Option 1: Create a new organization** (recommended for new users):
+- Call `OrganizationService.CreateOrganization` with the `user_id` and an organization name.
+- The system creates the organization with `active` status and assigns the user as `owner`.
+- The user can then log in using the returned organization `id` as `org_id`.
+- See [Organization Creation Flow](../organization-membership#organization-creation-flow) for details.
+
+**Option 2: Join an existing organization**:
+- An organization owner or admin adds the user via `MembershipService.AddMember`.
+- After membership is created, the user can log in with that organization's `id` as `org_id`.
 
 ### Login
 
@@ -220,6 +232,31 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 5. Load platform and org MFA/device-trust settings (from `platform_settings` and `org_mfa_settings`) and run policy evaluation (`PolicyEvaluator.EvaluateMFA`). See [mfa.md](./mfa) and [device-trust.md](./device-trust).
 6. **If MFA required**: If user has no phone, create MFA intent and return **LoginResponse** with **phone_required** (intent_id); client collects phone and calls SubmitPhoneAndRequestMFA, then VerifyMFA. If user has phone, create MFA challenge, send OTP (if SMS configured); return **LoginResponse** with **mfa_required** (challenge_id, phone_mask). Client then calls VerifyMFA with challenge_id and OTP.
 7. **If MFA not required**: Create session with id, user_id, org_id, device_id, expires_at, and **refresh_jti** and **refresh_token_hash** from the first refresh token; issue access and refresh JWTs; return **LoginResponse** with **tokens** (AuthResponse).
+
+### Organization Creation After Registration
+
+After a user successfully registers and receives a `user_id`, they can create an organization to get started. This flow enables self-service organization setup:
+
+1. **User registers** via `AuthService.Register` and receives `user_id`.
+2. **User creates organization** by calling `OrganizationService.CreateOrganization` with:
+   - `name`: The desired organization name
+   - `user_id`: The `user_id` received from registration
+3. **System processes creation**:
+   - Validates that the user exists
+   - Creates organization with `active` status (auto-activated for PoC)
+   - Creates membership record with `role=owner` for the creating user
+   - Returns the created organization with its `id`
+4. **User logs in** using:
+   - Email and password (from registration)
+   - `org_id`: The organization `id` returned from `CreateOrganization`
+
+**Why CreateOrganization is public**: This endpoint does not require authentication (no Bearer token) because users need to create organizations before they can log in and obtain tokens. The system validates that the `user_id` exists to ensure only registered users can create organizations.
+
+**Auto-activation**: For the PoC, organizations are automatically activated (`status=ACTIVE`) upon creation. In production, this would typically require platform administrator approval before the organization becomes active.
+
+**Owner assignment**: The creating user is automatically assigned the `owner` role, giving them full administrative control over the organization. They can add members, configure policies, manage sessions, and perform all org-admin operations.
+
+**Alternative**: Users can also be added to existing organizations by organization owners/admins via `MembershipService.AddMember`, then log in with that organization's `id`.
 
 ### VerifyMFA
 
