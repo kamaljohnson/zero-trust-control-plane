@@ -11,7 +11,7 @@ This document describes the authentication implementation for the zero-trust con
 
 ## Overview
 
-Auth provides **password-only** authentication for Browser, CLI, and Admin UI with enterprise-grade security: bcrypt password hashing, JWT access and refresh tokens (RS256/ES256), refresh-token rotation, session binding via `refresh_jti` and hashed refresh token, refresh reuse detection (revoke all user sessions on reuse), and strong password policy (12+ chars, mixed case, number, symbol).
+Auth provides **password-only** authentication for Browser and Admin UI with enterprise-grade security: bcrypt password hashing, JWT access and refresh tokens (RS256/ES256), refresh-token rotation, session binding via `refresh_jti` and hashed refresh token, refresh reuse detection (revoke all user sessions on reuse), and strong password policy (12+ chars, mixed case, number, symbol).
 
 **Scope**: Register, Login (with optional risk-based MFA), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 

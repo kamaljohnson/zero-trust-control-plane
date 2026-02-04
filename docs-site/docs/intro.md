@@ -5,7 +5,7 @@ sidebar_label: Introduction
 
 # Introduction
 
-Welcome to the **Zero Trust Control Plane** documentation. This project is a proof-of-concept zero-trust session and policy control plane: backend (Go gRPC), web client (Next.js), and CLI.
+Welcome to the **Zero Trust Control Plane** documentation. This project is a proof-of-concept zero-trust session and policy control plane: backend (Go gRPC) and web client (Next.js).
 
 ## What you'll find here
 

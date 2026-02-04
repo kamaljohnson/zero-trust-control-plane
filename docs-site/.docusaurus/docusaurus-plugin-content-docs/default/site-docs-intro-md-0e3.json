@@ -1,7 +1,7 @@
 {
   "id": "intro",
   "title": "Introduction",
-  "description": "Welcome to the Zero Trust Control Plane documentation. This project is a proof-of-concept zero-trust session and policy control plane: backend (Go gRPC), web client (Next.js), and CLI.",
+  "description": "Welcome to the Zero Trust Control Plane documentation. This project is a proof-of-concept zero-trust session and policy control plane: backend (Go gRPC) and web client (Next.js).",
   "source": "@site/docs/intro.md",
   "sourceDirName": ".",
   "slug": "/intro",

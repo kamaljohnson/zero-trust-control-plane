@@ -17,13 +17,13 @@ export default function Home(): React.ReactElement {
   return (
     <Layout
       title="Zero Trust Control Plane — Documentation"
-      description="Documentation for the zero-trust session and policy control plane: backend (Go gRPC), web client (Next.js), and CLI. Auth, sessions, policy engine, org admin dashboard, database, and telemetry."
+      description="Documentation for the zero-trust session and policy control plane: backend (Go gRPC) and web client (Next.js). Auth, sessions, policy engine, org admin dashboard, database, and telemetry."
     >
       <main style={{ padding: "2rem 1rem", maxWidth: 900, margin: "0 auto" }}>
         <section style={{ textAlign: "center", marginBottom: "3rem" }}>
           <h1>Zero Trust Control Plane — Documentation</h1>
           <p style={{ fontSize: "1.15rem", marginBottom: "1.5rem" }}>
-            This site documents a proof-of-concept <strong>zero-trust session and policy control plane</strong>: a backend (Go gRPC), web client (Next.js), and CLI. Here you’ll find backend services (auth, sessions, policy engine, org policy config, database, telemetry) and the org admin dashboard.
+            This site documents a proof-of-concept <strong>zero-trust session and policy control plane</strong>: a backend (Go gRPC), web client (Next.js). Here you’ll find backend services (auth, sessions, policy engine, org policy config, database, telemetry) and the org admin dashboard.
           </p>
           <Link to="/docs/intro" className="button button--primary button--lg">
             Get started

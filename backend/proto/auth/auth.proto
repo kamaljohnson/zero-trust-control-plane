@@ -102,7 +102,7 @@ message LinkIdentityResponse {
   string identity_id = 1;
 }
 
-// AuthService handles authentication and identity resolution. Used by Browser, CLI, Admin UI.
+// AuthService handles authentication and identity resolution. Used by Browser and Admin UI.
 service AuthService {
   rpc Register(RegisterRequest) returns (AuthResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
