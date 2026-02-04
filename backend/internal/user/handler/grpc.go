@@ -30,7 +30,20 @@ func (s *Server) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*user
 	if s.userRepo == nil {
 		return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 	}
-	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
+	userID := strings.TrimSpace(req.GetUserId())
+	if userID == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id required")
+	}
+	u, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to look up user")
+	}
+	if u == nil {
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+	return &userv1.GetUserResponse{
+		User: domainUserToProto(u),
+	}, nil
 }
 
 // GetUserByEmail returns a user by email. Caller must be authenticated.

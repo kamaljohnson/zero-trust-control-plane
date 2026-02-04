@@ -29,6 +29,7 @@ import (
 	membershiphandler "zero-trust-control-plane/backend/internal/membership/handler"
 	membershiprepo "zero-trust-control-plane/backend/internal/membership/repository"
 	organizationhandler "zero-trust-control-plane/backend/internal/organization/handler"
+	organizationrepo "zero-trust-control-plane/backend/internal/organization/repository"
 	orgmfasettingsrepo "zero-trust-control-plane/backend/internal/orgmfasettings/repository"
 	orgpolicyconfighandler "zero-trust-control-plane/backend/internal/orgpolicyconfig/handler"
 	orgpolicyconfigrepo "zero-trust-control-plane/backend/internal/orgpolicyconfig/repository"
@@ -72,6 +73,8 @@ type Deps struct {
 	OrgPolicyConfigRepo orgpolicyconfigrepo.Repository
 	// OrgMFASettingsRepo is used by OrgPolicyConfigService to sync auth_mfa and device_trust on update. If nil, sync is skipped.
 	OrgMFASettingsRepo orgmfasettingsrepo.Repository
+	// OrgRepo is used by OrganizationService. If nil, organization RPCs return Unimplemented.
+	OrgRepo organizationrepo.Repository
 }
 
 // RegisterServices registers all proto gRPC services with the given server.
@@ -96,7 +99,7 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	}
 	authv1.RegisterAuthServiceServer(s, identityhandler.NewAuthServer(authSvc))
 	userv1.RegisterUserServiceServer(s, userhandler.NewServer(deps.UserRepo))
-	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer())
+	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer(deps.OrgRepo))
 	devicev1.RegisterDeviceServiceServer(s, devicehandler.NewServer(deps.DeviceRepo))
 	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer(deps.MembershipRepo, deps.UserRepo, deps.AuditLogger))
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))

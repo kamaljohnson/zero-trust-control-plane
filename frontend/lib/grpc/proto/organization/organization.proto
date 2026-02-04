@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package ztcp.organization.v1;
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// OrganizationStatus is the organization lifecycle status.
+enum OrganizationStatus {
+  ORGANIZATION_STATUS_UNSPECIFIED = 0;
+  ORGANIZATION_STATUS_ACTIVE = 1;
+  ORGANIZATION_STATUS_SUSPENDED = 2;
+}
+
+// Organization represents an organization/tenant.
+message Organization {
+  string id = 1;
+  string name = 2;
+  OrganizationStatus status = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// CreateOrganizationRequest creates a new organization.
+message CreateOrganizationRequest {
+  string name = 1;
+}
+
+// CreateOrganizationResponse returns the created organization.
+message CreateOrganizationResponse {
+  Organization organization = 1;
+}
+
+// GetOrganizationRequest identifies the organization by ID.
+message GetOrganizationRequest {
+  string org_id = 1;
+}
+
+// GetOrganizationResponse returns the organization.
+message GetOrganizationResponse {
+  Organization organization = 1;
+}
+
+// ListOrganizationsRequest lists organizations with pagination.
+message ListOrganizationsRequest {
+  ztcp.common.v1.Pagination pagination = 1;
+}
+
+// ListOrganizationsResponse returns a page of organizations.
+message ListOrganizationsResponse {
+  repeated Organization organizations = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// SuspendOrganizationRequest identifies the organization to suspend.
+message SuspendOrganizationRequest {
+  string org_id = 1;
+}
+
+// SuspendOrganizationResponse is empty on success.
+message SuspendOrganizationResponse {}
+
+// OrganizationService handles multi-tenancy and organization management.
+service OrganizationService {
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse);
+  rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse);
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse);
+  rpc SuspendOrganization(SuspendOrganizationRequest) returns (SuspendOrganizationResponse);
+}

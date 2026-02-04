@@ -95,6 +95,21 @@ export function getUserClient(): grpc.Client {
   return userClient;
 }
 
+// Organization
+const organizationDef = protoLoader.loadSync(path.join(PROTO_ROOT, "organization", "organization.proto"), loadOptions);
+const organizationPkg = grpc.loadPackageDefinition(organizationDef) as unknown as {
+  ztcp: { organization: { v1: { OrganizationService: ServiceClientConstructor } } };
+};
+const OrganizationServiceClient = organizationPkg.ztcp.organization.v1.OrganizationService;
+
+let organizationClient: grpc.Client | null = null;
+export function getOrganizationClient(): grpc.Client {
+  if (!organizationClient) {
+    organizationClient = new OrganizationServiceClient(getChannel(), getCredentials());
+  }
+  return organizationClient;
+}
+
 // OrgPolicyConfig
 const orgPolicyConfigDef = protoLoader.loadSync(path.join(PROTO_ROOT, "orgpolicyconfig", "orgpolicyconfig.proto"), loadOptions);
 const orgPolicyConfigPkg = grpc.loadPackageDefinition(orgPolicyConfigDef) as unknown as {
@@ -188,6 +203,15 @@ export async function listSessions(
   );
 }
 
+export async function getSession(accessToken: string, sessionId: string) {
+  return promisifyWithMeta(
+    getSessionClient(),
+    "GetSession",
+    { session_id: sessionId },
+    metadataWithAuth(accessToken)
+  );
+}
+
 export async function revokeSession(accessToken: string, sessionId: string) {
   return promisifyWithMeta(
     getSessionClient(),
@@ -231,8 +255,17 @@ export async function listAuditLogs(
 }
 
 // User RPCs
+export async function getUser(accessToken: string, userId: string) {
+  return promisifyWithMeta(getUserClient(), "GetUser", { user_id: userId }, metadataWithAuth(accessToken));
+}
+
 export async function getUserByEmail(accessToken: string, email: string) {
   return promisifyWithMeta(getUserClient(), "GetUserByEmail", { email }, metadataWithAuth(accessToken));
+}
+
+// Organization RPCs
+export async function getOrganization(accessToken: string, orgId: string) {
+  return promisifyWithMeta(getOrganizationClient(), "GetOrganization", { org_id: orgId }, metadataWithAuth(accessToken));
 }
 
 // OrgPolicyConfig RPCs
