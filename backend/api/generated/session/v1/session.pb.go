@@ -418,6 +418,96 @@ func (x *ListSessionsResponse) GetPagination() *v1.PaginationResult {
 	return nil
 }
 
+// RevokeAllSessionsForUserRequest identifies the user in the org whose sessions to revoke.
+type RevokeAllSessionsForUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAllSessionsForUserRequest) Reset() {
+	*x = RevokeAllSessionsForUserRequest{}
+	mi := &file_session_session_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAllSessionsForUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAllSessionsForUserRequest) ProtoMessage() {}
+
+func (x *RevokeAllSessionsForUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_session_session_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAllSessionsForUserRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAllSessionsForUserRequest) Descriptor() ([]byte, []int) {
+	return file_session_session_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *RevokeAllSessionsForUserRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *RevokeAllSessionsForUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+// RevokeAllSessionsForUserResponse is empty on success.
+type RevokeAllSessionsForUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAllSessionsForUserResponse) Reset() {
+	*x = RevokeAllSessionsForUserResponse{}
+	mi := &file_session_session_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAllSessionsForUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAllSessionsForUserResponse) ProtoMessage() {}
+
+func (x *RevokeAllSessionsForUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_session_session_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAllSessionsForUserResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAllSessionsForUserResponse) Descriptor() ([]byte, []int) {
+	return file_session_session_proto_rawDescGZIP(), []int{8}
+}
+
 var File_session_session_proto protoreflect.FileDescriptor
 
 const file_session_session_proto_rawDesc = "" +
@@ -457,12 +547,17 @@ const file_session_session_proto_rawDesc = "" +
 	"\bsessions\x18\x01 \x03(\v2\x18.ztcp.session.v1.SessionR\bsessions\x12@\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2 .ztcp.common.v1.PaginationResultR\n" +
-	"pagination2\xa4\x02\n" +
+	"pagination\"Q\n" +
+	"\x1fRevokeAllSessionsForUserRequest\x12\x15\n" +
+	"\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"\"\n" +
+	" RevokeAllSessionsForUserResponse2\xa5\x03\n" +
 	"\x0eSessionService\x12^\n" +
 	"\rRevokeSession\x12%.ztcp.session.v1.RevokeSessionRequest\x1a&.ztcp.session.v1.RevokeSessionResponse\x12[\n" +
 	"\fListSessions\x12$.ztcp.session.v1.ListSessionsRequest\x1a%.ztcp.session.v1.ListSessionsResponse\x12U\n" +
 	"\n" +
-	"GetSession\x12\".ztcp.session.v1.GetSessionRequest\x1a#.ztcp.session.v1.GetSessionResponseBEZCzero-trust-control-plane/backend/api/generated/session/v1;sessionv1b\x06proto3"
+	"GetSession\x12\".ztcp.session.v1.GetSessionRequest\x1a#.ztcp.session.v1.GetSessionResponse\x12\x7f\n" +
+	"\x18RevokeAllSessionsForUser\x120.ztcp.session.v1.RevokeAllSessionsForUserRequest\x1a1.ztcp.session.v1.RevokeAllSessionsForUserResponseBEZCzero-trust-control-plane/backend/api/generated/session/v1;sessionv1b\x06proto3"
 
 var (
 	file_session_session_proto_rawDescOnce sync.Once
@@ -476,36 +571,40 @@ func file_session_session_proto_rawDescGZIP() []byte {
 	return file_session_session_proto_rawDescData
 }
 
-var file_session_session_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_session_session_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_session_session_proto_goTypes = []any{
-	(*Session)(nil),               // 0: ztcp.session.v1.Session
-	(*RevokeSessionRequest)(nil),  // 1: ztcp.session.v1.RevokeSessionRequest
-	(*RevokeSessionResponse)(nil), // 2: ztcp.session.v1.RevokeSessionResponse
-	(*GetSessionRequest)(nil),     // 3: ztcp.session.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),    // 4: ztcp.session.v1.GetSessionResponse
-	(*ListSessionsRequest)(nil),   // 5: ztcp.session.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),  // 6: ztcp.session.v1.ListSessionsResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
-	(*v1.Pagination)(nil),         // 8: ztcp.common.v1.Pagination
-	(*v1.PaginationResult)(nil),   // 9: ztcp.common.v1.PaginationResult
+	(*Session)(nil),                          // 0: ztcp.session.v1.Session
+	(*RevokeSessionRequest)(nil),             // 1: ztcp.session.v1.RevokeSessionRequest
+	(*RevokeSessionResponse)(nil),            // 2: ztcp.session.v1.RevokeSessionResponse
+	(*GetSessionRequest)(nil),                // 3: ztcp.session.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),               // 4: ztcp.session.v1.GetSessionResponse
+	(*ListSessionsRequest)(nil),              // 5: ztcp.session.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),             // 6: ztcp.session.v1.ListSessionsResponse
+	(*RevokeAllSessionsForUserRequest)(nil),  // 7: ztcp.session.v1.RevokeAllSessionsForUserRequest
+	(*RevokeAllSessionsForUserResponse)(nil), // 8: ztcp.session.v1.RevokeAllSessionsForUserResponse
+	(*timestamppb.Timestamp)(nil),            // 9: google.protobuf.Timestamp
+	(*v1.Pagination)(nil),                    // 10: ztcp.common.v1.Pagination
+	(*v1.PaginationResult)(nil),              // 11: ztcp.common.v1.PaginationResult
 }
 var file_session_session_proto_depIdxs = []int32{
-	7,  // 0: ztcp.session.v1.Session.expires_at:type_name -> google.protobuf.Timestamp
-	7,  // 1: ztcp.session.v1.Session.revoked_at:type_name -> google.protobuf.Timestamp
-	7,  // 2: ztcp.session.v1.Session.last_seen_at:type_name -> google.protobuf.Timestamp
-	7,  // 3: ztcp.session.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 0: ztcp.session.v1.Session.expires_at:type_name -> google.protobuf.Timestamp
+	9,  // 1: ztcp.session.v1.Session.revoked_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: ztcp.session.v1.Session.last_seen_at:type_name -> google.protobuf.Timestamp
+	9,  // 3: ztcp.session.v1.Session.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: ztcp.session.v1.GetSessionResponse.session:type_name -> ztcp.session.v1.Session
-	8,  // 5: ztcp.session.v1.ListSessionsRequest.pagination:type_name -> ztcp.common.v1.Pagination
+	10, // 5: ztcp.session.v1.ListSessionsRequest.pagination:type_name -> ztcp.common.v1.Pagination
 	0,  // 6: ztcp.session.v1.ListSessionsResponse.sessions:type_name -> ztcp.session.v1.Session
-	9,  // 7: ztcp.session.v1.ListSessionsResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
+	11, // 7: ztcp.session.v1.ListSessionsResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
 	1,  // 8: ztcp.session.v1.SessionService.RevokeSession:input_type -> ztcp.session.v1.RevokeSessionRequest
 	5,  // 9: ztcp.session.v1.SessionService.ListSessions:input_type -> ztcp.session.v1.ListSessionsRequest
 	3,  // 10: ztcp.session.v1.SessionService.GetSession:input_type -> ztcp.session.v1.GetSessionRequest
-	2,  // 11: ztcp.session.v1.SessionService.RevokeSession:output_type -> ztcp.session.v1.RevokeSessionResponse
-	6,  // 12: ztcp.session.v1.SessionService.ListSessions:output_type -> ztcp.session.v1.ListSessionsResponse
-	4,  // 13: ztcp.session.v1.SessionService.GetSession:output_type -> ztcp.session.v1.GetSessionResponse
-	11, // [11:14] is the sub-list for method output_type
-	8,  // [8:11] is the sub-list for method input_type
+	7,  // 11: ztcp.session.v1.SessionService.RevokeAllSessionsForUser:input_type -> ztcp.session.v1.RevokeAllSessionsForUserRequest
+	2,  // 12: ztcp.session.v1.SessionService.RevokeSession:output_type -> ztcp.session.v1.RevokeSessionResponse
+	6,  // 13: ztcp.session.v1.SessionService.ListSessions:output_type -> ztcp.session.v1.ListSessionsResponse
+	4,  // 14: ztcp.session.v1.SessionService.GetSession:output_type -> ztcp.session.v1.GetSessionResponse
+	8,  // 15: ztcp.session.v1.SessionService.RevokeAllSessionsForUser:output_type -> ztcp.session.v1.RevokeAllSessionsForUserResponse
+	12, // [12:16] is the sub-list for method output_type
+	8,  // [8:12] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -522,7 +621,7 @@ func file_session_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_session_session_proto_rawDesc), len(file_session_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_RevokeSession_FullMethodName = "/ztcp.session.v1.SessionService/RevokeSession"
-	SessionService_ListSessions_FullMethodName  = "/ztcp.session.v1.SessionService/ListSessions"
-	SessionService_GetSession_FullMethodName    = "/ztcp.session.v1.SessionService/GetSession"
+	SessionService_RevokeSession_FullMethodName            = "/ztcp.session.v1.SessionService/RevokeSession"
+	SessionService_ListSessions_FullMethodName             = "/ztcp.session.v1.SessionService/ListSessions"
+	SessionService_GetSession_FullMethodName               = "/ztcp.session.v1.SessionService/GetSession"
+	SessionService_RevokeAllSessionsForUser_FullMethodName = "/ztcp.session.v1.SessionService/RevokeAllSessionsForUser"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -33,6 +34,7 @@ type SessionServiceClient interface {
 	RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error)
 	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
 	GetSession(ctx context.Context, in *GetSessionRequest, opts ...grpc.CallOption) (*GetSessionResponse, error)
+	RevokeAllSessionsForUser(ctx context.Context, in *RevokeAllSessionsForUserRequest, opts ...grpc.CallOption) (*RevokeAllSessionsForUserResponse, error)
 }
 
 type sessionServiceClient struct {
@@ -73,6 +75,16 @@ func (c *sessionServiceClient) GetSession(ctx context.Context, in *GetSessionReq
 	return out, nil
 }
 
+func (c *sessionServiceClient) RevokeAllSessionsForUser(ctx context.Context, in *RevokeAllSessionsForUserRequest, opts ...grpc.CallOption) (*RevokeAllSessionsForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeAllSessionsForUserResponse)
+	err := c.cc.Invoke(ctx, SessionService_RevokeAllSessionsForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
@@ -82,6 +94,7 @@ type SessionServiceServer interface {
 	RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error)
 	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
 	GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error)
+	RevokeAllSessionsForUser(context.Context, *RevokeAllSessionsForUserRequest) (*RevokeAllSessionsForUserResponse, error)
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -100,6 +113,9 @@ func (UnimplementedSessionServiceServer) ListSessions(context.Context, *ListSess
 }
 func (UnimplementedSessionServiceServer) GetSession(context.Context, *GetSessionRequest) (*GetSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSession not implemented")
+}
+func (UnimplementedSessionServiceServer) RevokeAllSessionsForUser(context.Context, *RevokeAllSessionsForUserRequest) (*RevokeAllSessionsForUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAllSessionsForUser not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -176,6 +192,24 @@ func _SessionService_GetSession_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_RevokeAllSessionsForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAllSessionsForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).RevokeAllSessionsForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_RevokeAllSessionsForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).RevokeAllSessionsForUser(ctx, req.(*RevokeAllSessionsForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -194,6 +228,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSession",
 			Handler:    _SessionService_GetSession_Handler,
+		},
+		{
+			MethodName: "RevokeAllSessionsForUser",
+			Handler:    _SessionService_RevokeAllSessionsForUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

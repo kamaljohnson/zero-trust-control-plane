@@ -17,6 +17,7 @@ import (
 	userv1 "zero-trust-control-plane/backend/api/generated/user/v1"
 
 	adminhandler "zero-trust-control-plane/backend/internal/admin/handler"
+	"zero-trust-control-plane/backend/internal/audit"
 	audithandler "zero-trust-control-plane/backend/internal/audit/handler"
 	auditrepo "zero-trust-control-plane/backend/internal/audit/repository"
 	devicehandler "zero-trust-control-plane/backend/internal/device/handler"
@@ -25,13 +26,16 @@ import (
 	identityhandler "zero-trust-control-plane/backend/internal/identity/handler"
 	identityservice "zero-trust-control-plane/backend/internal/identity/service"
 	membershiphandler "zero-trust-control-plane/backend/internal/membership/handler"
+	membershiprepo "zero-trust-control-plane/backend/internal/membership/repository"
 	organizationhandler "zero-trust-control-plane/backend/internal/organization/handler"
 	policyhandler "zero-trust-control-plane/backend/internal/policy/handler"
 	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
 	sessionhandler "zero-trust-control-plane/backend/internal/session/handler"
+	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
 	"zero-trust-control-plane/backend/internal/telemetry"
 	telemetryhandler "zero-trust-control-plane/backend/internal/telemetry/handler"
 	userhandler "zero-trust-control-plane/backend/internal/user/handler"
+	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 )
 
 // Deps holds optional service dependencies for gRPC handlers.
@@ -52,6 +56,14 @@ type Deps struct {
 	DevOTPHandler devv1.DevServiceServer
 	// TelemetryEmitter emits telemetry events (e.g. via OTel Logs). If nil, TelemetryService Emit RPCs no-op.
 	TelemetryEmitter telemetry.EventEmitter
+	// MembershipRepo is used by MembershipService. If nil, membership RPCs return Unimplemented.
+	MembershipRepo membershiprepo.Repository
+	// SessionRepo is used by SessionService. If nil, session RPCs return Unimplemented.
+	SessionRepo sessionrepo.Repository
+	// UserRepo is used by UserService (e.g. GetUserByEmail). If nil, user RPCs return Unimplemented.
+	UserRepo userrepo.Repository
+	// AuditLogger logs org-admin actions (membership/session). If nil, admin actions are not audited.
+	AuditLogger audit.AuditLogger
 }
 
 // RegisterServices registers all proto gRPC services with the given server.
@@ -75,14 +87,14 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 		authSvc = deps.Auth
 	}
 	authv1.RegisterAuthServiceServer(s, identityhandler.NewAuthServer(authSvc))
-	userv1.RegisterUserServiceServer(s, userhandler.NewServer())
+	userv1.RegisterUserServiceServer(s, userhandler.NewServer(deps.UserRepo))
 	organizationv1.RegisterOrganizationServiceServer(s, organizationhandler.NewServer())
 	devicev1.RegisterDeviceServiceServer(s, devicehandler.NewServer(deps.DeviceRepo))
-	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer())
+	membershipv1.RegisterMembershipServiceServer(s, membershiphandler.NewServer(deps.MembershipRepo, deps.UserRepo, deps.AuditLogger))
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))
-	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer())
+	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer(deps.SessionRepo, deps.MembershipRepo, deps.AuditLogger))
 	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer(deps.TelemetryEmitter))
-	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo))
+	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo, deps.MembershipRepo))
 	healthv1.RegisterHealthServiceServer(s, healthhandler.NewServer(deps.HealthPinger, deps.HealthPolicyChecker))
 	if deps.DevOTPHandler != nil {
 		devv1.RegisterDevServiceServer(s, deps.DevOTPHandler)

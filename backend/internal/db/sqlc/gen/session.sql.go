@@ -87,6 +87,72 @@ func (q *Queries) GetSession(ctx context.Context, id string) (Session, error) {
 	return i, err
 }
 
+const listSessionsByOrg = `-- name: ListSessionsByOrg :many
+SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, created_at
+FROM sessions
+WHERE org_id = $1 AND revoked_at IS NULL
+  AND ($4::text IS NULL OR user_id = $4)
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListSessionsByOrgParams struct {
+	OrgID  string
+	Limit  int32
+	Offset int32
+	UserID sql.NullString
+}
+
+type ListSessionsByOrgRow struct {
+	ID         string
+	UserID     string
+	OrgID      string
+	DeviceID   string
+	ExpiresAt  time.Time
+	RevokedAt  sql.NullTime
+	LastSeenAt sql.NullTime
+	IpAddress  sql.NullString
+	CreatedAt  time.Time
+}
+
+func (q *Queries) ListSessionsByOrg(ctx context.Context, arg ListSessionsByOrgParams) ([]ListSessionsByOrgRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSessionsByOrg,
+		arg.OrgID,
+		arg.Limit,
+		arg.Offset,
+		arg.UserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSessionsByOrgRow
+	for rows.Next() {
+		var i ListSessionsByOrgRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OrgID,
+			&i.DeviceID,
+			&i.ExpiresAt,
+			&i.RevokedAt,
+			&i.LastSeenAt,
+			&i.IpAddress,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSessionsByUserAndOrg = `-- name: ListSessionsByUserAndOrg :many
 SELECT id, user_id, org_id, device_id, expires_at, revoked_at, last_seen_at, ip_address, refresh_jti, refresh_token_hash, created_at
 FROM sessions
@@ -147,6 +213,23 @@ type RevokeAllSessionsByUserParams struct {
 
 func (q *Queries) RevokeAllSessionsByUser(ctx context.Context, arg RevokeAllSessionsByUserParams) error {
 	_, err := q.db.ExecContext(ctx, revokeAllSessionsByUser, arg.UserID, arg.RevokedAt)
+	return err
+}
+
+const revokeAllSessionsByUserAndOrg = `-- name: RevokeAllSessionsByUserAndOrg :exec
+UPDATE sessions
+SET revoked_at = $3
+WHERE user_id = $1 AND org_id = $2
+`
+
+type RevokeAllSessionsByUserAndOrgParams struct {
+	UserID    string
+	OrgID     string
+	RevokedAt sql.NullTime
+}
+
+func (q *Queries) RevokeAllSessionsByUserAndOrg(ctx context.Context, arg RevokeAllSessionsByUserAndOrgParams) error {
+	_, err := q.db.ExecContext(ctx, revokeAllSessionsByUserAndOrg, arg.UserID, arg.OrgID, arg.RevokedAt)
 	return err
 }
 

@@ -142,6 +142,10 @@ func main() {
 		deps.PolicyRepo = policyRepo
 		deps.HealthPinger = database
 		deps.HealthPolicyChecker = policyEvaluator
+		deps.MembershipRepo = membershipRepo
+		deps.SessionRepo = sessionRepo
+		deps.UserRepo = userRepo
+		deps.AuditLogger = auditLogger
 	}
 
 	if authEnabled {
@@ -163,6 +167,16 @@ func main() {
 			healthv1.HealthService_HealthCheck_FullMethodName: true,
 			devv1.DevService_GetOTP_FullMethodName:            true,
 		}
+		var sessionValidator interceptors.SessionValidator
+		if deps.SessionRepo != nil {
+			sessionValidator = func(ctx context.Context, sessionID string) (bool, error) {
+				sess, err := deps.SessionRepo.GetByID(ctx, sessionID)
+				if err != nil {
+					return false, err
+				}
+				return sess != nil && sess.RevokedAt == nil, nil
+			}
+		}
 		s = grpc.NewServer(
 			grpc.StatsHandler(otelgrpc.NewServerHandler(
 				otelgrpc.WithTracerProvider(otelProviders.TracerProvider),
@@ -170,7 +184,7 @@ func main() {
 				otelgrpc.WithFilter(func(info *stats.RPCTagInfo) bool { return !telemetrySkipMethods[info.FullMethodName] }),
 			)),
 			grpc.ChainUnaryInterceptor(
-				interceptors.AuthUnary(tokens, publicMethods),
+				interceptors.AuthUnary(tokens, publicMethods, sessionValidator),
 				interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods),
 			),
 		)

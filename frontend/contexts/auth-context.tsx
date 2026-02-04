@@ -33,6 +33,8 @@ interface AuthState {
 
 interface AuthContextValue {
   user: AuthUser | null;
+  /** Bearer token for API calls. Null when not authenticated. */
+  accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   /** Returns login response; if mfa_required, caller should show OTP step and call verifyMFA. */
@@ -46,6 +48,8 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
   setAuthFromResponse: (res: authClient.AuthResponse) => void;
   clearAuth: () => void;
+  /** Clears auth and redirects to /login. Call when API returns 401 (e.g. session revoked). */
+  handleSessionInvalid: () => void;
 }
 
 function loadFromStorage(): AuthState | null {
@@ -172,6 +176,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(null);
   }, []);
 
+  const handleSessionInvalid = useCallback(() => {
+    clearStorage();
+    setState(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }, []);
+
   const login = useCallback(
     async (email: string, password: string, orgId: string): Promise<authClient.LoginResponse> => {
       const fingerprint = await getDeviceFingerprint();
@@ -208,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user: state?.user ?? null,
+      accessToken: state?.accessToken ?? null,
       isAuthenticated: state !== null,
       isLoading,
       login,
@@ -216,8 +229,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refresh,
       setAuthFromResponse,
       clearAuth,
+      handleSessionInvalid,
     }),
-    [state, isLoading, login, verifyMFA, logout, refresh, setAuthFromResponse, clearAuth]
+    [state, isLoading, login, verifyMFA, logout, refresh, setAuthFromResponse, clearAuth, handleSessionInvalid]
   );
 
   return (

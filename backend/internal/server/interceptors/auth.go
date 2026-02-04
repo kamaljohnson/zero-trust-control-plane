@@ -14,11 +14,16 @@ import (
 
 const bearerPrefix = "bearer "
 
+// SessionValidator returns true if the session is active (exists and not revoked).
+// When non-nil, AuthUnary calls it after ValidateAccess; if it returns false or an error, the request is rejected with Unauthenticated.
+type SessionValidator func(ctx context.Context, sessionID string) (active bool, err error)
+
 // AuthUnary returns a unary server interceptor that validates the Bearer (access) token
 // from gRPC metadata and sets user_id, org_id, session_id in context for protected RPCs.
 // publicMethods is the set of full method names that do not require a Bearer token
 // (e.g. AuthService Register, Login, Refresh; HealthService HealthCheck).
-func AuthUnary(tokens *security.TokenProvider, publicMethods map[string]bool) grpc.UnaryServerInterceptor {
+// If sessionValidator is non-nil, it is called after token validation; revoked or missing sessions are rejected with Unauthenticated.
+func AuthUnary(tokens *security.TokenProvider, publicMethods map[string]bool, sessionValidator SessionValidator) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		token := extractBearer(ctx)
 		public := publicMethods[info.FullMethod]
@@ -36,6 +41,13 @@ func AuthUnary(tokens *security.TokenProvider, publicMethods map[string]bool) gr
 				return handler(ctx, req)
 			}
 			return nil, status.Error(codes.Unauthenticated, "missing or invalid authorization")
+		}
+
+		if sessionValidator != nil {
+			active, err := sessionValidator(ctx, sessionID)
+			if err != nil || !active {
+				return nil, status.Error(codes.Unauthenticated, "missing or invalid authorization")
+			}
 		}
 
 		ctx = WithIdentity(ctx, userID, orgID, sessionID)

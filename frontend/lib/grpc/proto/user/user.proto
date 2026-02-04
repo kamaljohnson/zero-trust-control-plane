@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package ztcp.user.v1;
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// UserStatus is the user lifecycle status.
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_DISABLED = 2;
+}
+
+// User is the core user resource (global, not org-scoped).
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  UserStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// GetUserRequest identifies the user by ID.
+message GetUserRequest {
+  string user_id = 1;
+}
+
+// GetUserResponse returns the user.
+message GetUserResponse {
+  User user = 1;
+}
+
+// GetUserByEmailRequest identifies the user by email.
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+// GetUserByEmailResponse returns the user.
+message GetUserByEmailResponse {
+  User user = 1;
+}
+
+// ListUsersRequest lists users with pagination (global).
+message ListUsersRequest {
+  ztcp.common.v1.Pagination pagination = 1;
+}
+
+// ListUsersResponse returns a page of users.
+message ListUsersResponse {
+  repeated User users = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// DisableUserRequest identifies the user to disable.
+message DisableUserRequest {
+  string user_id = 1;
+}
+
+// DisableUserResponse is empty on success.
+message DisableUserResponse {}
+
+// EnableUserRequest identifies the user to enable.
+message EnableUserRequest {
+  string user_id = 1;
+}
+
+// EnableUserResponse is empty on success.
+message EnableUserResponse {}
+
+// UserService manages user lifecycle (not auth). Users are global.
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
+  rpc EnableUser(EnableUserRequest) returns (EnableUserResponse);
+}

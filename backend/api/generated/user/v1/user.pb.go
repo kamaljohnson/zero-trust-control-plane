@@ -248,6 +248,96 @@ func (x *GetUserResponse) GetUser() *User {
 	return nil
 }
 
+// GetUserByEmailRequest identifies the user by email.
+type GetUserByEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserByEmailRequest) Reset() {
+	*x = GetUserByEmailRequest{}
+	mi := &file_user_user_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserByEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserByEmailRequest) ProtoMessage() {}
+
+func (x *GetUserByEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserByEmailRequest.ProtoReflect.Descriptor instead.
+func (*GetUserByEmailRequest) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetUserByEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+// GetUserByEmailResponse returns the user.
+type GetUserByEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserByEmailResponse) Reset() {
+	*x = GetUserByEmailResponse{}
+	mi := &file_user_user_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserByEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserByEmailResponse) ProtoMessage() {}
+
+func (x *GetUserByEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_user_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserByEmailResponse.ProtoReflect.Descriptor instead.
+func (*GetUserByEmailResponse) Descriptor() ([]byte, []int) {
+	return file_user_user_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetUserByEmailResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 // ListUsersRequest lists users with pagination (global).
 type ListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -258,7 +348,7 @@ type ListUsersRequest struct {
 
 func (x *ListUsersRequest) Reset() {
 	*x = ListUsersRequest{}
-	mi := &file_user_user_proto_msgTypes[3]
+	mi := &file_user_user_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -270,7 +360,7 @@ func (x *ListUsersRequest) String() string {
 func (*ListUsersRequest) ProtoMessage() {}
 
 func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[3]
+	mi := &file_user_user_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -283,7 +373,7 @@ func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{3}
+	return file_user_user_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListUsersRequest) GetPagination() *v1.Pagination {
@@ -304,7 +394,7 @@ type ListUsersResponse struct {
 
 func (x *ListUsersResponse) Reset() {
 	*x = ListUsersResponse{}
-	mi := &file_user_user_proto_msgTypes[4]
+	mi := &file_user_user_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +406,7 @@ func (x *ListUsersResponse) String() string {
 func (*ListUsersResponse) ProtoMessage() {}
 
 func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[4]
+	mi := &file_user_user_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +419,7 @@ func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{4}
+	return file_user_user_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListUsersResponse) GetUsers() []*User {
@@ -356,7 +446,7 @@ type DisableUserRequest struct {
 
 func (x *DisableUserRequest) Reset() {
 	*x = DisableUserRequest{}
-	mi := &file_user_user_proto_msgTypes[5]
+	mi := &file_user_user_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -368,7 +458,7 @@ func (x *DisableUserRequest) String() string {
 func (*DisableUserRequest) ProtoMessage() {}
 
 func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[5]
+	mi := &file_user_user_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -381,7 +471,7 @@ func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableUserRequest.ProtoReflect.Descriptor instead.
 func (*DisableUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{5}
+	return file_user_user_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DisableUserRequest) GetUserId() string {
@@ -400,7 +490,7 @@ type DisableUserResponse struct {
 
 func (x *DisableUserResponse) Reset() {
 	*x = DisableUserResponse{}
-	mi := &file_user_user_proto_msgTypes[6]
+	mi := &file_user_user_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -412,7 +502,7 @@ func (x *DisableUserResponse) String() string {
 func (*DisableUserResponse) ProtoMessage() {}
 
 func (x *DisableUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[6]
+	mi := &file_user_user_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -425,7 +515,7 @@ func (x *DisableUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableUserResponse.ProtoReflect.Descriptor instead.
 func (*DisableUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{6}
+	return file_user_user_proto_rawDescGZIP(), []int{8}
 }
 
 // EnableUserRequest identifies the user to enable.
@@ -438,7 +528,7 @@ type EnableUserRequest struct {
 
 func (x *EnableUserRequest) Reset() {
 	*x = EnableUserRequest{}
-	mi := &file_user_user_proto_msgTypes[7]
+	mi := &file_user_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +540,7 @@ func (x *EnableUserRequest) String() string {
 func (*EnableUserRequest) ProtoMessage() {}
 
 func (x *EnableUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[7]
+	mi := &file_user_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +553,7 @@ func (x *EnableUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableUserRequest.ProtoReflect.Descriptor instead.
 func (*EnableUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{7}
+	return file_user_user_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EnableUserRequest) GetUserId() string {
@@ -482,7 +572,7 @@ type EnableUserResponse struct {
 
 func (x *EnableUserResponse) Reset() {
 	*x = EnableUserResponse{}
-	mi := &file_user_user_proto_msgTypes[8]
+	mi := &file_user_user_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -494,7 +584,7 @@ func (x *EnableUserResponse) String() string {
 func (*EnableUserResponse) ProtoMessage() {}
 
 func (x *EnableUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_user_proto_msgTypes[8]
+	mi := &file_user_user_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -507,7 +597,7 @@ func (x *EnableUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableUserResponse.ProtoReflect.Descriptor instead.
 func (*EnableUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_user_proto_rawDescGZIP(), []int{8}
+	return file_user_user_proto_rawDescGZIP(), []int{10}
 }
 
 var File_user_user_proto protoreflect.FileDescriptor
@@ -527,6 +617,10 @@ const file_user_user_proto_rawDesc = "" +
 	"\x0eGetUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"9\n" +
 	"\x0fGetUserResponse\x12&\n" +
+	"\x04user\x18\x01 \x01(\v2\x12.ztcp.user.v1.UserR\x04user\"-\n" +
+	"\x15GetUserByEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"@\n" +
+	"\x16GetUserByEmailResponse\x12&\n" +
 	"\x04user\x18\x01 \x01(\v2\x12.ztcp.user.v1.UserR\x04user\"N\n" +
 	"\x10ListUsersRequest\x12:\n" +
 	"\n" +
@@ -547,9 +641,10 @@ const file_user_user_proto_rawDesc = "" +
 	"UserStatus\x12\x1b\n" +
 	"\x17USER_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_STATUS_ACTIVE\x10\x01\x12\x18\n" +
-	"\x14USER_STATUS_DISABLED\x10\x022\xc8\x02\n" +
+	"\x14USER_STATUS_DISABLED\x10\x022\xa5\x03\n" +
 	"\vUserService\x12F\n" +
-	"\aGetUser\x12\x1c.ztcp.user.v1.GetUserRequest\x1a\x1d.ztcp.user.v1.GetUserResponse\x12L\n" +
+	"\aGetUser\x12\x1c.ztcp.user.v1.GetUserRequest\x1a\x1d.ztcp.user.v1.GetUserResponse\x12[\n" +
+	"\x0eGetUserByEmail\x12#.ztcp.user.v1.GetUserByEmailRequest\x1a$.ztcp.user.v1.GetUserByEmailResponse\x12L\n" +
 	"\tListUsers\x12\x1e.ztcp.user.v1.ListUsersRequest\x1a\x1f.ztcp.user.v1.ListUsersResponse\x12R\n" +
 	"\vDisableUser\x12 .ztcp.user.v1.DisableUserRequest\x1a!.ztcp.user.v1.DisableUserResponse\x12O\n" +
 	"\n" +
@@ -568,43 +663,48 @@ func file_user_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_user_user_proto_goTypes = []any{
-	(UserStatus)(0),               // 0: ztcp.user.v1.UserStatus
-	(*User)(nil),                  // 1: ztcp.user.v1.User
-	(*GetUserRequest)(nil),        // 2: ztcp.user.v1.GetUserRequest
-	(*GetUserResponse)(nil),       // 3: ztcp.user.v1.GetUserResponse
-	(*ListUsersRequest)(nil),      // 4: ztcp.user.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),     // 5: ztcp.user.v1.ListUsersResponse
-	(*DisableUserRequest)(nil),    // 6: ztcp.user.v1.DisableUserRequest
-	(*DisableUserResponse)(nil),   // 7: ztcp.user.v1.DisableUserResponse
-	(*EnableUserRequest)(nil),     // 8: ztcp.user.v1.EnableUserRequest
-	(*EnableUserResponse)(nil),    // 9: ztcp.user.v1.EnableUserResponse
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*v1.Pagination)(nil),         // 11: ztcp.common.v1.Pagination
-	(*v1.PaginationResult)(nil),   // 12: ztcp.common.v1.PaginationResult
+	(UserStatus)(0),                // 0: ztcp.user.v1.UserStatus
+	(*User)(nil),                   // 1: ztcp.user.v1.User
+	(*GetUserRequest)(nil),         // 2: ztcp.user.v1.GetUserRequest
+	(*GetUserResponse)(nil),        // 3: ztcp.user.v1.GetUserResponse
+	(*GetUserByEmailRequest)(nil),  // 4: ztcp.user.v1.GetUserByEmailRequest
+	(*GetUserByEmailResponse)(nil), // 5: ztcp.user.v1.GetUserByEmailResponse
+	(*ListUsersRequest)(nil),       // 6: ztcp.user.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),      // 7: ztcp.user.v1.ListUsersResponse
+	(*DisableUserRequest)(nil),     // 8: ztcp.user.v1.DisableUserRequest
+	(*DisableUserResponse)(nil),    // 9: ztcp.user.v1.DisableUserResponse
+	(*EnableUserRequest)(nil),      // 10: ztcp.user.v1.EnableUserRequest
+	(*EnableUserResponse)(nil),     // 11: ztcp.user.v1.EnableUserResponse
+	(*timestamppb.Timestamp)(nil),  // 12: google.protobuf.Timestamp
+	(*v1.Pagination)(nil),          // 13: ztcp.common.v1.Pagination
+	(*v1.PaginationResult)(nil),    // 14: ztcp.common.v1.PaginationResult
 }
 var file_user_user_proto_depIdxs = []int32{
 	0,  // 0: ztcp.user.v1.User.status:type_name -> ztcp.user.v1.UserStatus
-	10, // 1: ztcp.user.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	10, // 2: ztcp.user.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 1: ztcp.user.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	12, // 2: ztcp.user.v1.User.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 3: ztcp.user.v1.GetUserResponse.user:type_name -> ztcp.user.v1.User
-	11, // 4: ztcp.user.v1.ListUsersRequest.pagination:type_name -> ztcp.common.v1.Pagination
-	1,  // 5: ztcp.user.v1.ListUsersResponse.users:type_name -> ztcp.user.v1.User
-	12, // 6: ztcp.user.v1.ListUsersResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
-	2,  // 7: ztcp.user.v1.UserService.GetUser:input_type -> ztcp.user.v1.GetUserRequest
-	4,  // 8: ztcp.user.v1.UserService.ListUsers:input_type -> ztcp.user.v1.ListUsersRequest
-	6,  // 9: ztcp.user.v1.UserService.DisableUser:input_type -> ztcp.user.v1.DisableUserRequest
-	8,  // 10: ztcp.user.v1.UserService.EnableUser:input_type -> ztcp.user.v1.EnableUserRequest
-	3,  // 11: ztcp.user.v1.UserService.GetUser:output_type -> ztcp.user.v1.GetUserResponse
-	5,  // 12: ztcp.user.v1.UserService.ListUsers:output_type -> ztcp.user.v1.ListUsersResponse
-	7,  // 13: ztcp.user.v1.UserService.DisableUser:output_type -> ztcp.user.v1.DisableUserResponse
-	9,  // 14: ztcp.user.v1.UserService.EnableUser:output_type -> ztcp.user.v1.EnableUserResponse
-	11, // [11:15] is the sub-list for method output_type
-	7,  // [7:11] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 4: ztcp.user.v1.GetUserByEmailResponse.user:type_name -> ztcp.user.v1.User
+	13, // 5: ztcp.user.v1.ListUsersRequest.pagination:type_name -> ztcp.common.v1.Pagination
+	1,  // 6: ztcp.user.v1.ListUsersResponse.users:type_name -> ztcp.user.v1.User
+	14, // 7: ztcp.user.v1.ListUsersResponse.pagination:type_name -> ztcp.common.v1.PaginationResult
+	2,  // 8: ztcp.user.v1.UserService.GetUser:input_type -> ztcp.user.v1.GetUserRequest
+	4,  // 9: ztcp.user.v1.UserService.GetUserByEmail:input_type -> ztcp.user.v1.GetUserByEmailRequest
+	6,  // 10: ztcp.user.v1.UserService.ListUsers:input_type -> ztcp.user.v1.ListUsersRequest
+	8,  // 11: ztcp.user.v1.UserService.DisableUser:input_type -> ztcp.user.v1.DisableUserRequest
+	10, // 12: ztcp.user.v1.UserService.EnableUser:input_type -> ztcp.user.v1.EnableUserRequest
+	3,  // 13: ztcp.user.v1.UserService.GetUser:output_type -> ztcp.user.v1.GetUserResponse
+	5,  // 14: ztcp.user.v1.UserService.GetUserByEmail:output_type -> ztcp.user.v1.GetUserByEmailResponse
+	7,  // 15: ztcp.user.v1.UserService.ListUsers:output_type -> ztcp.user.v1.ListUsersResponse
+	9,  // 16: ztcp.user.v1.UserService.DisableUser:output_type -> ztcp.user.v1.DisableUserResponse
+	11, // 17: ztcp.user.v1.UserService.EnableUser:output_type -> ztcp.user.v1.EnableUserResponse
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_user_user_proto_init() }
@@ -618,7 +718,7 @@ func file_user_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_user_proto_rawDesc), len(file_user_user_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

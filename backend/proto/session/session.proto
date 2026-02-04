@@ -51,9 +51,19 @@ message ListSessionsResponse {
   ztcp.common.v1.PaginationResult pagination = 2;
 }
 
+// RevokeAllSessionsForUserRequest identifies the user in the org whose sessions to revoke.
+message RevokeAllSessionsForUserRequest {
+  string org_id = 1;
+  string user_id = 2;
+}
+
+// RevokeAllSessionsForUserResponse is empty on success.
+message RevokeAllSessionsForUserResponse {}
+
 // SessionService manages session lifecycle. Critical for zero-trust enforcement.
 service SessionService {
   rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
   rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc RevokeAllSessionsForUser(RevokeAllSessionsForUserRequest) returns (RevokeAllSessionsForUserResponse);
 }

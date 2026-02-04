@@ -65,6 +65,32 @@ func (r *PostgresRepository) CreateMembership(ctx context.Context, m *domain.Mem
 	return err
 }
 
+// DeleteByUserAndOrg removes the membership for the given user and org. Idempotent; no error if not found.
+func (r *PostgresRepository) DeleteByUserAndOrg(ctx context.Context, userID, orgID string) error {
+	return r.queries.DeleteMembershipByUserAndOrg(ctx, gen.DeleteMembershipByUserAndOrgParams{
+		UserID: userID, OrgID: orgID,
+	})
+}
+
+// UpdateRole sets the membership role for the given user and org. Returns the updated membership or nil if not found.
+func (r *PostgresRepository) UpdateRole(ctx context.Context, userID, orgID string, role domain.Role) (*domain.Membership, error) {
+	m, err := r.queries.UpdateMembershipRole(ctx, gen.UpdateMembershipRoleParams{
+		UserID: userID, OrgID: orgID, Role: gen.Role(role),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return genMembershipToDomain(&m), nil
+}
+
+// CountOwnersByOrg returns the number of owners in the org. Returns an error only on database failure.
+func (r *PostgresRepository) CountOwnersByOrg(ctx context.Context, orgID string) (int64, error) {
+	return r.queries.CountOwnersByOrg(ctx, orgID)
+}
+
 func genMembershipToDomain(m *gen.Membership) *domain.Membership {
 	if m == nil {
 		return nil

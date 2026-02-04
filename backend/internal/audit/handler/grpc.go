@@ -11,6 +11,7 @@ import (
 	auditv1 "zero-trust-control-plane/backend/api/generated/audit/v1"
 	commonv1 "zero-trust-control-plane/backend/api/generated/common/v1"
 	"zero-trust-control-plane/backend/internal/audit/domain"
+	"zero-trust-control-plane/backend/internal/platform/rbac"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
 )
 
@@ -23,7 +24,8 @@ const (
 // Proto: audit/audit.proto → internal/audit/handler.
 type Server struct {
 	auditv1.UnimplementedAuditServiceServer
-	repo Repository
+	repo            Repository
+	orgAdminChecker rbac.OrgMembershipGetter
 }
 
 // Repository is the minimal interface needed by the audit handler for listing logs.
@@ -32,34 +34,49 @@ type Repository interface {
 }
 
 // NewServer returns a new Audit gRPC server that uses repo for listing audit logs.
-func NewServer(repo Repository) *Server {
-	return &Server{repo: repo}
+// If orgAdminChecker is non-nil, ListAuditLogs requires the caller to be org admin or owner.
+func NewServer(repo Repository, orgAdminChecker rbac.OrgMembershipGetter) *Server {
+	return &Server{repo: repo, orgAdminChecker: orgAdminChecker}
 }
 
 // ListAuditLogs returns a paginated list of audit logs for the caller's org, with optional filters.
-// Caller must be authenticated; org_id is taken from context. req.OrgId, if set, must match context org.
+// Caller must be authenticated; if orgAdminChecker is set, caller must be org admin or owner.
 func (s *Server) ListAuditLogs(ctx context.Context, req *auditv1.ListAuditLogsRequest) (*auditv1.ListAuditLogsResponse, error) {
 	if s.repo == nil {
 		return nil, status.Error(codes.Unimplemented, "method ListAuditLogs not implemented")
 	}
-	orgID, ok := interceptors.GetOrgID(ctx)
-	if !ok || orgID == "" {
-		return nil, status.Error(codes.Unauthenticated, "org context required")
+	var orgID string
+	if s.orgAdminChecker != nil {
+		var err error
+		orgID, _, err = rbac.RequireOrgAdmin(ctx, s.orgAdminChecker)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var ok bool
+		orgID, ok = interceptors.GetOrgID(ctx)
+		if !ok || orgID == "" {
+			return nil, status.Error(codes.Unauthenticated, "org context required")
+		}
 	}
 	if req.GetOrgId() != "" && req.GetOrgId() != orgID {
 		return nil, status.Error(codes.PermissionDenied, "org_id does not match context")
 	}
-	pageSize := req.GetPagination().GetPageSize()
-	if pageSize <= 0 {
-		pageSize = defaultPageSize
+	pageSize := int32(defaultPageSize)
+	if pag := req.GetPagination(); pag != nil {
+		if ps := pag.GetPageSize(); ps > 0 {
+			pageSize = ps
+		}
 	}
 	if pageSize > maxPageSize {
 		pageSize = maxPageSize
 	}
 	offset := int32(0)
-	if tok := req.GetPagination().GetPageToken(); tok != "" {
-		if n, err := strconv.ParseInt(tok, 10, 32); err == nil && n >= 0 {
-			offset = int32(n)
+	if pag := req.GetPagination(); pag != nil {
+		if tok := pag.GetPageToken(); tok != "" {
+			if n, err := strconv.ParseInt(tok, 10, 32); err == nil && n >= 0 {
+				offset = int32(n)
+			}
 		}
 	}
 	var userID, action, resource *string

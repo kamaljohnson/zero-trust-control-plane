@@ -55,7 +55,10 @@ export default function Home() {
             Logged in as user {user.user_id} in organization {user.org_id}.
           </CardDescription>
         </CardHeader>
-        <CardFooter>
+        <CardFooter className="flex gap-2">
+          <Button asChild>
+            <Link href="/dashboard">Org admin</Link>
+          </Button>
           <Button variant="outline" onClick={() => logout()}>
             Sign out
           </Button>

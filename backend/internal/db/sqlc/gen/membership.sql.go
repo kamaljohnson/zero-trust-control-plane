@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+const countOwnersByOrg = `-- name: CountOwnersByOrg :one
+SELECT COUNT(*) FROM memberships
+WHERE org_id = $1 AND role = 'owner'
+`
+
+func (q *Queries) CountOwnersByOrg(ctx context.Context, orgID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOwnersByOrg, orgID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMembership = `-- name: CreateMembership :one
 INSERT INTO memberships (id, user_id, org_id, role, created_at)
 VALUES ($1, $2, $3, $4, $5)
@@ -41,6 +53,21 @@ func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipPara
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const deleteMembershipByUserAndOrg = `-- name: DeleteMembershipByUserAndOrg :exec
+DELETE FROM memberships
+WHERE user_id = $1 AND org_id = $2
+`
+
+type DeleteMembershipByUserAndOrgParams struct {
+	UserID string
+	OrgID  string
+}
+
+func (q *Queries) DeleteMembershipByUserAndOrg(ctx context.Context, arg DeleteMembershipByUserAndOrgParams) error {
+	_, err := q.db.ExecContext(ctx, deleteMembershipByUserAndOrg, arg.UserID, arg.OrgID)
+	return err
 }
 
 const getMembership = `-- name: GetMembership :one
@@ -120,4 +147,30 @@ func (q *Queries) ListMembershipsByOrg(ctx context.Context, orgID string) ([]Mem
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMembershipRole = `-- name: UpdateMembershipRole :one
+UPDATE memberships
+SET role = $3
+WHERE user_id = $1 AND org_id = $2
+RETURNING id, user_id, org_id, role, created_at
+`
+
+type UpdateMembershipRoleParams struct {
+	UserID string
+	OrgID  string
+	Role   Role
+}
+
+func (q *Queries) UpdateMembershipRole(ctx context.Context, arg UpdateMembershipRoleParams) (Membership, error) {
+	row := q.db.QueryRowContext(ctx, updateMembershipRole, arg.UserID, arg.OrgID, arg.Role)
+	var i Membership
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.OrgID,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
 }

@@ -45,6 +45,30 @@ func (r *PostgresRepository) ListByUserAndOrg(ctx context.Context, userID, orgID
 	return out, nil
 }
 
+// ListByOrg returns sessions for the org, optionally filtered by user, with limit and offset. Only non-revoked sessions are returned.
+func (r *PostgresRepository) ListByOrg(ctx context.Context, orgID string, userID *string, limit, offset int32) ([]*domain.Session, error) {
+	arg := gen.ListSessionsByOrgParams{OrgID: orgID, Limit: limit, Offset: offset}
+	if userID != nil && *userID != "" {
+		arg.UserID = sql.NullString{String: *userID, Valid: true}
+	}
+	list, err := r.queries.ListSessionsByOrg(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*domain.Session, len(list))
+	for i := range list {
+		out[i] = listSessionsByOrgRowToDomain(&list[i])
+	}
+	return out, nil
+}
+
+// RevokeAllSessionsByUserAndOrg revokes all sessions for the given user in the given org.
+func (r *PostgresRepository) RevokeAllSessionsByUserAndOrg(ctx context.Context, userID, orgID string) error {
+	return r.queries.RevokeAllSessionsByUserAndOrg(ctx, gen.RevokeAllSessionsByUserAndOrgParams{
+		UserID: userID, OrgID: orgID, RevokedAt: sql.NullTime{Time: time.Now(), Valid: true},
+	})
+}
+
 // Create persists the session to the database. The session must have ID set.
 func (r *PostgresRepository) Create(ctx context.Context, s *domain.Session) error {
 	_, err := r.queries.CreateSession(ctx, gen.CreateSessionParams{
@@ -111,6 +135,29 @@ func nullTimeToPtr(n sql.NullTime) *time.Time {
 		return nil
 	}
 	return &n.Time
+}
+
+func listSessionsByOrgRowToDomain(row *gen.ListSessionsByOrgRow) *domain.Session {
+	if row == nil {
+		return nil
+	}
+	ip := ""
+	if row.IpAddress.Valid {
+		ip = row.IpAddress.String
+	}
+	return &domain.Session{
+		ID:               row.ID,
+		UserID:           row.UserID,
+		OrgID:            row.OrgID,
+		DeviceID:         row.DeviceID,
+		ExpiresAt:        row.ExpiresAt,
+		RevokedAt:        nullTimeToPtr(row.RevokedAt),
+		LastSeenAt:       nullTimeToPtr(row.LastSeenAt),
+		IPAddress:        ip,
+		RefreshJti:       "",
+		RefreshTokenHash: "",
+		CreatedAt:        row.CreatedAt,
+	}
 }
 
 func genSessionToDomain(s *gen.Session) *domain.Session {

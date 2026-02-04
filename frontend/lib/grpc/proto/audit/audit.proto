@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package ztcp.audit.v1;
+
+import "common/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// AuditEvent represents an audit log entry.
+message AuditEvent {
+  string id = 1;
+  string org_id = 2;
+  string user_id = 3;
+  string action = 4;
+  string resource = 5;
+  string ip = 6;
+  string metadata = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+// ListAuditLogsRequest lists audit logs for an org with pagination.
+message ListAuditLogsRequest {
+  string org_id = 1;
+  ztcp.common.v1.Pagination pagination = 2;
+  string user_id = 3;   // optional filter
+  string action = 4;    // optional filter
+  string resource = 5;  // optional filter
+}
+
+// ListAuditLogsResponse returns a page of audit logs.
+message ListAuditLogsResponse {
+  repeated AuditEvent logs = 1;
+  ztcp.common.v1.PaginationResult pagination = 2;
+}
+
+// AuditService handles compliance and security trail.
+service AuditService {
+  rpc ListAuditLogs(ListAuditLogsRequest) returns (ListAuditLogsResponse);
+}
