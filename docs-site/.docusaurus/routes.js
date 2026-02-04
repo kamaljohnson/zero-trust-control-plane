@@ -39,15 +39,15 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', 'e41'),
+    component: ComponentCreator('/docs', 'ae0'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', '17e'),
+        component: ComponentCreator('/docs', '2de'),
         routes: [
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '87d'),
+            component: ComponentCreator('/docs', 'c1d'),
             routes: [
               {
                 path: '/docs/backend/audit',
@@ -124,6 +124,12 @@ export default [
               {
                 path: '/docs/backend/telemetry',
                 component: ComponentCreator('/docs/backend/telemetry', 'cfd'),
+                exact: true,
+                sidebar: "docsSidebar"
+              },
+              {
+                path: '/docs/backend/testing',
+                component: ComponentCreator('/docs/backend/testing', 'c7e'),
                 exact: true,
                 sidebar: "docsSidebar"
               },

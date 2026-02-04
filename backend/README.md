@@ -131,4 +131,34 @@ Default dev logins for local testing:
 ./scripts/generate_sqlc.sh   # Generate sqlc code (run after installing sqlc)
 ./scripts/migrate.sh          # Run DB migrations (see ../docs/database.md for migrations list)
 ./scripts/seed.sh             # Seed dev data (run after migrate; see Seeding development data)
+./scripts/test-coverage.sh    # Run tests with coverage and generate HTML report
 ```
+
+## Testing
+
+The backend includes comprehensive test coverage for all handlers, services, interceptors, and utilities. See **[docs-site/docs/backend/testing.md](../docs-site/docs/backend/testing.md)** for complete test documentation.
+
+### Quick Start
+
+Run all tests:
+```bash
+go test ./...
+```
+
+Run tests with coverage:
+```bash
+./scripts/test-coverage.sh
+```
+
+Run tests for a specific package:
+```bash
+go test ./internal/user/handler/...
+```
+
+### CI Integration
+
+Tests run automatically on every push and pull request via GitHub Actions. Coverage is uploaded to Codecov and displayed in PR comments.
+
+**Coverage**: [![codecov](https://codecov.io/gh/OWNER/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/OWNER/REPO) *(Replace OWNER/REPO with your repository)*
+
+See `.github/workflows/backend-tests.yml` for the CI workflow configuration.

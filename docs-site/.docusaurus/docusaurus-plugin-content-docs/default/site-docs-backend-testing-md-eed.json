@@ -1,0 +1,26 @@
+{
+  "id": "backend/testing",
+  "title": "Backend Testing",
+  "description": "This document describes the comprehensive test suite for the zero-trust control plane backend. All tests use Go's standard testing package and follow consistent patterns for mocking dependencies and testing both success and error scenarios.",
+  "source": "@site/docs/backend/testing.md",
+  "sourceDirName": "backend",
+  "slug": "/backend/testing",
+  "permalink": "/docs/backend/testing",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Backend Testing",
+    "sidebar_label": "Testing"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Telemetry",
+    "permalink": "/docs/backend/telemetry"
+  },
+  "next": {
+    "title": "Frontend",
+    "permalink": "/docs/category/frontend"
+  }
+}

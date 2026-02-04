@@ -76,6 +76,11 @@
               "sidebar": "docsSidebar"
             },
             {
+              "id": "backend/testing",
+              "path": "/docs/backend/testing",
+              "sidebar": "docsSidebar"
+            },
+            {
               "id": "contributing/pending",
               "path": "/docs/contributing/pending"
             },

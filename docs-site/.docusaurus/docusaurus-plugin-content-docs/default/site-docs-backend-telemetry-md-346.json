@@ -20,7 +20,7 @@
     "permalink": "/docs/backend/session-lifecycle"
   },
   "next": {
-    "title": "Frontend",
-    "permalink": "/docs/category/frontend"
+    "title": "Testing",
+    "permalink": "/docs/backend/testing"
   }
 }

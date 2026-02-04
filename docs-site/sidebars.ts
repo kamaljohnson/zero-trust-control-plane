@@ -25,6 +25,7 @@ const sidebars: SidebarsConfig = {
         "backend/sessions",
         "backend/session-lifecycle",
         "backend/telemetry",
+        "backend/testing",
       ],
     },
     {
