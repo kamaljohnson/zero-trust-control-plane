@@ -252,6 +252,180 @@ func TestAddMember_InvalidUserID(t *testing.T) {
 	}
 }
 
+// Additional tests for RemoveMember, UpdateRole, and domainMemberToProto
+
+func TestRemoveMember_RepositoryError(t *testing.T) {
+	membershipRepo := &mockMembershipRepo{
+		memberships: map[string]*domain.Membership{
+			"user-1:org-1": {ID: "m1", UserID: "user-1", OrgID: "org-1", Role: domain.RoleMember},
+			"admin-1:org-1": {ID: "m-admin", UserID: "admin-1", OrgID: "org-1", Role: domain.RoleAdmin},
+		},
+		byID:        make(map[string]*domain.Membership),
+		ownerCounts: map[string]int64{"org-1": 1},
+		deleteErr:   status.Error(codes.Internal, "database error"),
+	}
+	userRepo := &mockUserRepo{
+		users: make(map[string]*userdomain.User),
+	}
+	srv := NewServer(membershipRepo, userRepo, nil)
+	ctx := ctxWithAdmin("org-1", "admin-1")
+
+	_, err := srv.RemoveMember(ctx, &membershipv1.RemoveMemberRequest{
+		UserId: "user-1",
+		OrgId:  "org-1",
+	})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
+func TestUpdateRole_NotFound(t *testing.T) {
+	membershipRepo := &mockMembershipRepo{
+		memberships: map[string]*domain.Membership{
+			"admin-1:org-1": {ID: "m-admin", UserID: "admin-1", OrgID: "org-1", Role: domain.RoleAdmin},
+		},
+		byID:        make(map[string]*domain.Membership),
+		ownerCounts: make(map[string]int64),
+	}
+	userRepo := &mockUserRepo{
+		users: make(map[string]*userdomain.User),
+	}
+	srv := NewServer(membershipRepo, userRepo, nil)
+	ctx := ctxWithAdmin("org-1", "admin-1")
+
+	_, err := srv.UpdateRole(ctx, &membershipv1.UpdateRoleRequest{
+		UserId: "nonexistent",
+		OrgId:  "org-1",
+		Role:   membershipv1.Role_ROLE_ADMIN,
+	})
+	if err == nil {
+		t.Fatal("expected error for nonexistent membership")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.NotFound)
+	}
+}
+
+func TestUpdateRole_RepositoryError(t *testing.T) {
+	membershipRepo := &mockMembershipRepo{
+		memberships: map[string]*domain.Membership{
+			"user-1:org-1": {ID: "m1", UserID: "user-1", OrgID: "org-1", Role: domain.RoleMember},
+			"admin-1:org-1": {ID: "m-admin", UserID: "admin-1", OrgID: "org-1", Role: domain.RoleAdmin},
+		},
+		byID:        make(map[string]*domain.Membership),
+		ownerCounts: make(map[string]int64),
+		updateErr:   status.Error(codes.Internal, "database error"),
+	}
+	userRepo := &mockUserRepo{
+		users: make(map[string]*userdomain.User),
+	}
+	srv := NewServer(membershipRepo, userRepo, nil)
+	ctx := ctxWithAdmin("org-1", "admin-1")
+
+	_, err := srv.UpdateRole(ctx, &membershipv1.UpdateRoleRequest{
+		UserId: "user-1",
+		OrgId:  "org-1",
+		Role:   membershipv1.Role_ROLE_ADMIN,
+	})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
+func TestDomainMemberToProto_Owner(t *testing.T) {
+	now := time.Now().UTC()
+	member := &domain.Membership{
+		ID:        "m1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		Role:      domain.RoleOwner,
+		CreatedAt: now,
+	}
+
+	proto := domainMemberToProto(member)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Id != "m1" {
+		t.Errorf("id = %q, want %q", proto.Id, "m1")
+	}
+	if proto.UserId != "user-1" {
+		t.Errorf("user_id = %q, want %q", proto.UserId, "user-1")
+	}
+	if proto.OrgId != "org-1" {
+		t.Errorf("org_id = %q, want %q", proto.OrgId, "org-1")
+	}
+	if proto.Role != membershipv1.Role_ROLE_OWNER {
+		t.Errorf("role = %v, want %v", proto.Role, membershipv1.Role_ROLE_OWNER)
+	}
+	if proto.CreatedAt == nil {
+		t.Error("created_at should be set")
+	}
+}
+
+func TestDomainMemberToProto_Admin(t *testing.T) {
+	now := time.Now().UTC()
+	member := &domain.Membership{
+		ID:        "m1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		Role:      domain.RoleAdmin,
+		CreatedAt: now,
+	}
+
+	proto := domainMemberToProto(member)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Role != membershipv1.Role_ROLE_ADMIN {
+		t.Errorf("role = %v, want %v", proto.Role, membershipv1.Role_ROLE_ADMIN)
+	}
+}
+
+func TestDomainMemberToProto_Member(t *testing.T) {
+	now := time.Now().UTC()
+	member := &domain.Membership{
+		ID:        "m1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		Role:      domain.RoleMember,
+		CreatedAt: now,
+	}
+
+	proto := domainMemberToProto(member)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Role != membershipv1.Role_ROLE_MEMBER {
+		t.Errorf("role = %v, want %v", proto.Role, membershipv1.Role_ROLE_MEMBER)
+	}
+}
+
+func TestDomainMemberToProto_NilMember(t *testing.T) {
+	proto := domainMemberToProto(nil)
+	if proto != nil {
+		t.Error("proto should be nil for nil member")
+	}
+}
+
 func TestAddMember_UserNotFound(t *testing.T) {
 	membershipRepo := &mockMembershipRepo{
 		memberships: map[string]*domain.Membership{
@@ -743,5 +917,45 @@ func TestListMembers_NilRepo(t *testing.T) {
 	}
 	if st.Code() != codes.Unimplemented {
 		t.Errorf("status code = %v, want %v", st.Code(), codes.Unimplemented)
+	}
+}
+
+func TestProtoRoleToDomain(t *testing.T) {
+	testCases := []struct {
+		input    membershipv1.Role
+		expected domain.Role
+	}{
+		{membershipv1.Role_ROLE_OWNER, domain.RoleOwner},
+		{membershipv1.Role_ROLE_ADMIN, domain.RoleAdmin},
+		{membershipv1.Role_ROLE_MEMBER, domain.RoleMember},
+		{membershipv1.Role_ROLE_UNSPECIFIED, ""},
+		{999, ""}, // Invalid enum value
+	}
+
+	for _, tc := range testCases {
+		result := protoRoleToDomain(tc.input)
+		if result != tc.expected {
+			t.Errorf("protoRoleToDomain(%v) = %q, want %q", tc.input, result, tc.expected)
+		}
+	}
+}
+
+func TestDomainRoleToProto(t *testing.T) {
+	testCases := []struct {
+		input    domain.Role
+		expected membershipv1.Role
+	}{
+		{domain.RoleOwner, membershipv1.Role_ROLE_OWNER},
+		{domain.RoleAdmin, membershipv1.Role_ROLE_ADMIN},
+		{domain.RoleMember, membershipv1.Role_ROLE_MEMBER},
+		{"", membershipv1.Role_ROLE_UNSPECIFIED},
+		{"invalid", membershipv1.Role_ROLE_UNSPECIFIED},
+	}
+
+	for _, tc := range testCases {
+		result := domainRoleToProto(tc.input)
+		if result != tc.expected {
+			t.Errorf("domainRoleToProto(%q) = %v, want %v", tc.input, result, tc.expected)
+		}
 	}
 }

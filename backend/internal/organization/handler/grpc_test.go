@@ -231,3 +231,118 @@ func TestSuspendOrganization_Unimplemented(t *testing.T) {
 		t.Errorf("status code = %v, want %v", st.Code(), codes.Unimplemented)
 	}
 }
+
+// Tests for domainOrgToProto helper function
+
+func TestDomainOrgToProto_NilOrg(t *testing.T) {
+	proto := domainOrgToProto(nil)
+	if proto != nil {
+		t.Error("domainOrgToProto(nil) should return nil")
+	}
+}
+
+func TestDomainOrgToProto_ActiveStatus(t *testing.T) {
+	now := time.Now().UTC()
+	org := &domain.Org{
+		ID:        "org-1",
+		Name:      "Test Org",
+		Status:    domain.OrgStatusActive,
+		CreatedAt: now,
+	}
+	proto := domainOrgToProto(org)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Status != organizationv1.OrganizationStatus_ORGANIZATION_STATUS_ACTIVE {
+		t.Errorf("Status = %v, want ACTIVE", proto.Status)
+	}
+	if proto.Id != "org-1" {
+		t.Errorf("Id = %q, want %q", proto.Id, "org-1")
+	}
+	if proto.Name != "Test Org" {
+		t.Errorf("Name = %q, want %q", proto.Name, "Test Org")
+	}
+	if proto.CreatedAt == nil {
+		t.Error("CreatedAt should be set")
+	}
+}
+
+func TestDomainOrgToProto_SuspendedStatus(t *testing.T) {
+	now := time.Now().UTC()
+	org := &domain.Org{
+		ID:        "org-1",
+		Name:      "Test Org",
+		Status:    domain.OrgStatusSuspended,
+		CreatedAt: now,
+	}
+	proto := domainOrgToProto(org)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Status != organizationv1.OrganizationStatus_ORGANIZATION_STATUS_SUSPENDED {
+		t.Errorf("Status = %v, want SUSPENDED", proto.Status)
+	}
+}
+
+func TestDomainOrgToProto_UnknownStatus(t *testing.T) {
+	now := time.Now().UTC()
+	org := &domain.Org{
+		ID:        "org-1",
+		Name:      "Test Org",
+		Status:    domain.OrgStatus("unknown"),
+		CreatedAt: now,
+	}
+	proto := domainOrgToProto(org)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Status != organizationv1.OrganizationStatus_ORGANIZATION_STATUS_UNSPECIFIED {
+		t.Errorf("Status = %v, want UNSPECIFIED", proto.Status)
+	}
+}
+
+func TestDomainOrgToProto_EmptyStatus(t *testing.T) {
+	now := time.Now().UTC()
+	org := &domain.Org{
+		ID:        "org-1",
+		Name:      "Test Org",
+		Status:    "",
+		CreatedAt: now,
+	}
+	proto := domainOrgToProto(org)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Status != organizationv1.OrganizationStatus_ORGANIZATION_STATUS_UNSPECIFIED {
+		t.Errorf("Status = %v, want UNSPECIFIED", proto.Status)
+	}
+}
+
+func TestDomainOrgToProto_AllFields(t *testing.T) {
+	now := time.Now().UTC()
+	org := &domain.Org{
+		ID:        "org-123",
+		Name:      "My Organization",
+		Status:    domain.OrgStatusActive,
+		CreatedAt: now,
+	}
+	proto := domainOrgToProto(org)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Id != "org-123" {
+		t.Errorf("Id = %q, want %q", proto.Id, "org-123")
+	}
+	if proto.Name != "My Organization" {
+		t.Errorf("Name = %q, want %q", proto.Name, "My Organization")
+	}
+	if proto.Status != organizationv1.OrganizationStatus_ORGANIZATION_STATUS_ACTIVE {
+		t.Errorf("Status = %v, want ACTIVE", proto.Status)
+	}
+	if proto.CreatedAt == nil {
+		t.Error("CreatedAt should be set")
+	}
+	if !proto.CreatedAt.AsTime().Equal(now) {
+		t.Errorf("CreatedAt = %v, want %v", proto.CreatedAt.AsTime(), now)
+	}
+}

@@ -1,5 +1,7 @@
 # Zero-Trust Control Plane (PoC)
 
+[![codecov](https://codecov.io/gh/kamaljohnson/zero-trust-control-plane/graph/badge.svg?token=T0A6M30PG0)](https://codecov.io/gh/kamaljohnson/zero-trust-control-plane)
+
 A proof-of-concept **zero-trust session and policy control plane** designed to demonstrate continuous authorization, centralized policy enforcement, **action-level telemetry and auditability**, and real-time session revocation across multiple client types.
 
 This project focuses on the **control-plane architecture** behind enterprise security systems (such as enterprise browsers and secure access platforms), rather than client-side enforcement or UI complexity.

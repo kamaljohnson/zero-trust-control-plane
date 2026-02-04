@@ -412,6 +412,123 @@ func TestListSessions_Pagination(t *testing.T) {
 	}
 }
 
+func TestListSessions_RepositoryError(t *testing.T) {
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: make(map[string][]*sessiondomain.Session),
+		listErr:   status.Error(codes.Internal, "database error"),
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	_, err := srv.ListSessions(ctx, &sessionv1.ListSessionsRequest{OrgId: "org-1"})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
+func TestListSessions_EmptyResults(t *testing.T) {
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: map[string][]*sessiondomain.Session{"org-1": {}},
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	resp, err := srv.ListSessions(ctx, &sessionv1.ListSessionsRequest{OrgId: "org-1"})
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(resp.Sessions) != 0 {
+		t.Errorf("sessions count = %d, want 0", len(resp.Sessions))
+	}
+}
+
+func TestListSessions_OffsetBeyondResults(t *testing.T) {
+	now := time.Now().UTC()
+	sessions := []*sessiondomain.Session{
+		{ID: "session-1", UserID: "user-1", OrgID: "org-1", DeviceID: "device-1", ExpiresAt: now.Add(24 * time.Hour), CreatedAt: now},
+	}
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: map[string][]*sessiondomain.Session{"org-1": sessions},
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	resp, err := srv.ListSessions(ctx, &sessionv1.ListSessionsRequest{
+		OrgId: "org-1",
+		Pagination: &commonv1.Pagination{
+			PageSize:  10,
+			PageToken: "100", // Beyond available results (offset 100)
+		},
+	})
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(resp.Sessions) != 0 {
+		t.Errorf("sessions count = %d, want 0 when offset beyond results", len(resp.Sessions))
+	}
+}
+
+func TestRevokeSession_RepositoryError(t *testing.T) {
+	now := time.Now().UTC()
+	session := &sessiondomain.Session{
+		ID:        "session-1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		DeviceID:  "device-1",
+		ExpiresAt: now.Add(24 * time.Hour),
+		CreatedAt: now,
+	}
+	sessionRepo := &mockSessionRepo{
+		sessions:  map[string]*sessiondomain.Session{"session-1": session},
+		listByOrg: make(map[string][]*sessiondomain.Session),
+		revokeErr: status.Error(codes.Internal, "database error"),
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	_, err := srv.RevokeSession(ctx, &sessionv1.RevokeSessionRequest{SessionId: "session-1"})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
 func TestListSessions_NonAdminCaller(t *testing.T) {
 	sessionRepo := &mockSessionRepo{
 		sessions:  make(map[string]*sessiondomain.Session),
@@ -556,5 +673,213 @@ func TestRevokeAllSessionsForUser_InvalidUserID(t *testing.T) {
 	}
 	if st.Code() != codes.InvalidArgument {
 		t.Errorf("status code = %v, want %v", st.Code(), codes.InvalidArgument)
+	}
+}
+
+// Additional tests for GetSession, RevokeAllSessionsForUser, and domainSessionToProto
+
+func TestGetSession_NotFound(t *testing.T) {
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: make(map[string][]*sessiondomain.Session),
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	_, err := srv.GetSession(ctx, &sessionv1.GetSessionRequest{SessionId: "nonexistent"})
+	if err == nil {
+		t.Fatal("expected error for nonexistent session")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.NotFound)
+	}
+}
+
+func TestGetSession_RepositoryError(t *testing.T) {
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: make(map[string][]*sessiondomain.Session),
+		getByIDErr: status.Error(codes.Internal, "database error"),
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	_, err := srv.GetSession(ctx, &sessionv1.GetSessionRequest{SessionId: "session-1"})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
+func TestRevokeAllSessionsForUser_RepositoryError(t *testing.T) {
+	sessionRepo := &mockSessionRepo{
+		sessions:  make(map[string]*sessiondomain.Session),
+		listByOrg: make(map[string][]*sessiondomain.Session),
+		revokeErr: status.Error(codes.Internal, "database error"),
+	}
+	membershipRepo := &mockMembershipRepoForSession{
+		memberships: map[string]*membershipdomain.Membership{
+			"admin-1:org-1": {ID: "m1", UserID: "admin-1", OrgID: "org-1", Role: membershipdomain.RoleAdmin},
+		},
+	}
+	srv := NewServer(sessionRepo, membershipRepo, nil)
+	ctx := ctxWithAdminForSession("org-1", "admin-1")
+
+	_, err := srv.RevokeAllSessionsForUser(ctx, &sessionv1.RevokeAllSessionsForUserRequest{
+		UserId: "user-1",
+		OrgId:  "org-1",
+	})
+	if err == nil {
+		t.Fatal("expected error when repository fails")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("error is not a gRPC status: %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("status code = %v, want %v", st.Code(), codes.Internal)
+	}
+}
+
+func TestDomainSessionToProto_WithRevokedAt(t *testing.T) {
+	now := time.Now().UTC()
+	revokedAt := now.Add(1 * time.Hour)
+	session := &sessiondomain.Session{
+		ID:        "session-1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		DeviceID:  "device-1",
+		ExpiresAt: now.Add(24 * time.Hour),
+		RevokedAt: &revokedAt,
+		CreatedAt: now,
+	}
+
+	proto := domainSessionToProto(session)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Id != "session-1" {
+		t.Errorf("id = %q, want %q", proto.Id, "session-1")
+	}
+	if proto.RevokedAt == nil {
+		t.Error("revoked_at should be set")
+	}
+	if !proto.RevokedAt.AsTime().Equal(revokedAt) {
+		t.Errorf("revoked_at = %v, want %v", proto.RevokedAt.AsTime(), revokedAt)
+	}
+}
+
+func TestDomainSessionToProto_WithoutRevokedAt(t *testing.T) {
+	now := time.Now().UTC()
+	session := &sessiondomain.Session{
+		ID:        "session-1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		DeviceID:  "device-1",
+		ExpiresAt: now.Add(24 * time.Hour),
+		RevokedAt: nil, // Not revoked
+		CreatedAt: now,
+	}
+
+	proto := domainSessionToProto(session)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.RevokedAt != nil {
+		t.Error("revoked_at should be nil for non-revoked session")
+	}
+}
+
+func TestDomainSessionToProto_WithLastSeenAt(t *testing.T) {
+	now := time.Now().UTC()
+	lastSeenAt := now.Add(30 * time.Minute)
+	session := &sessiondomain.Session{
+		ID:         "session-1",
+		UserID:     "user-1",
+		OrgID:      "org-1",
+		DeviceID:   "device-1",
+		ExpiresAt:  now.Add(24 * time.Hour),
+		LastSeenAt: &lastSeenAt,
+		CreatedAt:  now,
+	}
+
+	proto := domainSessionToProto(session)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.LastSeenAt == nil {
+		t.Error("last_seen_at should be set")
+	}
+	if !proto.LastSeenAt.AsTime().Equal(lastSeenAt) {
+		t.Errorf("last_seen_at = %v, want %v", proto.LastSeenAt.AsTime(), lastSeenAt)
+	}
+}
+
+func TestDomainSessionToProto_WithoutLastSeenAt(t *testing.T) {
+	now := time.Now().UTC()
+	session := &sessiondomain.Session{
+		ID:         "session-1",
+		UserID:     "user-1",
+		OrgID:      "org-1",
+		DeviceID:   "device-1",
+		ExpiresAt:  now.Add(24 * time.Hour),
+		LastSeenAt: nil,
+		CreatedAt:  now,
+	}
+
+	proto := domainSessionToProto(session)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.LastSeenAt != nil {
+		t.Error("last_seen_at should be nil when not set")
+	}
+}
+
+func TestDomainSessionToProto_NilSession(t *testing.T) {
+	proto := domainSessionToProto(nil)
+	if proto != nil {
+		t.Error("proto should be nil for nil session")
+	}
+}
+
+func TestDomainSessionToProto_WithIPAddress(t *testing.T) {
+	now := time.Now().UTC()
+	session := &sessiondomain.Session{
+		ID:        "session-1",
+		UserID:    "user-1",
+		OrgID:     "org-1",
+		DeviceID:  "device-1",
+		ExpiresAt: now.Add(24 * time.Hour),
+		IPAddress: "192.168.1.1",
+		CreatedAt: now,
+	}
+
+	proto := domainSessionToProto(session)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.IpAddress != "192.168.1.1" {
+		t.Errorf("ip_address = %q, want %q", proto.IpAddress, "192.168.1.1")
 	}
 }

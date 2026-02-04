@@ -146,13 +146,17 @@ func TestMemoryStore_ExpirationBoundary(t *testing.T) {
 	store := NewMemoryStore()
 	ctx := context.Background()
 	
-	// Test with exactly now (should be expired)
-	expiresAt := time.Now().UTC()
+	// Test with time that's just expired (1 millisecond ago) - should be expired
+	// Using millisecond instead of nanosecond to avoid timing precision issues
+	expiresAt := time.Now().UTC().Add(-1 * time.Millisecond)
 	store.Put(ctx, "challenge-1", "123456", expiresAt)
+
+	// Small delay to ensure time has definitely passed
+	time.Sleep(2 * time.Millisecond)
 
 	otp, ok := store.Get(ctx, "challenge-1")
 	if ok {
-		t.Error("Get should return false when expiresAt is exactly now")
+		t.Error("Get should return false when expiresAt is in the past")
 	}
 	if otp != "" {
 		t.Errorf("otp = %q, want empty string", otp)

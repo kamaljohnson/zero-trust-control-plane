@@ -378,3 +378,143 @@ func TestRegisterDevice_Unimplemented(t *testing.T) {
 		t.Errorf("status code = %v, want %v", st.Code(), codes.Unimplemented)
 	}
 }
+
+// Tests for deviceToProto helper function
+
+func TestDeviceToProto_NilDevice(t *testing.T) {
+	proto := deviceToProto(nil)
+	if proto != nil {
+		t.Error("deviceToProto(nil) should return nil")
+	}
+}
+
+func TestDeviceToProto_AllTimestampsNil(t *testing.T) {
+	now := time.Now().UTC()
+	device := &domain.Device{
+		ID:          "device-1",
+		UserID:      "user-1",
+		OrgID:       "org-1",
+		Fingerprint: "fp-123",
+		Trusted:     true,
+		LastSeenAt:  nil,
+		TrustedUntil: nil,
+		RevokedAt:   nil,
+		CreatedAt:   now,
+	}
+	proto := deviceToProto(device)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.LastSeenAt != nil {
+		t.Error("LastSeenAt should be nil")
+	}
+	if proto.TrustedUntil != nil {
+		t.Error("TrustedUntil should be nil")
+	}
+	if proto.RevokedAt != nil {
+		t.Error("RevokedAt should be nil")
+	}
+	if proto.CreatedAt == nil {
+		t.Error("CreatedAt should be set")
+	}
+}
+
+func TestDeviceToProto_AllTimestampsPresent(t *testing.T) {
+	now := time.Now().UTC()
+	lastSeen := now.Add(-2 * time.Hour)
+	trustedUntil := now.Add(24 * time.Hour)
+	revokedAt := now.Add(-1 * time.Hour)
+	device := &domain.Device{
+		ID:          "device-1",
+		UserID:      "user-1",
+		OrgID:       "org-1",
+		Fingerprint: "fp-123",
+		Trusted:     false,
+		LastSeenAt:  &lastSeen,
+		TrustedUntil: &trustedUntil,
+		RevokedAt:   &revokedAt,
+		CreatedAt:   now,
+	}
+	proto := deviceToProto(device)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.LastSeenAt == nil {
+		t.Error("LastSeenAt should be set")
+	}
+	if !proto.LastSeenAt.AsTime().Equal(lastSeen) {
+		t.Errorf("LastSeenAt = %v, want %v", proto.LastSeenAt.AsTime(), lastSeen)
+	}
+	if proto.TrustedUntil == nil {
+		t.Error("TrustedUntil should be set")
+	}
+	if !proto.TrustedUntil.AsTime().Equal(trustedUntil) {
+		t.Errorf("TrustedUntil = %v, want %v", proto.TrustedUntil.AsTime(), trustedUntil)
+	}
+	if proto.RevokedAt == nil {
+		t.Error("RevokedAt should be set")
+	}
+	if !proto.RevokedAt.AsTime().Equal(revokedAt) {
+		t.Errorf("RevokedAt = %v, want %v", proto.RevokedAt.AsTime(), revokedAt)
+	}
+}
+
+func TestDeviceToProto_MixedTimestamps(t *testing.T) {
+	now := time.Now().UTC()
+	lastSeen := now.Add(-1 * time.Hour)
+	device := &domain.Device{
+		ID:          "device-1",
+		UserID:      "user-1",
+		OrgID:       "org-1",
+		Fingerprint: "fp-123",
+		Trusted:     true,
+		LastSeenAt:  &lastSeen,
+		TrustedUntil: nil,
+		RevokedAt:   nil,
+		CreatedAt:   now,
+	}
+	proto := deviceToProto(device)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.LastSeenAt == nil {
+		t.Error("LastSeenAt should be set")
+	}
+	if proto.TrustedUntil != nil {
+		t.Error("TrustedUntil should be nil")
+	}
+	if proto.RevokedAt != nil {
+		t.Error("RevokedAt should be nil")
+	}
+}
+
+func TestDeviceToProto_AllFields(t *testing.T) {
+	now := time.Now().UTC()
+	device := &domain.Device{
+		ID:          "device-1",
+		UserID:      "user-1",
+		OrgID:       "org-1",
+		Fingerprint: "fp-123",
+		Trusted:     true,
+		CreatedAt:   now,
+	}
+	proto := deviceToProto(device)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Id != "device-1" {
+		t.Errorf("Id = %q, want %q", proto.Id, "device-1")
+	}
+	if proto.UserId != "user-1" {
+		t.Errorf("UserId = %q, want %q", proto.UserId, "user-1")
+	}
+	if proto.OrgId != "org-1" {
+		t.Errorf("OrgId = %q, want %q", proto.OrgId, "org-1")
+	}
+	if proto.Fingerprint != "fp-123" {
+		t.Errorf("Fingerprint = %q, want %q", proto.Fingerprint, "fp-123")
+	}
+	if !proto.Trusted {
+		t.Error("Trusted should be true")
+	}
+}

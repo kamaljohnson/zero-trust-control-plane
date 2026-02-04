@@ -540,3 +540,133 @@ func TestListPolicies_NilRepo(t *testing.T) {
 		t.Errorf("status code = %v, want %v", st.Code(), codes.Unimplemented)
 	}
 }
+
+// Tests for validateRego and policyToProto helper functions
+
+func TestValidateRego_ValidSyntax(t *testing.T) {
+	validRego := `package policy
+
+default allow = false
+
+allow if input.user.role == "admin"
+`
+	err := validateRego(validRego)
+	if err != nil {
+		t.Errorf("validateRego with valid Rego should not error, got: %v", err)
+	}
+}
+
+func TestValidateRego_InvalidSyntax(t *testing.T) {
+	invalidRego := `package policy
+
+default allow = false
+
+allow {
+    invalid syntax here
+}`
+	err := validateRego(invalidRego)
+	if err == nil {
+		t.Error("validateRego with invalid Rego should return error")
+	}
+}
+
+func TestValidateRego_EmptyRego(t *testing.T) {
+	err := validateRego("")
+	if err == nil {
+		t.Error("validateRego with empty string should return error")
+	}
+}
+
+func TestValidateRego_MalformedPackage(t *testing.T) {
+	malformed := `package
+
+default allow = false`
+	err := validateRego(malformed)
+	// Empty package name might not error, but invalid syntax will
+	if err == nil {
+		// Try a more obviously malformed case
+		malformed2 := `package policy
+
+invalid syntax here {`
+		err2 := validateRego(malformed2)
+		if err2 == nil {
+			t.Error("validateRego with malformed syntax should return error")
+		}
+	}
+}
+
+func TestPolicyToProto_NilPolicy(t *testing.T) {
+	proto := policyToProto(nil)
+	if proto != nil {
+		t.Error("policyToProto(nil) should return nil")
+	}
+}
+
+func TestPolicyToProto_AllFields(t *testing.T) {
+	now := time.Now().UTC()
+	policy := &domain.Policy{
+		ID:        "policy-1",
+		OrgID:     "org-1",
+		Rules:     "package policy\ndefault allow = true",
+		Enabled:   true,
+		CreatedAt: now,
+	}
+	proto := policyToProto(policy)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Id != "policy-1" {
+		t.Errorf("Id = %q, want %q", proto.Id, "policy-1")
+	}
+	if proto.OrgId != "org-1" {
+		t.Errorf("OrgId = %q, want %q", proto.OrgId, "org-1")
+	}
+	if proto.Rules != policy.Rules {
+		t.Errorf("Rules = %q, want %q", proto.Rules, policy.Rules)
+	}
+	if !proto.Enabled {
+		t.Error("Enabled should be true")
+	}
+	if proto.CreatedAt == nil {
+		t.Error("CreatedAt should be set")
+	}
+	if !proto.CreatedAt.AsTime().Equal(now) {
+		t.Errorf("CreatedAt = %v, want %v", proto.CreatedAt.AsTime(), now)
+	}
+}
+
+func TestPolicyToProto_DisabledPolicy(t *testing.T) {
+	now := time.Now().UTC()
+	policy := &domain.Policy{
+		ID:        "policy-1",
+		OrgID:     "org-1",
+		Rules:     "package policy",
+		Enabled:   false,
+		CreatedAt: now,
+	}
+	proto := policyToProto(policy)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Enabled {
+		t.Error("Enabled should be false")
+	}
+}
+
+func TestPolicyToProto_EmptyRules(t *testing.T) {
+	now := time.Now().UTC()
+	policy := &domain.Policy{
+		ID:        "policy-1",
+		OrgID:     "org-1",
+		Rules:     "",
+		Enabled:   true,
+		CreatedAt: now,
+	}
+	proto := policyToProto(policy)
+	if proto == nil {
+		t.Fatal("proto should not be nil")
+	}
+	if proto.Rules != "" {
+		t.Errorf("Rules = %q, want empty string", proto.Rules)
+	}
+}

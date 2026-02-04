@@ -2,14 +2,12 @@ name: Backend Tests
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-tests.yml'
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-tests.yml'
@@ -19,7 +17,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: ./backend
@@ -40,16 +38,15 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+
       - name: Download dependencies
         run: go mod download
 
       - name: Run tests with coverage
-        run: |
-          go test -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
 
-      - name: Generate coverage summary
-        run: |
-          go tool cover -func=coverage.out | tail -1
+      - name: Print coverage summary
+        run: go tool cover -func=coverage.out | tail -1
 
       - name: Copy coverage file to repo root for Codecov
         run: |
@@ -64,9 +61,9 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
-      - name: Upload coverage report artifact
+      - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: backend-coverage
           path: backend/coverage.out
           retention-days: 30

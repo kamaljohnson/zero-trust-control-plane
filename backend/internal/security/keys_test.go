@@ -199,3 +199,91 @@ func TestParsePublicKey_WithFile(t *testing.T) {
 		t.Fatal("ParsePublicKey returned nil key")
 	}
 }
+
+// Key Parsing Edge Case Tests
+
+func TestParsePrivateKey_InvalidFormat(t *testing.T) {
+	testCases := []struct {
+		name string
+		pem  string
+	}{
+		{"not PEM format", "not a pem format"},
+		{"missing BEGIN marker", "-----END PRIVATE KEY-----\ncontent\n-----END PRIVATE KEY-----"},
+		{"missing END marker", "-----BEGIN PRIVATE KEY-----\ncontent"},
+		{"empty PEM block", "-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"},
+		{"invalid base64", "-----BEGIN PRIVATE KEY-----\n!!!invalid base64!!!\n-----END PRIVATE KEY-----"},
+		{"file path that doesn't exist", "/nonexistent/private_key.pem"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ParsePrivateKey(tc.pem)
+			if err == nil {
+				t.Errorf("ParsePrivateKey %q: want error, got nil", tc.name)
+			}
+		})
+	}
+}
+
+func TestParsePrivateKey_WrongKeyType(t *testing.T) {
+	// Test with a public key (wrong type for ParsePrivateKey)
+	_, err := ParsePrivateKey(testPublicKeyPEM)
+	if err == nil {
+		t.Error("ParsePrivateKey with public key: want error, got nil")
+	}
+	if err != ErrInvalidKey && !strings.Contains(err.Error(), "invalid") {
+		t.Errorf("ParsePrivateKey wrong type: want ErrInvalidKey or parsing error, got %v", err)
+	}
+
+	// Test with certificate (wrong type)
+	certPEM := `-----BEGIN CERTIFICATE-----
+MIIC...
+-----END CERTIFICATE-----`
+	_, err = ParsePrivateKey(certPEM)
+	if err == nil {
+		t.Error("ParsePrivateKey with certificate: want error, got nil")
+	}
+}
+
+func TestParsePublicKey_InvalidFormat(t *testing.T) {
+	testCases := []struct {
+		name string
+		pem  string
+	}{
+		{"not PEM format", "not a pem format"},
+		{"missing BEGIN marker", "-----END PUBLIC KEY-----\ncontent\n-----END PUBLIC KEY-----"},
+		{"missing END marker", "-----BEGIN PUBLIC KEY-----\ncontent"},
+		{"empty PEM block", "-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----"},
+		{"invalid base64", "-----BEGIN PUBLIC KEY-----\n!!!invalid base64!!!\n-----END PUBLIC KEY-----"},
+		{"file path that doesn't exist", "/nonexistent/public_key.pem"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ParsePublicKey(tc.pem)
+			if err == nil {
+				t.Errorf("ParsePublicKey %q: want error, got nil", tc.name)
+			}
+		})
+	}
+}
+
+func TestParsePublicKey_WrongKeyType(t *testing.T) {
+	// Test with a private key (wrong type for ParsePublicKey)
+	_, err := ParsePublicKey(testPrivateKeyPEM)
+	if err == nil {
+		t.Error("ParsePublicKey with private key: want error, got nil")
+	}
+	if err != ErrInvalidKey && !strings.Contains(err.Error(), "invalid") {
+		t.Errorf("ParsePublicKey wrong type: want ErrInvalidKey or parsing error, got %v", err)
+	}
+
+	// Test with certificate (wrong type)
+	certPEM := `-----BEGIN CERTIFICATE-----
+MIIC...
+-----END CERTIFICATE-----`
+	_, err = ParsePublicKey(certPEM)
+	if err == nil {
+		t.Error("ParsePublicKey with certificate: want error, got nil")
+	}
+}

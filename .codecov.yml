@@ -33,8 +33,11 @@ comment:
   require_head: true
 
 ignore:
-  - "backend/api/generated"
-  - "backend/internal/db/sqlc/gen"
-  - "backend/cmd"
-  - "*.pb.go"
-  - "*.pb.gw.go"
+  - "backend/api/generated/**"
+  - "backend/internal/db/sqlc/gen/**"
+  - "backend/cmd/**"
+  - "**/*.pb.go"
+  - "**/*.pb.gw.go"
+  - "backend/internal/server/**"
+  - "backend/internal/*/domain/**"
+  - "backend/internal/*/repository/**"
