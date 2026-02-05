@@ -42,6 +42,17 @@ message LogoutRequest {
   string refresh_token = 1;  // optional; if empty, rely on context when auth interceptor is implemented
 }
 
+// VerifyCredentialsRequest carries email and password for credential verification only (no session).
+message VerifyCredentialsRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// VerifyCredentialsResponse returns user_id when credentials are valid. Used for org-creation flow.
+message VerifyCredentialsResponse {
+  string user_id = 1;
+}
+
 // AuthResponse returns session tokens and user/org context. Used by Register, Login, Refresh, and VerifyMFA.
 message AuthResponse {
   string access_token = 1;
@@ -110,5 +121,6 @@ service AuthService {
   rpc SubmitPhoneAndRequestMFA(SubmitPhoneAndRequestMFARequest) returns (SubmitPhoneAndRequestMFAResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
   rpc Logout(LogoutRequest) returns (google.protobuf.Empty);
+  rpc VerifyCredentials(VerifyCredentialsRequest) returns (VerifyCredentialsResponse);
   rpc LinkIdentity(LinkIdentityRequest) returns (LinkIdentityResponse);
 }

@@ -110,7 +110,7 @@ Or from repo root: `make run-frontend`. The app is served at **http://localhost:
 | Variable | Required | Notes |
 |----------|----------|--------|
 | `BACKEND_GRPC_URL` | Yes | Backend gRPC host:port (e.g. `localhost:8080`) |
-| `NEXT_PUBLIC_DOCS_URL` | No | Docs site link in header |
+| `NEXT_PUBLIC_DOCS_URL` | No | When set, the "Docs" link in the header and on the home alert points to this URL (e.g. external docs site). If unset, the link may point to a default or be hidden depending on implementation. |
 | `DEV_OTP_ENABLED`, `NEXT_PUBLIC_DEV_OTP_ENABLED` | No | Dev-only OTP; disable in production |
 
 Local one-shot setup: from repo root run `make setup` (creates `.env` from [deploy/.env.example](../../../deploy/.env.example) if missing, starts Docker, migrates, optional seed). Then run `make run-backend` and `make run-frontend` in two terminals.

@@ -17,7 +17,7 @@ The frontend is a **Next.js** application (App Router) that talks to the backend
 
 - **Routes**: [app/](../../../frontend/app/) — App Router. Public: `/`, `/login`, `/register`. Authenticated: `/dashboard` (and children), `/browser`. API routes under `app/api/`.
 - **API routes**:
-  - **auth**: `login`, `logout`, `refresh`, `register`, `mfa/request-with-phone`, `mfa/verify` — AuthService, token issuance, MFA flow.
+  - **auth**: `login`, `logout`, `refresh`, `register`, `verify` (credential verification for create-org flow; calls backend VerifyCredentials), `mfa/request-with-phone`, `mfa/verify` — AuthService, token issuance, MFA flow.
   - **organization**: `create` — OrganizationService.CreateOrganization for creating new organizations after registration.
   - **org-admin**: `members`, `audit`, `policy-config`, `sessions` — Org admin dashboard backend (Membership, Audit, OrgPolicyConfig, Session).
   - **browser**: `check-url`, `policy` — CheckUrlAccess, GetBrowserPolicy for the user browser flow.
@@ -29,7 +29,7 @@ The frontend is a **Next.js** application (App Router) that talks to the backend
 - **Provider**: [contexts/auth-context.tsx](../../../frontend/contexts/auth-context.tsx). Wraps the app and exposes `useAuth()`.
 - **Exposed**: `user` (user_id, org_id), `accessToken`, `isAuthenticated`, `isLoading`, `login`, `verifyMFA`, `logout`, `refresh`, `setAuthFromResponse`, `clearAuth`, **handleSessionInvalid**.
 - **Storage**: Tokens and user/org ids in localStorage; keys prefixed with `ztcp_`.
-- **401 handling**: When any API returns 401, the caller should invoke **handleSessionInvalid()** — it clears auth state and redirects to `/login`. Used by dashboard and other protected pages.
+- **401 handling**: When any API returns 401, the caller should invoke **handleSessionInvalid()** — it clears auth state and redirects to `/login`. Used by dashboard and other protected pages. **Logout** (user-initiated) clears auth and redirects to `/` (home); **handleSessionInvalid** (session revoked or 401) redirects to `/login`.
 
 ## gRPC/HTTP bridge
 
@@ -49,48 +49,31 @@ The browser does **not** call gRPC. Flow:
 
 ## User Registration and Organization Setup Flow
 
-The frontend provides a complete flow for new users to register, create an organization, and log in:
+The frontend supports sign-in, registration, and organization creation as follows:
 
-### Registration Flow
+### Home (`/`)
 
-1. **User visits `/register`** and fills out the registration form:
-   - Email (validated for format)
-   - Password (12+ chars, upper, lower, number, symbol)
-   - Name (optional)
+Sign in and Register links only; no create-organization on the home page. Create-organization is on the login page.
 
-2. **On submit**, the page calls `POST /api/auth/register` which:
-   - Validates the request body
-   - Calls `AuthService.Register` via gRPC
-   - Returns `{ user_id }` on success
+### Login page (`/login`)
 
-3. **After successful registration**, the UI shows an organization creation form:
-   - User enters organization name
-   - Option to skip and sign in to existing organization
+Two modes via **shadcn/ui Tabs**:
 
-4. **On organization creation**, the page calls `POST /api/organization/create` with:
-   - `name`: Organization name (required, non-empty)
-   - `user_id`: The `user_id` from registration
+- **Existing**: Sign in with email, password, and organization ID. For users who are already members of an org (e.g. added via `MembershipService.AddMember` or who created an org earlier).
+- **Create new**: Create an organization and then log in. User enters email, password, and organization name. The frontend:
+  1. Calls `POST /api/auth/verify` with email and password → BFF calls backend `AuthService.VerifyCredentials` → returns `user_id`.
+  2. Calls `POST /api/organization/create` with `user_id` and `name` → backend creates org and owner membership.
+  3. Logs the user in with the same credentials and the new org id (redirect to dashboard).
 
-5. **The API route** (`app/api/organization/create/route.ts`):
-   - Validates request body using Zod schema
-   - Calls `OrganizationService.CreateOrganization` via [organization-client.ts](../../../frontend/lib/grpc/organization-client.ts)
-   - Maps gRPC errors to HTTP status codes
-   - Returns `{ organization: { id, name, status, created_at } }`
+Both **newly registered** and **already-registered** users can create an org from the "Create new" tab (VerifyCredentials works for any valid email/password).
 
-6. **On success**, the UI:
-   - Displays the created organization ID
-   - Provides a button to navigate to login with `org_id` pre-filled via query parameter: `/login?org_id=<org-id>`
+### Register page (`/register`)
 
-7. **User logs in** at `/login`:
-   - Email and password (from registration)
-   - Organization ID (pre-filled from query param or manually entered)
-   - After successful login, user is authenticated and redirected to dashboard
-
-### Alternative Flow
-
-Users can skip organization creation and sign in to an existing organization if they have been added by an organization owner/admin via `MembershipService.AddMember`.
+Registration only: email, password, optional name. On success, the user receives `user_id`. They can then go to `/login` and use the **Create new** tab to create an organization (VerifyCredentials + CreateOrganization), or use the **Existing** tab to sign in to an org they were added to.
 
 ### API Route: Organization Creation
+
+The `user_id` passed to this route is obtained from **Register** (after signup) or from **VerifyCredentials** (when creating from the login page "Create new" tab).
 
 **Route**: `POST /api/organization/create`
 
@@ -98,7 +81,7 @@ Users can skip organization creation and sign in to an existing organization if 
 ```typescript
 {
   name: string;      // Organization name (required, min length 1)
-  user_id: string;  // User ID from registration (required, min length 1)
+  user_id: string;  // User ID from Register or VerifyCredentials (required, min length 1)
 }
 ```
 

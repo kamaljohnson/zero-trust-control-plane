@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/health.md",
   "sourceDirName": "backend",
   "slug": "/backend/health",
-  "permalink": "/docs/backend/health",
+  "permalink": "/zero-trust-control-plane/backend/health",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Device Trust",
-    "permalink": "/docs/backend/device-trust"
+    "permalink": "/zero-trust-control-plane/backend/device-trust"
   },
   "next": {
     "title": "MFA",
-    "permalink": "/docs/backend/mfa"
+    "permalink": "/zero-trust-control-plane/backend/mfa"
   }
 }

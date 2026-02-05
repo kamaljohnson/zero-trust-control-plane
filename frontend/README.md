@@ -1,6 +1,6 @@
 # Zero Trust Control Plane — Frontend
 
-Web UI for the Zero Trust Control Plane. Built with Next.js 16 (App Router), React 19, Tailwind CSS 4, and [shadcn/ui](https://ui.shadcn.com) components. Includes a full auth flow (register, login, refresh, logout) that talks to the backend via a Next.js BFF (API routes → gRPC).
+Web UI for the Zero Trust Control Plane. Built with Next.js 16 (App Router), React 19, Tailwind CSS 4, and [shadcn/ui](https://ui.shadcn.com) components. Includes a full auth flow (register, login, verify credentials for create-org, refresh, logout) that talks to the backend via a Next.js BFF (API routes → gRPC).
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ Web UI for the Zero Trust Control Plane. Built with Next.js 16 (App Router), Rea
    npm run dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000). The app shows the home page; sign in and register links when unauthenticated, or a simple “logged in” view and sign out when authenticated.
+   Open [http://localhost:3000](http://localhost:3000). The app shows the home page; sign in and register links when unauthenticated (create organization is on the login page, "Create new" tab), or a simple “logged in” view and sign out when authenticated.
 
 ## Scripts
 
@@ -48,13 +48,13 @@ Authenticated org-admin dashboard at `/dashboard`: **Members** (list, add, remov
 ```
 frontend/
 ├── app/
-│   ├── api/auth/          # BFF: register, login, refresh, logout (JSON → gRPC, Zod validation)
+│   ├── api/auth/          # BFF: register, login, verify, refresh, logout (JSON → gRPC, Zod validation)
 │   ├── api/org-admin/     # Org admin: members, audit, sessions, policy-config
 │   ├── api/users/         # User lookup (e.g. by-email for add member)
 │   ├── dashboard/         # Org admin: Members, Audit, Policy, Telemetry
 │   ├── error.tsx          # Error boundary for app content (Try again / Go home)
 │   ├── global-error.tsx   # Error boundary for root layout
-│   ├── login/page.tsx     # Sign-in form (email, password, org ID)
+│   ├── login/page.tsx     # Sign-in and create-org form (Tabs: Existing org ID vs Create new org with name)
 │   ├── register/page.tsx  # Registration form (email, password, name)
 │   ├── page.tsx           # Home: sign in/register or logged-in + sign out
 │   ├── layout.tsx         # Root layout + AuthProvider
@@ -85,7 +85,8 @@ frontend/
   - **Register**: email, password, optional name → backend creates user; no tokens until the user is in an org and logs in.
   - **Login**: email (trimmed and lowercased, format validated), password, org ID → returns access + refresh tokens, user_id, org_id.
   - **Refresh**: The auth context refreshes the access token before it expires (5‑minute margin). The client sends **device_fingerprint** (from [lib/fingerprint.ts](lib/fingerprint.ts)) with `POST /api/auth/refresh` (body: `refresh_token`, optional `device_fingerprint`). The backend may return new tokens or, when device-trust policy requires MFA, **mfa_required** or **phone_required**. In the MFA case, the app clears auth state, stores the challenge/intent in sessionStorage, and redirects to `/login`, where the user completes the same MFA flow (OTP or phone then OTP); after VerifyMFA, the new tokens are stored and the user is redirected home.
-  - **Logout**: `POST /api/auth/logout` with **access_token** and optional **refresh_token** in the body. The BFF forwards the access token as `Authorization: Bearer` to the backend so the call is authorized and logout is audited; the backend revokes the session, then the client clears storage.
+  - **Create organization from login**: From the login page "Create new" tab, the user enters email, password, and org name. The BFF calls `VerifyCredentials` then `CreateOrganization`, then logs the user in with the new org.
+  - **Logout**: `POST /api/auth/logout` with **access_token** and optional **refresh_token** in the body. The BFF forwards the access token as `Authorization: Bearer` to the backend so the call is authorized and logout is audited; the backend revokes the session, then the client clears storage and redirects to `/` (home).
 
 Password policy (backend): 12+ characters, at least one uppercase, one lowercase, one number, one symbol. The register form validates this on the client.
 

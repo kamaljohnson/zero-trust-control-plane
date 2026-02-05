@@ -3,186 +3,191 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 
 export default [
   {
-    path: '/__docusaurus/debug',
-    component: ComponentCreator('/__docusaurus/debug', '5ff'),
+    path: '/zero-trust-control-plane/__docusaurus/debug',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug', 'da8'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/config',
-    component: ComponentCreator('/__docusaurus/debug/config', '5ba'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/config',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/config', 'aed'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/content',
-    component: ComponentCreator('/__docusaurus/debug/content', 'a2b'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/content',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/content', 'cac'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/globalData',
-    component: ComponentCreator('/__docusaurus/debug/globalData', 'c3c'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/globalData',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/globalData', '98a'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/metadata',
-    component: ComponentCreator('/__docusaurus/debug/metadata', '156'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/metadata',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/metadata', '7a4'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/registry',
-    component: ComponentCreator('/__docusaurus/debug/registry', '88c'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/registry',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/registry', '322'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/routes',
-    component: ComponentCreator('/__docusaurus/debug/routes', '000'),
+    path: '/zero-trust-control-plane/__docusaurus/debug/routes',
+    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/routes', '3e5'),
     exact: true
   },
   {
-    path: '/docs',
-    component: ComponentCreator('/docs', 'ae0'),
+    path: '/zero-trust-control-plane/',
+    component: ComponentCreator('/zero-trust-control-plane/', '35f'),
+    exact: true
+  },
+  {
+    path: '/zero-trust-control-plane/',
+    component: ComponentCreator('/zero-trust-control-plane/', 'cf1'),
     routes: [
       {
-        path: '/docs',
-        component: ComponentCreator('/docs', '2de'),
+        path: '/zero-trust-control-plane/',
+        component: ComponentCreator('/zero-trust-control-plane/', '270'),
         routes: [
           {
-            path: '/docs',
-            component: ComponentCreator('/docs', 'c1d'),
+            path: '/zero-trust-control-plane/',
+            component: ComponentCreator('/zero-trust-control-plane/', 'e5b'),
             routes: [
               {
-                path: '/docs/backend/audit',
-                component: ComponentCreator('/docs/backend/audit', '642'),
+                path: '/zero-trust-control-plane/backend/audit',
+                component: ComponentCreator('/zero-trust-control-plane/backend/audit', '3e0'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/auth',
-                component: ComponentCreator('/docs/backend/auth', 'af4'),
+                path: '/zero-trust-control-plane/backend/auth',
+                component: ComponentCreator('/zero-trust-control-plane/backend/auth', '547'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/database',
-                component: ComponentCreator('/docs/backend/database', '753'),
+                path: '/zero-trust-control-plane/backend/database',
+                component: ComponentCreator('/zero-trust-control-plane/backend/database', '280'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/device-trust',
-                component: ComponentCreator('/docs/backend/device-trust', 'ac5'),
+                path: '/zero-trust-control-plane/backend/device-trust',
+                component: ComponentCreator('/zero-trust-control-plane/backend/device-trust', '06a'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/grpc-api-overview',
-                component: ComponentCreator('/docs/backend/grpc-api-overview', 'c64'),
+                path: '/zero-trust-control-plane/backend/grpc-api-overview',
+                component: ComponentCreator('/zero-trust-control-plane/backend/grpc-api-overview', '84b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/health',
-                component: ComponentCreator('/docs/backend/health', 'aca'),
+                path: '/zero-trust-control-plane/backend/health',
+                component: ComponentCreator('/zero-trust-control-plane/backend/health', 'f0c'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/mfa',
-                component: ComponentCreator('/docs/backend/mfa', '775'),
+                path: '/zero-trust-control-plane/backend/mfa',
+                component: ComponentCreator('/zero-trust-control-plane/backend/mfa', '6fa'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/org-policy-config',
-                component: ComponentCreator('/docs/backend/org-policy-config', '42a'),
+                path: '/zero-trust-control-plane/backend/org-policy-config',
+                component: ComponentCreator('/zero-trust-control-plane/backend/org-policy-config', '313'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/organization-membership',
-                component: ComponentCreator('/docs/backend/organization-membership', '53e'),
+                path: '/zero-trust-control-plane/backend/organization-membership',
+                component: ComponentCreator('/zero-trust-control-plane/backend/organization-membership', 'd83'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/policy-engine',
-                component: ComponentCreator('/docs/backend/policy-engine', '0d3'),
+                path: '/zero-trust-control-plane/backend/policy-engine',
+                component: ComponentCreator('/zero-trust-control-plane/backend/policy-engine', '250'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/session-lifecycle',
-                component: ComponentCreator('/docs/backend/session-lifecycle', 'c43'),
+                path: '/zero-trust-control-plane/backend/session-lifecycle',
+                component: ComponentCreator('/zero-trust-control-plane/backend/session-lifecycle', 'd8b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/sessions',
-                component: ComponentCreator('/docs/backend/sessions', 'd82'),
+                path: '/zero-trust-control-plane/backend/sessions',
+                component: ComponentCreator('/zero-trust-control-plane/backend/sessions', '4b1'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/telemetry',
-                component: ComponentCreator('/docs/backend/telemetry', 'cfd'),
+                path: '/zero-trust-control-plane/backend/telemetry',
+                component: ComponentCreator('/zero-trust-control-plane/backend/telemetry', '8d8'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/backend/testing',
-                component: ComponentCreator('/docs/backend/testing', 'c7e'),
+                path: '/zero-trust-control-plane/backend/testing',
+                component: ComponentCreator('/zero-trust-control-plane/backend/testing', '8a1'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/category/backend',
-                component: ComponentCreator('/docs/category/backend', '145'),
+                path: '/zero-trust-control-plane/category/backend',
+                component: ComponentCreator('/zero-trust-control-plane/category/backend', '648'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/category/frontend',
-                component: ComponentCreator('/docs/category/frontend', '7e5'),
+                path: '/zero-trust-control-plane/category/frontend',
+                component: ComponentCreator('/zero-trust-control-plane/category/frontend', '6e0'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/category/operations',
-                component: ComponentCreator('/docs/category/operations', '15e'),
+                path: '/zero-trust-control-plane/category/operations',
+                component: ComponentCreator('/zero-trust-control-plane/category/operations', '71b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/contributing/pending',
-                component: ComponentCreator('/docs/contributing/pending', '9b4'),
+                path: '/zero-trust-control-plane/contributing/pending',
+                component: ComponentCreator('/zero-trust-control-plane/contributing/pending', '4f1'),
                 exact: true
               },
               {
-                path: '/docs/frontend/architecture',
-                component: ComponentCreator('/docs/frontend/architecture', '0ae'),
+                path: '/zero-trust-control-plane/frontend/architecture',
+                component: ComponentCreator('/zero-trust-control-plane/frontend/architecture', '107'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/frontend/dashboard',
-                component: ComponentCreator('/docs/frontend/dashboard', 'd4a'),
+                path: '/zero-trust-control-plane/frontend/dashboard',
+                component: ComponentCreator('/zero-trust-control-plane/frontend/dashboard', 'c50'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/frontend/user-browser',
-                component: ComponentCreator('/docs/frontend/user-browser', '894'),
+                path: '/zero-trust-control-plane/frontend/user-browser',
+                component: ComponentCreator('/zero-trust-control-plane/frontend/user-browser', '330'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/intro',
-                component: ComponentCreator('/docs/intro', '058'),
+                path: '/zero-trust-control-plane/intro',
+                component: ComponentCreator('/zero-trust-control-plane/intro', '19f'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/docs/operations/deployment',
-                component: ComponentCreator('/docs/operations/deployment', 'b82'),
+                path: '/zero-trust-control-plane/operations/deployment',
+                component: ComponentCreator('/zero-trust-control-plane/operations/deployment', '75f'),
                 exact: true,
                 sidebar: "docsSidebar"
               }
@@ -191,11 +196,6 @@ export default [
         ]
       }
     ]
-  },
-  {
-    path: '/',
-    component: ComponentCreator('/', 'e5f'),
-    exact: true
   },
   {
     path: '*',

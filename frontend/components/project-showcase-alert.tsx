@@ -3,7 +3,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "/docs";
+const DOCS_URL = "http://docs.ztcp.projects.xborglabs.com/";
 
 /**
  * Project showcase alert component that displays project details and a Docs button.

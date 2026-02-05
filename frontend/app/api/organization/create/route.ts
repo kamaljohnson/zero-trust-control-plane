@@ -13,12 +13,13 @@ const createOrganizationBodySchema = z.object({
  *
  * Creates a new organization and assigns the user as owner. The organization is
  * auto-activated (status=ACTIVE) for PoC. This endpoint does not require authentication
- * as users need to create organizations before they can log in.
+ * as users need to create organizations before they can log in. Callers obtain user_id
+ * via /api/auth/verify (sign-in page create-org flow) or from registration response.
  *
  * @param request - Next.js request object
  * @param request.body - Request body with:
  *   - name: string (required, min length 1) - Organization name
- *   - user_id: string (required, min length 1) - User ID from registration
+ *   - user_id: string (required, min length 1) - User ID from registration or /api/auth/verify
  * @returns JSON response with:
  *   - organization: { id, name, status, created_at } on success
  *   - error: string on failure

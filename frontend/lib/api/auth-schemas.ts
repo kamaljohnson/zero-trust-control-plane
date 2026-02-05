@@ -28,7 +28,13 @@ export const logoutBodySchema = z.object({
   access_token: z.string().optional(),
 });
 
+export const verifyBodySchema = z.object({
+  email: z.string().min(1, "Email is required."),
+  password: z.string().min(1, "Password is required."),
+});
+
 export type LoginBody = z.infer<typeof loginBodySchema>;
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type RefreshBody = z.infer<typeof refreshBodySchema>;
 export type LogoutBody = z.infer<typeof logoutBodySchema>;
+export type VerifyBody = z.infer<typeof verifyBodySchema>;

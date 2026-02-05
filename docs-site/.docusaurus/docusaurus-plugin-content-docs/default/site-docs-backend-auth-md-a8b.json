@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/auth.md",
   "sourceDirName": "backend",
   "slug": "/backend/auth",
-  "permalink": "/docs/backend/auth",
+  "permalink": "/zero-trust-control-plane/backend/auth",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "gRPC API overview",
-    "permalink": "/docs/backend/grpc-api-overview"
+    "permalink": "/zero-trust-control-plane/backend/grpc-api-overview"
   },
   "next": {
     "title": "Audit",
-    "permalink": "/docs/backend/audit"
+    "permalink": "/zero-trust-control-plane/backend/audit"
   }
 }

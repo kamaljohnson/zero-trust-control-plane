@@ -66,11 +66,11 @@ Creates a new organization with the given name and automatically assigns the cre
 - The creating user is automatically assigned the `owner` role, giving them full administrative control.
 - **Note**: In the current PoC implementation, organization creation and membership creation are not wrapped in a database transaction. If membership creation fails after organization creation, the organization will remain in the database without an owner. In production, this should be implemented as a transaction to ensure atomicity.
 
-**Example Flow**:
-1. User registers via `AuthService.Register` and receives `user_id`.
-2. User calls `CreateOrganization` with `name` and `user_id`.
-3. System creates organization and owner membership.
-4. User can now log in using the returned organization `id` as `org_id`.
+**Example Flow** (two ways to obtain `user_id`):
+
+1. **After registration**: User registers via `AuthService.Register` and receives `user_id`. User (or frontend) calls `CreateOrganization` with `name` and `user_id`. System creates organization and owner membership. User logs in using the returned organization `id` as `org_id`.
+
+2. **From login page (existing or new user)**: User goes to the login page and uses the "Create new" flow. Frontend calls `AuthService.VerifyCredentials` (email, password) to get `user_id`, then calls `CreateOrganization` with `name` and `user_id`. System creates organization and owner membership. Frontend then logs the user in with the new org.
 
 ## MembershipService
 
@@ -89,9 +89,9 @@ Org-admin operations (e.g. AddMember, RemoveMember, UpdateRole, ListMembers for 
 
 ## Organization Creation Flow
 
-After a user registers via `AuthService.Register`, they receive a `user_id` but no organization membership. To log in, the user must either:
+A user may obtain `user_id` from **Register** (after signup) or from **VerifyCredentials** (e.g. when using the login page "Create new" tab). With that `user_id`, they have no organization membership until they create or join an org. To log in, the user must either:
 
-1. **Create a new organization**: Call `OrganizationService.CreateOrganization` with their `user_id` and an organization name. The system will:
+1. **Create a new organization**: Call `OrganizationService.CreateOrganization` with their `user_id` and an organization name. The `user_id` comes from Register or from VerifyCredentials. The system will:
    - Create the organization with `active` status (auto-activated for PoC)
    - Create a membership record assigning the user as `owner`
    - Return the organization `id` which can be used as `org_id` for login

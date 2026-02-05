@@ -5,7 +5,7 @@
   "source": "@site/docs/frontend/user-browser.md",
   "sourceDirName": "frontend",
   "slug": "/frontend/user-browser",
-  "permalink": "/docs/frontend/user-browser",
+  "permalink": "/zero-trust-control-plane/frontend/user-browser",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Dashboard",
-    "permalink": "/docs/frontend/dashboard"
+    "permalink": "/zero-trust-control-plane/frontend/dashboard"
   },
   "next": {
     "title": "Operations",
-    "permalink": "/docs/category/operations"
+    "permalink": "/zero-trust-control-plane/category/operations"
   }
 }

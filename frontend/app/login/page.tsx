@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DEFAULT_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? "";
@@ -24,13 +25,16 @@ const DEV_OTP_ENABLED = process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || pr
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, verifyMFA, isAuthenticated, isLoading } = useAuth();
+  const { login, verifyMFA, isAuthenticated, isLoading, setAuthFromResponse } = useAuth();
+  const [mode, setMode] = useState<"signin" | "createOrg">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // Initialize with DEFAULT_ORG_ID to avoid hydration mismatch; sync from searchParams in useEffect
   const [orgId, setOrgId] = useState(DEFAULT_ORG_ID);
+  const [orgName, setOrgName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [creatingOrg, setCreatingOrg] = useState(false);
   const [phoneIntentId, setPhoneIntentId] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [requestingMfa, setRequestingMfa] = useState(false);
@@ -40,12 +44,17 @@ function LoginPageContent() {
   const [mfaOtpNote, setMfaOtpNote] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated) {
       router.replace("/");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [mounted, isLoading, isAuthenticated, router]);
 
   // Sync orgId from query params
   useEffect(() => {
@@ -99,16 +108,15 @@ function LoginPageContent() {
     };
   }, [mfaChallengeId]);
 
-  if (isLoading) {
+  // Use same outer structure as main content to avoid hydration mismatch (isLoading true on server, false on client).
+  if (!mounted || isLoading || isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-sm flex items-center justify-center">
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
       </div>
     );
-  }
-
-  if (isAuthenticated) {
-    return null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -119,6 +127,12 @@ function LoginPageContent() {
       setError("Invalid email format.");
       return;
     }
+    
+    if (mode === "createOrg") {
+      await handleCreateOrganization(trimmedEmail);
+      return;
+    }
+    
     setSubmitting(true);
     try {
       const res = await login(trimmedEmail, password, orgId.trim());
@@ -137,6 +151,65 @@ function LoginPageContent() {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleCreateOrganization(email: string) {
+    if (!orgName.trim()) {
+      setError("Organization name is required.");
+      return;
+    }
+    setCreatingOrg(true);
+    setError(null);
+    try {
+      // Verify credentials and get user_id (no session created)
+      const verifyRes = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        throw new Error(verifyData.error ?? "Invalid email or password.");
+      }
+      const userId = verifyData.user_id;
+      if (!userId) {
+        throw new Error("Verification did not return user_id.");
+      }
+
+      // Create organization with the verified user_id
+      const createRes = await fetch("/api/organization/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: orgName.trim(), user_id: userId }),
+      });
+      const createData = await createRes.json();
+      if (!createRes.ok) {
+        throw new Error(createData.error ?? "Organization creation failed.");
+      }
+
+      if (createData.organization?.id) {
+        // Organization created; sign user in with the new org_id
+        const loginRes = await login(email, password, createData.organization.id);
+        if (loginRes.phone_required === true && loginRes.intent_id) {
+          setPhoneIntentId(loginRes.intent_id);
+        } else if (loginRes.mfa_required === true && loginRes.challenge_id) {
+          setMfaChallengeId(loginRes.challenge_id);
+          setMfaPhoneMask(loginRes.phone_mask ?? null);
+          setMfaOtp(null);
+          setMfaOtpNote(null);
+          setOtp("");
+        } else if (loginRes.access_token && loginRes.refresh_token && loginRes.user_id && loginRes.org_id) {
+          setAuthFromResponse(loginRes);
+          router.replace("/");
+        }
+      } else {
+        setError("Organization created but ID was not returned.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Organization creation failed.");
+    } finally {
+      setCreatingOrg(false);
     }
   }
 
@@ -307,7 +380,9 @@ function LoginPageContent() {
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Sign in with your email and organization ID.
+            {mode === "signin"
+              ? "Sign in with your email and organization ID."
+              : "Create a new organization. Enter your credentials and organization name."}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -340,34 +415,55 @@ function LoginPageContent() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="login-org">Organization ID</Label>
-              <Input
-                id="login-org"
-                type="text"
-                value={orgId}
-                onChange={(e) => setOrgId(e.target.value)}
-                required
-                placeholder="your-org-id"
-              />
-            </div>
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v as "signin" | "createOrg");
+                setError(null);
+              }}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Existing</TabsTrigger>
+                <TabsTrigger value="createOrg">Create new</TabsTrigger>
+              </TabsList>
+              <TabsContent value="signin" className="space-y-2">
+                <Label htmlFor="login-org">Organization ID</Label>
+                <Input
+                  id="login-org"
+                  type="text"
+                  value={orgId}
+                  onChange={(e) => setOrgId(e.target.value)}
+                  required={mode === "signin"}
+                  placeholder="your-org-id"
+                />
+              </TabsContent>
+              <TabsContent value="createOrg" className="space-y-2">
+                <Label htmlFor="login-org-name">Organization name</Label>
+                <Input
+                  id="login-org-name"
+                  type="text"
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  required={mode === "createOrg"}
+                  placeholder="My Organization"
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Signing in…" : "Sign in"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={submitting || creatingOrg}
+            >
+              {creatingOrg
+                ? "Creating organization…"
+                : submitting
+                  ? "Signing in…"
+                  : mode === "createOrg"
+                    ? "Create organization"
+                    : "Sign in"}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-primary underline-offset-4 hover:underline">
-                Register
-              </Link>
-            </p>
-            <p className="text-center text-sm text-muted-foreground">
-              Need to create an organization?{" "}
-              <Link href="/register" className="text-primary underline-offset-4 hover:underline">
-                Register and create one
-              </Link>
-            </p>
           </CardFooter>
         </form>
       </Card>

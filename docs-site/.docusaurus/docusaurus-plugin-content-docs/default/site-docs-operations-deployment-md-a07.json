@@ -5,7 +5,7 @@
   "source": "@site/docs/operations/deployment.md",
   "sourceDirName": "operations",
   "slug": "/operations/deployment",
-  "permalink": "/docs/operations/deployment",
+  "permalink": "/zero-trust-control-plane/operations/deployment",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,6 +17,6 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Operations",
-    "permalink": "/docs/category/operations"
+    "permalink": "/zero-trust-control-plane/category/operations"
   }
 }

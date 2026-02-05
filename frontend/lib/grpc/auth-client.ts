@@ -308,6 +308,28 @@ export async function refresh(
 }
 
 /**
+ * VerifyCredentials validates email and password and returns user_id. Does not create a session.
+ * Used by the org-creation flow so registered users can create an organization from the sign-in page.
+ */
+export async function verifyCredentials(email: string, password: string): Promise<{ user_id: string }> {
+  const client = getAuthClient();
+  return new Promise((resolve, reject) => {
+    (client as grpc.Client & {
+      VerifyCredentials: (
+        r: { email: string; password: string },
+        c: (e: grpc.ServiceError | null, r: { user_id?: string }) => void
+      ) => void;
+    }).VerifyCredentials(
+      { email, password },
+      (err: grpc.ServiceError | null, res: { user_id?: string }) => {
+        if (err) reject({ code: err.code, message: err.details || err.message });
+        else resolve({ user_id: res?.user_id ?? "" });
+      }
+    );
+  });
+}
+
+/**
  * Logout revokes the session. Pass access_token so the backend authorizes the call and audits logout; optional refresh_token for revoking by token.
  */
 export async function logout(refresh_token?: string, access_token?: string): Promise<void> {

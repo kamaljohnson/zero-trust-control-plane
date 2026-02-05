@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/org-policy-config.md",
   "sourceDirName": "backend",
   "slug": "/backend/org-policy-config",
-  "permalink": "/docs/backend/org-policy-config",
+  "permalink": "/zero-trust-control-plane/backend/org-policy-config",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "MFA",
-    "permalink": "/docs/backend/mfa"
+    "permalink": "/zero-trust-control-plane/backend/mfa"
   },
   "next": {
     "title": "Organization and membership",
-    "permalink": "/docs/backend/organization-membership"
+    "permalink": "/zero-trust-control-plane/backend/organization-membership"
   }
 }

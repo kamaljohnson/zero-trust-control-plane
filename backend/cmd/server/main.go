@@ -163,6 +163,7 @@ func main() {
 			authv1.AuthService_VerifyMFA_FullMethodName:                true,
 			authv1.AuthService_SubmitPhoneAndRequestMFA_FullMethodName: true,
 			authv1.AuthService_Refresh_FullMethodName:                  true,
+			authv1.AuthService_VerifyCredentials_FullMethodName:        true,
 			healthv1.HealthService_HealthCheck_FullMethodName:          true,
 			organizationv1.OrganizationService_CreateOrganization_FullMethodName: true,
 		}

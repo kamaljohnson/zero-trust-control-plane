@@ -13,7 +13,7 @@ This document describes the authentication implementation for the zero-trust con
 
 Auth provides **password-only** authentication for Browser and Admin UI with enterprise-grade security: bcrypt password hashing, JWT access and refresh tokens (RS256/ES256), refresh-token rotation, session binding via `refresh_jti` and hashed refresh token, refresh reuse detection (revoke all user sessions on reuse), and strong password policy (12+ chars, mixed case, number, symbol).
 
-**Scope**: Register, Login (with optional risk-based MFA), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
+**Scope**: Register, Login (with optional risk-based MFA), **VerifyCredentials** (credential verification without session/org check, for create-org flow), VerifyMFA, Refresh, and Logout are implemented. **LinkIdentity** is reserved for future OIDC/SAML and currently returns Unimplemented. For detailed MFA and device-trust logic (when MFA is required, policy evaluation, OTP flow, device trust registration and revocation), see [mfa.md](./mfa) and [device-trust.md](./device-trust).
 
 ### When auth is enabled
 
@@ -38,7 +38,7 @@ When `authEnabled` is true, [cmd/server/main.go](../../../backend/cmd/server/mai
 3. Parses JWT keys via [internal/security/keys.go](../../../backend/internal/security/keys.go) `ParsePrivateKey` and `ParsePublicKey` (supports inline PEM or file path; see `LoadPEM`).
 4. Builds `TokenProvider` with issuer, audience, and TTLs from config.
 5. Creates the five repos (user, identity, session, device, membership) and other repos (platform settings, org MFA settings, MFA challenge/intent, policy). Creates the audit repo and audit logger; see [audit.md](./audit). Calls `NewAuthService(..., auditLogger)` and sets `deps.Auth`, `deps.DeviceRepo`, `deps.PolicyRepo`, `deps.AuditRepo`, `deps.HealthPinger`, `deps.HealthPolicyChecker`.
-6. Builds `publicMethods` with the five full method names: AuthService Register, Login, VerifyMFA, Refresh; HealthService HealthCheck.
+6. Builds `publicMethods` with the six full method names: AuthService Register, Login, VerifyCredentials, VerifyMFA, Refresh; HealthService HealthCheck.
 7. Creates the gRPC server with `grpc.ChainUnaryInterceptor(interceptors.AuthUnary(tokens, publicMethods), interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods))`. See [audit.md](./audit) for the audit skip set and when audit is written.
 
 [internal/server/grpc.go](../../../backend/internal/server/grpc.go) `RegisterServices` passes `deps.Auth` into `identityhandler.NewAuthServer(authSvc)`. If `deps.Auth == nil` (auth disabled), the handler returns Unimplemented for all auth RPCs.
@@ -62,7 +62,7 @@ flowchart LR
 
 ### Request path (protected RPC)
 
-For a protected RPC, the request passes through the auth interceptor before the handler. Public methods (Register, Login, VerifyMFA, Refresh, HealthCheck) skip Bearer validation and proceed even with no or invalid token.
+For a protected RPC, the request passes through the auth interceptor before the handler. Public methods (Register, Login, VerifyCredentials, VerifyMFA, Refresh, HealthCheck) skip Bearer validation and proceed even with no or invalid token.
 
 ```mermaid
 sequenceDiagram
@@ -97,6 +97,7 @@ sequenceDiagram
 | RPC | Request | Response | AuthResponse contents | Notes |
 |-----|--------|----------|------------------------|-------|
 | Register | RegisterRequest | AuthResponse | `user_id` only | No tokens or org_id until Login with org. |
+| VerifyCredentials | VerifyCredentialsRequest | VerifyCredentialsResponse | `user_id` only | Validates email/password; returns user_id only. Does not check org membership; no tokens. Public; used for create-org flow (e.g. from login page). |
 | Login | LoginRequest | **LoginResponse** | oneof: **tokens**, **mfa_required** (challenge_id, phone_mask), or **phone_required** (intent_id) | If policy requires MFA and user has phone, returns mfa_required; if MFA required but user has no phone, returns phone_required; else returns tokens. |
 | VerifyMFA | VerifyMFARequest | AuthResponse | access_token, refresh_token, expires_at, user_id, org_id | Completes MFA; validates challenge and OTP, creates session, optionally marks device trusted; on first-time phone, sets user.phone and phone_verified. Returns tokens. |
 | SubmitPhoneAndRequestMFA | SubmitPhoneAndRequestMFARequest | SubmitPhoneAndRequestMFAResponse | challenge_id, phone_mask | Consumes intent from Login(phone_required); creates MFA challenge for submitted phone, sends OTP; returns challenge_id and phone_mask. Client then calls VerifyMFA. |
@@ -110,6 +111,7 @@ The following full method names are treated as public; they do not require a val
 
 - `AuthService_Register_FullMethodName`
 - `AuthService_Login_FullMethodName`
+- `AuthService_VerifyCredentials_FullMethodName`
 - `AuthService_VerifyMFA_FullMethodName`
 - `AuthService_SubmitPhoneAndRequestMFA_FullMethodName`
 - `AuthService_Refresh_FullMethodName`
@@ -120,6 +122,8 @@ These are configured in [cmd/server/main.go](../../../backend/cmd/server/main.go
 ### Messages
 
 - **RegisterRequest**: `email`, `password`, optional `name`.
+- **VerifyCredentialsRequest**: `email`, `password`. Used to obtain `user_id` for CreateOrganization without issuing tokens or checking org membership.
+- **VerifyCredentialsResponse**: `user_id` (set when credentials are valid).
 - **LoginRequest**: `email`, `password`, `org_id` (required), optional `device_fingerprint` (used to get-or-create device for the session).
 - **RefreshRequest**: `refresh_token`; optional `device_fingerprint` (used to evaluate device-trust policy, same semantics as Login; default `"password-login"` if omitted).
 - **RefreshResponse**: oneof **result** — **tokens** (AuthResponse), **mfa_required** (MFARequired), or **phone_required** (PhoneRequired). Same shape as LoginResponse. Returned when device-trust policy is evaluated on Refresh; when MFA is required, the current session is revoked and the client must complete MFA to get new tokens.
@@ -211,10 +215,10 @@ The **sessions** table includes nullable `refresh_jti` and `refresh_token_hash`.
 3. Create user (status active) and local identity (provider `local`, provider_id = email, bcrypt-hashed password).
 4. Return AuthResponse with `user_id` only (no tokens or org_id). **No organization or membership is created.**
 
-After registration, the user has two options to obtain access:
+After registration, the user can obtain access by creating an org (from the **login page** "Create new" tab via VerifyCredentials + CreateOrganization, or with the `user_id` from Register) or by joining an existing org:
 
 **Option 1: Create a new organization** (recommended for new users):
-- Call `OrganizationService.CreateOrganization` with the `user_id` and an organization name.
+- Call `OrganizationService.CreateOrganization` with the `user_id` and an organization name. The `user_id` may come from Register or from **VerifyCredentials** (e.g. when creating an org from the login page).
 - The system creates the organization with `active` status and assigns the user as `owner`.
 - The user can then log in using the returned organization `id` as `org_id`.
 - See [Organization Creation Flow](../organization-membership#organization-creation-flow) for details.
@@ -222,6 +226,10 @@ After registration, the user has two options to obtain access:
 **Option 2: Join an existing organization**:
 - An organization owner or admin adds the user via `MembershipService.AddMember`.
 - After membership is created, the user can log in with that organization's `id` as `org_id`.
+
+### VerifyCredentials
+
+Validates email and password the same way as Login (user lookup, local identity, bcrypt compare) but does **not** require `org_id` and does **not** check org membership or issue tokens. Returns **VerifyCredentialsResponse** with `user_id` when credentials are valid. Used by the frontend create-org-from-login flow: the client calls VerifyCredentials to obtain `user_id`, then calls `OrganizationService.CreateOrganization` with that `user_id` and an org name, then logs in with the new org. Both newly registered users and already-registered users can create an org from the login page using this flow.
 
 ### Login
 

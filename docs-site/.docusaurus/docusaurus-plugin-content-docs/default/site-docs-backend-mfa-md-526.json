@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/mfa.md",
   "sourceDirName": "backend",
   "slug": "/backend/mfa",
-  "permalink": "/docs/backend/mfa",
+  "permalink": "/zero-trust-control-plane/backend/mfa",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Health",
-    "permalink": "/docs/backend/health"
+    "permalink": "/zero-trust-control-plane/backend/health"
   },
   "next": {
     "title": "Org Policy Config",
-    "permalink": "/docs/backend/org-policy-config"
+    "permalink": "/zero-trust-control-plane/backend/org-policy-config"
   }
 }

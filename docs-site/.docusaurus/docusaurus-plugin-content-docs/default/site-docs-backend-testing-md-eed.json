@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/testing.md",
   "sourceDirName": "backend",
   "slug": "/backend/testing",
-  "permalink": "/docs/backend/testing",
+  "permalink": "/zero-trust-control-plane/backend/testing",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Telemetry",
-    "permalink": "/docs/backend/telemetry"
+    "permalink": "/zero-trust-control-plane/backend/telemetry"
   },
   "next": {
     "title": "Frontend",
-    "permalink": "/docs/category/frontend"
+    "permalink": "/zero-trust-control-plane/category/frontend"
   }
 }

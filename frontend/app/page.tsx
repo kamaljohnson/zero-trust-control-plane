@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -17,25 +17,26 @@ import { ProjectShowcaseAlert } from "@/components/project-showcase-alert";
 export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && isAuthenticated && user) {
       router.replace("/browser");
     }
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [mounted, isLoading, isAuthenticated, user, router]);
 
-  if (isLoading) {
+  // Always render the same structure to avoid hydration mismatch
+  // Show loading state only after component has mounted on client
+  if (!mounted || isLoading || (isAuthenticated && user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
-      </div>
-    );
-  }
-
-  if (isAuthenticated && user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+      <div className="flex min-h-screen flex-col p-4">
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
       </div>
     );
   }

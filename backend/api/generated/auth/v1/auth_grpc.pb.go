@@ -26,6 +26,7 @@ const (
 	AuthService_SubmitPhoneAndRequestMFA_FullMethodName = "/ztcp.auth.v1.AuthService/SubmitPhoneAndRequestMFA"
 	AuthService_Refresh_FullMethodName                  = "/ztcp.auth.v1.AuthService/Refresh"
 	AuthService_Logout_FullMethodName                   = "/ztcp.auth.v1.AuthService/Logout"
+	AuthService_VerifyCredentials_FullMethodName        = "/ztcp.auth.v1.AuthService/VerifyCredentials"
 	AuthService_LinkIdentity_FullMethodName             = "/ztcp.auth.v1.AuthService/LinkIdentity"
 )
 
@@ -41,6 +42,7 @@ type AuthServiceClient interface {
 	SubmitPhoneAndRequestMFA(ctx context.Context, in *SubmitPhoneAndRequestMFARequest, opts ...grpc.CallOption) (*SubmitPhoneAndRequestMFAResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	VerifyCredentials(ctx context.Context, in *VerifyCredentialsRequest, opts ...grpc.CallOption) (*VerifyCredentialsResponse, error)
 	LinkIdentity(ctx context.Context, in *LinkIdentityRequest, opts ...grpc.CallOption) (*LinkIdentityResponse, error)
 }
 
@@ -112,6 +114,16 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 	return out, nil
 }
 
+func (c *authServiceClient) VerifyCredentials(ctx context.Context, in *VerifyCredentialsRequest, opts ...grpc.CallOption) (*VerifyCredentialsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyCredentialsResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) LinkIdentity(ctx context.Context, in *LinkIdentityRequest, opts ...grpc.CallOption) (*LinkIdentityResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LinkIdentityResponse)
@@ -134,6 +146,7 @@ type AuthServiceServer interface {
 	SubmitPhoneAndRequestMFA(context.Context, *SubmitPhoneAndRequestMFARequest) (*SubmitPhoneAndRequestMFAResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
+	VerifyCredentials(context.Context, *VerifyCredentialsRequest) (*VerifyCredentialsResponse, error)
 	LinkIdentity(context.Context, *LinkIdentityRequest) (*LinkIdentityResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
@@ -162,6 +175,9 @@ func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) 
 }
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyCredentials(context.Context, *VerifyCredentialsRequest) (*VerifyCredentialsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyCredentials not implemented")
 }
 func (UnimplementedAuthServiceServer) LinkIdentity(context.Context, *LinkIdentityRequest) (*LinkIdentityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LinkIdentity not implemented")
@@ -295,6 +311,24 @@ func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_VerifyCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyCredentials(ctx, req.(*VerifyCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_LinkIdentity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LinkIdentityRequest)
 	if err := dec(in); err != nil {
@@ -343,6 +377,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Logout",
 			Handler:    _AuthService_Logout_Handler,
+		},
+		{
+			MethodName: "VerifyCredentials",
+			Handler:    _AuthService_VerifyCredentials_Handler,
 		},
 		{
 			MethodName: "LinkIdentity",

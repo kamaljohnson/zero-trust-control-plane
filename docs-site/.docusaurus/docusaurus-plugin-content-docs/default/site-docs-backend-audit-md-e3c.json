@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/audit.md",
   "sourceDirName": "backend",
   "slug": "/backend/audit",
-  "permalink": "/docs/backend/audit",
+  "permalink": "/zero-trust-control-plane/backend/audit",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Auth",
-    "permalink": "/docs/backend/auth"
+    "permalink": "/zero-trust-control-plane/backend/auth"
   },
   "next": {
     "title": "Database",
-    "permalink": "/docs/backend/database"
+    "permalink": "/zero-trust-control-plane/backend/database"
   }
 }

@@ -216,6 +216,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     clearAuth();
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   }, [state?.accessToken, state?.refreshToken, clearAuth]);
 
   const value = useMemo<AuthContextValue>(

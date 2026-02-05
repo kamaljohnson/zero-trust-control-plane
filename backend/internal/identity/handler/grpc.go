@@ -99,6 +99,18 @@ func (s *AuthServer) Logout(ctx context.Context, req *authv1.LogoutRequest) (*em
 	return &emptypb.Empty{}, nil
 }
 
+// VerifyCredentials validates email/password and returns user_id. Used for org-creation flow.
+func (s *AuthServer) VerifyCredentials(ctx context.Context, req *authv1.VerifyCredentialsRequest) (*authv1.VerifyCredentialsResponse, error) {
+	if s.auth == nil {
+		return nil, status.Error(codes.Unimplemented, "method VerifyCredentials not implemented")
+	}
+	userID, err := s.auth.VerifyCredentials(ctx, req.GetEmail(), req.GetPassword())
+	if err != nil {
+		return nil, authErr(err)
+	}
+	return &authv1.VerifyCredentialsResponse{UserId: userID}, nil
+}
+
 // LinkIdentity associates an external identity with the current user. Not implemented for password-only auth.
 func (s *AuthServer) LinkIdentity(ctx context.Context, req *authv1.LinkIdentityRequest) (*authv1.LinkIdentityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LinkIdentity not implemented for password-only auth")

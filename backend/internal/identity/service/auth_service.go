@@ -278,6 +278,33 @@ func (s *AuthService) Register(ctx context.Context, email, password, name string
 	return &AuthResult{UserID: userID}, nil
 }
 
+// VerifyCredentials validates email and password and returns the user_id. Does not check org membership.
+// Used by the org-creation flow so registered users can create an organization from the sign-in page.
+func (s *AuthService) VerifyCredentials(ctx context.Context, email, password string) (userID string, err error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" || password == "" {
+		return "", ErrInvalidCredentials
+	}
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", err
+	}
+	if user == nil || user.Status != userdomain.UserStatusActive {
+		return "", ErrInvalidCredentials
+	}
+	ident, err := s.identityRepo.GetByUserAndProvider(ctx, user.ID, identitydomain.IdentityProviderLocal)
+	if err != nil {
+		return "", err
+	}
+	if ident == nil || ident.PasswordHash == "" {
+		return "", ErrInvalidCredentials
+	}
+	if err := s.hasher.Compare(ident.PasswordHash, []byte(password)); err != nil {
+		return "", ErrInvalidCredentials
+	}
+	return user.ID, nil
+}
+
 // Login authenticates with email/password and org_id. If policy requires MFA (new/untrusted device or org/platform setting), returns MFARequired with challenge_id; otherwise creates a session and returns tokens.
 func (s *AuthService) Login(ctx context.Context, email, password, orgID, deviceFingerprint string) (*LoginResult, error) {
 	email = strings.TrimSpace(strings.ToLower(email))

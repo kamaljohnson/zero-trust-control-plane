@@ -13,8 +13,8 @@
       "calendar": "gregory",
       "path": "en",
       "translate": false,
-      "url": "https://your-docs-domain.com",
-      "baseUrl": "/"
+      "url": "https://kamaljohnson.github.io",
+      "baseUrl": "/zero-trust-control-plane/"
     }
   }
 }
