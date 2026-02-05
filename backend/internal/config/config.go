@@ -3,6 +3,7 @@ package config
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -61,6 +62,11 @@ func Load() (*Config, error) {
 	_ = v.ReadInConfig() // ignore ErrConfigFileNotFound
 
 	v.AutomaticEnv()
+	// BindEnv ensures env vars are used during Unmarshal (AutomaticEnv alone does not apply to Unmarshal in many Viper versions).
+	// Required so Docker-injected DATABASE_URL and JWT keys from env_file are loaded when no .env file exists in the container.
+	v.BindEnv("DATABASE_URL", "DATABASE_URL")
+	v.BindEnv("JWT_PRIVATE_KEY", "JWT_PRIVATE_KEY")
+	v.BindEnv("JWT_PUBLIC_KEY", "JWT_PUBLIC_KEY")
 
 	v.SetDefault("GRPC_ADDR", ":8080")
 	v.SetDefault("DATABASE_URL", "")
@@ -80,6 +86,17 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
+	}
+
+	// Explicit env fallback so Docker-injected vars (env_file) are always used when Viper did not load them.
+	if cfg.DatabaseURL == "" {
+		cfg.DatabaseURL = os.Getenv("DATABASE_URL")
+	}
+	if cfg.JWTPrivateKey == "" {
+		cfg.JWTPrivateKey = os.Getenv("JWT_PRIVATE_KEY")
+	}
+	if cfg.JWTPublicKey == "" {
+		cfg.JWTPublicKey = os.Getenv("JWT_PUBLIC_KEY")
 	}
 
 	if cfg.GRPCAddr == "" {

@@ -72,6 +72,21 @@ func main() {
 	deps.TelemetryEmitter = otel.NewEventEmitter(otelProviders.LoggerProvider)
 
 	authEnabled := cfg.DatabaseURL != "" && cfg.JWTPrivateKey != "" && cfg.JWTPublicKey != ""
+	if !authEnabled {
+		var missing []string
+		if cfg.DatabaseURL == "" {
+			missing = append(missing, "DATABASE_URL")
+		}
+		if cfg.JWTPrivateKey == "" {
+			missing = append(missing, "JWT_PRIVATE_KEY")
+		}
+		if cfg.JWTPublicKey == "" {
+			missing = append(missing, "JWT_PUBLIC_KEY")
+		}
+		log.Printf("auth disabled: %v not set or empty; Register/Login/Refresh will return Unimplemented", missing)
+	} else {
+		log.Print("auth enabled: DATABASE_URL and JWT keys set; Register/Login/Refresh available")
+	}
 	if authEnabled {
 		database, err := db.Open(cfg.DatabaseURL)
 		if err != nil {
