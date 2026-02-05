@@ -114,6 +114,10 @@ jobs:
           tags: |
             ${{ steps.registry.outputs.REGISTRY }}/ztcp-frontend:latest
             ${{ steps.registry.outputs.REGISTRY }}/ztcp-frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_DEV_OTP_ENABLED=${{ vars.NEXT_PUBLIC_DEV_OTP_ENABLED == '' && 'false' || vars.NEXT_PUBLIC_DEV_OTP_ENABLED }}
+            NEXT_PUBLIC_DOCS_URL=${{ vars.NEXT_PUBLIC_DOCS_URL }}
+            NEXT_PUBLIC_GRAFANA_URL=${{ vars.NEXT_PUBLIC_GRAFANA_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

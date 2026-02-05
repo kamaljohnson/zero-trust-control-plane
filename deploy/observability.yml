@@ -121,6 +121,9 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_AUTH_DISABLE_LOGIN_FORM=${GF_AUTH_DISABLE_LOGIN_FORM:-true}
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-}
+      # Serve under /grafana when behind nginx (set GF_SERVER_ROOT_URL in .env.prod to https://yourdomain.com/grafana)
+      - GF_SERVER_SERVE_FROM_SUB_PATH=${GF_SERVER_SERVE_FROM_SUB_PATH:-false}
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL:-}
     ports:
       - "3002:3000"   # 3002 on host so frontend dev can use 3000
     volumes:

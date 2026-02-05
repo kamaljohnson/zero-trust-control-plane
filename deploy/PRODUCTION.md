@@ -560,8 +560,11 @@ Configure these in **Settings → Secrets and variables → Actions**:
 | Variable | Description |
 |----------|-------------|
 | `DEPLOY_REPO_DIR` | Path to the repo on the droplet (default: `/opt/zero-trust-control-plane`) |
+| `NEXT_PUBLIC_DEV_OTP_ENABLED` | When `true`, BFF returns OTP in response for MFA (no SMS). Set to match `.env.prod`; default in CI is `false` if unset. |
+| `NEXT_PUBLIC_DOCS_URL` | Docs base URL for the frontend "Docs" link (e.g. `https://yourdomain.com/docs`). Baked into the frontend image at build time. |
+| `NEXT_PUBLIC_GRAFANA_URL` | Grafana base URL for the dashboard "Open Grafana" telemetry link (e.g. `https://yourdomain.com/grafana`). Baked into the frontend image at build time. |
 
-Set in **Settings → Secrets and variables → Actions → Variables**.
+Set in **Settings → Secrets and variables → Actions → Variables**. If you deploy via CI (pull from registry), set `NEXT_PUBLIC_DOCS_URL` and `NEXT_PUBLIC_GRAFANA_URL` so the frontend build gets these values; otherwise the telemetry page will show the "Set NEXT_PUBLIC_GRAFANA_URL" placeholder.
 
 ### Manual deployment trigger
 
