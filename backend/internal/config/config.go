@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -97,6 +98,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.JWTPublicKey == "" {
 		cfg.JWTPublicKey = os.Getenv("JWT_PUBLIC_KEY")
+	}
+	if v := strings.TrimSpace(os.Getenv("OTP_RETURN_TO_CLIENT")); v != "" {
+		cfg.OTPReturnToClient = v == "true" || v == "1"
 	}
 
 	if cfg.GRPCAddr == "" {

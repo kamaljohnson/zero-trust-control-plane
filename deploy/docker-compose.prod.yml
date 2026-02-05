@@ -72,6 +72,9 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_DEV_OTP_ENABLED: ${NEXT_PUBLIC_DEV_OTP_ENABLED:-false}
+        NEXT_PUBLIC_DOCS_URL: ${NEXT_PUBLIC_DOCS_URL:-}
     container_name: ztcp-frontend
     env_file:
       - .env.prod
@@ -79,6 +82,7 @@ services:
       - NODE_ENV=production
       - BACKEND_GRPC_URL=backend:8080
       - NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL:-}
+      - NEXT_PUBLIC_DEV_OTP_ENABLED=${NEXT_PUBLIC_DEV_OTP_ENABLED:-false}
     ports:
       - "127.0.0.1:3000:3000"  # Only expose on localhost for nginx
     depends_on:

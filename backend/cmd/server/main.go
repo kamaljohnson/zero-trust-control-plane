@@ -127,7 +127,7 @@ func main() {
 			smsSender = sms.NewSMSLocalClient(cfg.SMSLocalAPIKey, cfg.SMSLocalBaseURL, cfg.SMSLocalSender)
 		}
 		var devOTPStore identityservice.DevOTPStore
-		if cfg.OTPReturnToClient && cfg.Env != "production" {
+		if cfg.OTPReturnToClient {
 			devStore := devotp.NewMemoryStore()
 			devOTPStore = devStore
 			deps.DevOTPHandler = devotphandler.NewServer(devStore)

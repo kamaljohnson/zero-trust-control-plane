@@ -16,9 +16,13 @@ COPY . .
 # Ensure public exists (Next.js may not create it; COPY in runner stage requires it)
 RUN mkdir -p /app/public
 
-# Set production environment
+# Set production environment (NEXT_PUBLIC_* baked at build time; pass via build-arg for dev OTP etc.)
+ARG NEXT_PUBLIC_DEV_OTP_ENABLED=false
+ARG NEXT_PUBLIC_DOCS_URL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_DEV_OTP_ENABLED=${NEXT_PUBLIC_DEV_OTP_ENABLED}
+ENV NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL}
 
 # Build the Next.js application
 RUN npm run build
