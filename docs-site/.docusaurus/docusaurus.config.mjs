@@ -8,7 +8,7 @@ export default {
   "tagline": "Documentation",
   "favicon": "img/favicon.ico",
   "url": "https://kamaljohnson.github.io",
-  "baseUrl": "/zero-trust-control-plane/",
+  "baseUrl": "/",
   "organizationName": "kamaljohnson",
   "projectName": "zero-trust-control-plane",
   "trailingSlash": false,

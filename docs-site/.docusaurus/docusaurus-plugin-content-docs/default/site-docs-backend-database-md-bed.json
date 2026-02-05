@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/database.md",
   "sourceDirName": "backend",
   "slug": "/backend/database",
-  "permalink": "/zero-trust-control-plane/backend/database",
+  "permalink": "/backend/database",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Audit",
-    "permalink": "/zero-trust-control-plane/backend/audit"
+    "permalink": "/backend/audit"
   },
   "next": {
     "title": "Device Trust",
-    "permalink": "/zero-trust-control-plane/backend/device-trust"
+    "permalink": "/backend/device-trust"
   }
 }

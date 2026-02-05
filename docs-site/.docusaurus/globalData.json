@@ -1,127 +1,127 @@
 {
   "docusaurus-plugin-content-docs": {
     "default": {
-      "path": "/zero-trust-control-plane/",
+      "path": "/",
       "versions": [
         {
           "name": "current",
           "label": "Next",
           "isLast": true,
-          "path": "/zero-trust-control-plane/",
+          "path": "/",
           "mainDocId": "intro",
           "docs": [
             {
               "id": "backend/audit",
-              "path": "/zero-trust-control-plane/backend/audit",
+              "path": "/backend/audit",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/auth",
-              "path": "/zero-trust-control-plane/backend/auth",
+              "path": "/backend/auth",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/database",
-              "path": "/zero-trust-control-plane/backend/database",
+              "path": "/backend/database",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/device-trust",
-              "path": "/zero-trust-control-plane/backend/device-trust",
+              "path": "/backend/device-trust",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/grpc-api-overview",
-              "path": "/zero-trust-control-plane/backend/grpc-api-overview",
+              "path": "/backend/grpc-api-overview",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/health",
-              "path": "/zero-trust-control-plane/backend/health",
+              "path": "/backend/health",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/mfa",
-              "path": "/zero-trust-control-plane/backend/mfa",
+              "path": "/backend/mfa",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/org-policy-config",
-              "path": "/zero-trust-control-plane/backend/org-policy-config",
+              "path": "/backend/org-policy-config",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/organization-membership",
-              "path": "/zero-trust-control-plane/backend/organization-membership",
+              "path": "/backend/organization-membership",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/policy-engine",
-              "path": "/zero-trust-control-plane/backend/policy-engine",
+              "path": "/backend/policy-engine",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/session-lifecycle",
-              "path": "/zero-trust-control-plane/backend/session-lifecycle",
+              "path": "/backend/session-lifecycle",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/sessions",
-              "path": "/zero-trust-control-plane/backend/sessions",
+              "path": "/backend/sessions",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/telemetry",
-              "path": "/zero-trust-control-plane/backend/telemetry",
+              "path": "/backend/telemetry",
               "sidebar": "docsSidebar"
             },
             {
               "id": "backend/testing",
-              "path": "/zero-trust-control-plane/backend/testing",
+              "path": "/backend/testing",
               "sidebar": "docsSidebar"
             },
             {
               "id": "contributing/pending",
-              "path": "/zero-trust-control-plane/contributing/pending"
+              "path": "/contributing/pending"
             },
             {
               "id": "frontend/architecture",
-              "path": "/zero-trust-control-plane/frontend/architecture",
+              "path": "/frontend/architecture",
               "sidebar": "docsSidebar"
             },
             {
               "id": "frontend/dashboard",
-              "path": "/zero-trust-control-plane/frontend/dashboard",
+              "path": "/frontend/dashboard",
               "sidebar": "docsSidebar"
             },
             {
               "id": "frontend/user-browser",
-              "path": "/zero-trust-control-plane/frontend/user-browser",
+              "path": "/frontend/user-browser",
               "sidebar": "docsSidebar"
             },
             {
               "id": "intro",
-              "path": "/zero-trust-control-plane/intro",
+              "path": "/intro",
               "sidebar": "docsSidebar"
             },
             {
               "id": "operations/deployment",
-              "path": "/zero-trust-control-plane/operations/deployment",
+              "path": "/operations/deployment",
               "sidebar": "docsSidebar"
             },
             {
               "id": "/category/backend",
-              "path": "/zero-trust-control-plane/category/backend",
+              "path": "/category/backend",
               "sidebar": "docsSidebar"
             },
             {
               "id": "/category/frontend",
-              "path": "/zero-trust-control-plane/category/frontend",
+              "path": "/category/frontend",
               "sidebar": "docsSidebar"
             },
             {
               "id": "/category/operations",
-              "path": "/zero-trust-control-plane/category/operations",
+              "path": "/category/operations",
               "sidebar": "docsSidebar"
             }
           ],
@@ -129,7 +129,7 @@
           "sidebars": {
             "docsSidebar": {
               "link": {
-                "path": "/zero-trust-control-plane/intro",
+                "path": "/intro",
                 "label": "intro"
               }
             }

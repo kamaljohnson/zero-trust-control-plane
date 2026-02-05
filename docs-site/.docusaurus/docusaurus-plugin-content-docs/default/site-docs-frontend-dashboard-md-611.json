@@ -5,7 +5,7 @@
   "source": "@site/docs/frontend/dashboard.md",
   "sourceDirName": "frontend",
   "slug": "/frontend/dashboard",
-  "permalink": "/zero-trust-control-plane/frontend/dashboard",
+  "permalink": "/frontend/dashboard",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Architecture",
-    "permalink": "/zero-trust-control-plane/frontend/architecture"
+    "permalink": "/frontend/architecture"
   },
   "next": {
     "title": "User Browser",
-    "permalink": "/zero-trust-control-plane/frontend/user-browser"
+    "permalink": "/frontend/user-browser"
   }
 }

@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/sessions.md",
   "sourceDirName": "backend",
   "slug": "/backend/sessions",
-  "permalink": "/zero-trust-control-plane/backend/sessions",
+  "permalink": "/backend/sessions",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Policy engine",
-    "permalink": "/zero-trust-control-plane/backend/policy-engine"
+    "permalink": "/backend/policy-engine"
   },
   "next": {
     "title": "Session lifecycle",
-    "permalink": "/zero-trust-control-plane/backend/session-lifecycle"
+    "permalink": "/backend/session-lifecycle"
   }
 }

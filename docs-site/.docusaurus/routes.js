@@ -3,191 +3,191 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 
 export default [
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug', 'da8'),
+    path: '/__docusaurus/debug',
+    component: ComponentCreator('/__docusaurus/debug', '5ff'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/config',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/config', 'aed'),
+    path: '/__docusaurus/debug/config',
+    component: ComponentCreator('/__docusaurus/debug/config', '5ba'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/content',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/content', 'cac'),
+    path: '/__docusaurus/debug/content',
+    component: ComponentCreator('/__docusaurus/debug/content', 'a2b'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/globalData',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/globalData', '98a'),
+    path: '/__docusaurus/debug/globalData',
+    component: ComponentCreator('/__docusaurus/debug/globalData', 'c3c'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/metadata',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/metadata', '7a4'),
+    path: '/__docusaurus/debug/metadata',
+    component: ComponentCreator('/__docusaurus/debug/metadata', '156'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/registry',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/registry', '322'),
+    path: '/__docusaurus/debug/registry',
+    component: ComponentCreator('/__docusaurus/debug/registry', '88c'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/__docusaurus/debug/routes',
-    component: ComponentCreator('/zero-trust-control-plane/__docusaurus/debug/routes', '3e5'),
+    path: '/__docusaurus/debug/routes',
+    component: ComponentCreator('/__docusaurus/debug/routes', '000'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/',
-    component: ComponentCreator('/zero-trust-control-plane/', '35f'),
+    path: '/',
+    component: ComponentCreator('/', 'e5f'),
     exact: true
   },
   {
-    path: '/zero-trust-control-plane/',
-    component: ComponentCreator('/zero-trust-control-plane/', 'cf1'),
+    path: '/',
+    component: ComponentCreator('/', 'aa1'),
     routes: [
       {
-        path: '/zero-trust-control-plane/',
-        component: ComponentCreator('/zero-trust-control-plane/', '270'),
+        path: '/',
+        component: ComponentCreator('/', '519'),
         routes: [
           {
-            path: '/zero-trust-control-plane/',
-            component: ComponentCreator('/zero-trust-control-plane/', 'e5b'),
+            path: '/',
+            component: ComponentCreator('/', '0ad'),
             routes: [
               {
-                path: '/zero-trust-control-plane/backend/audit',
-                component: ComponentCreator('/zero-trust-control-plane/backend/audit', '3e0'),
+                path: '/backend/audit',
+                component: ComponentCreator('/backend/audit', '01b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/auth',
-                component: ComponentCreator('/zero-trust-control-plane/backend/auth', '547'),
+                path: '/backend/auth',
+                component: ComponentCreator('/backend/auth', 'b2f'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/database',
-                component: ComponentCreator('/zero-trust-control-plane/backend/database', '280'),
+                path: '/backend/database',
+                component: ComponentCreator('/backend/database', 'e81'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/device-trust',
-                component: ComponentCreator('/zero-trust-control-plane/backend/device-trust', '06a'),
+                path: '/backend/device-trust',
+                component: ComponentCreator('/backend/device-trust', 'b3d'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/grpc-api-overview',
-                component: ComponentCreator('/zero-trust-control-plane/backend/grpc-api-overview', '84b'),
+                path: '/backend/grpc-api-overview',
+                component: ComponentCreator('/backend/grpc-api-overview', '1f7'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/health',
-                component: ComponentCreator('/zero-trust-control-plane/backend/health', 'f0c'),
+                path: '/backend/health',
+                component: ComponentCreator('/backend/health', '56a'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/mfa',
-                component: ComponentCreator('/zero-trust-control-plane/backend/mfa', '6fa'),
+                path: '/backend/mfa',
+                component: ComponentCreator('/backend/mfa', '9cb'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/org-policy-config',
-                component: ComponentCreator('/zero-trust-control-plane/backend/org-policy-config', '313'),
+                path: '/backend/org-policy-config',
+                component: ComponentCreator('/backend/org-policy-config', '25b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/organization-membership',
-                component: ComponentCreator('/zero-trust-control-plane/backend/organization-membership', 'd83'),
+                path: '/backend/organization-membership',
+                component: ComponentCreator('/backend/organization-membership', '5a4'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/policy-engine',
-                component: ComponentCreator('/zero-trust-control-plane/backend/policy-engine', '250'),
+                path: '/backend/policy-engine',
+                component: ComponentCreator('/backend/policy-engine', '73e'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/session-lifecycle',
-                component: ComponentCreator('/zero-trust-control-plane/backend/session-lifecycle', 'd8b'),
+                path: '/backend/session-lifecycle',
+                component: ComponentCreator('/backend/session-lifecycle', 'f85'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/sessions',
-                component: ComponentCreator('/zero-trust-control-plane/backend/sessions', '4b1'),
+                path: '/backend/sessions',
+                component: ComponentCreator('/backend/sessions', 'cb4'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/telemetry',
-                component: ComponentCreator('/zero-trust-control-plane/backend/telemetry', '8d8'),
+                path: '/backend/telemetry',
+                component: ComponentCreator('/backend/telemetry', '85f'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/backend/testing',
-                component: ComponentCreator('/zero-trust-control-plane/backend/testing', '8a1'),
+                path: '/backend/testing',
+                component: ComponentCreator('/backend/testing', '75c'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/category/backend',
-                component: ComponentCreator('/zero-trust-control-plane/category/backend', '648'),
+                path: '/category/backend',
+                component: ComponentCreator('/category/backend', 'cc4'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/category/frontend',
-                component: ComponentCreator('/zero-trust-control-plane/category/frontend', '6e0'),
+                path: '/category/frontend',
+                component: ComponentCreator('/category/frontend', 'b3b'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/category/operations',
-                component: ComponentCreator('/zero-trust-control-plane/category/operations', '71b'),
+                path: '/category/operations',
+                component: ComponentCreator('/category/operations', '11d'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/contributing/pending',
-                component: ComponentCreator('/zero-trust-control-plane/contributing/pending', '4f1'),
+                path: '/contributing/pending',
+                component: ComponentCreator('/contributing/pending', '948'),
                 exact: true
               },
               {
-                path: '/zero-trust-control-plane/frontend/architecture',
-                component: ComponentCreator('/zero-trust-control-plane/frontend/architecture', '107'),
+                path: '/frontend/architecture',
+                component: ComponentCreator('/frontend/architecture', '4ab'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/frontend/dashboard',
-                component: ComponentCreator('/zero-trust-control-plane/frontend/dashboard', 'c50'),
+                path: '/frontend/dashboard',
+                component: ComponentCreator('/frontend/dashboard', 'a94'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/frontend/user-browser',
-                component: ComponentCreator('/zero-trust-control-plane/frontend/user-browser', '330'),
+                path: '/frontend/user-browser',
+                component: ComponentCreator('/frontend/user-browser', 'c22'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/intro',
-                component: ComponentCreator('/zero-trust-control-plane/intro', '19f'),
+                path: '/intro',
+                component: ComponentCreator('/intro', '4a2'),
                 exact: true,
                 sidebar: "docsSidebar"
               },
               {
-                path: '/zero-trust-control-plane/operations/deployment',
-                component: ComponentCreator('/zero-trust-control-plane/operations/deployment', '75f'),
+                path: '/operations/deployment',
+                component: ComponentCreator('/operations/deployment', '161'),
                 exact: true,
                 sidebar: "docsSidebar"
               }

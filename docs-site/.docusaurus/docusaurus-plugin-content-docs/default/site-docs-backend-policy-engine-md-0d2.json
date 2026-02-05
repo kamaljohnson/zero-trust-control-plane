@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/policy-engine.md",
   "sourceDirName": "backend",
   "slug": "/backend/policy-engine",
-  "permalink": "/zero-trust-control-plane/backend/policy-engine",
+  "permalink": "/backend/policy-engine",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Organization and membership",
-    "permalink": "/zero-trust-control-plane/backend/organization-membership"
+    "permalink": "/backend/organization-membership"
   },
   "next": {
     "title": "Sessions",
-    "permalink": "/zero-trust-control-plane/backend/sessions"
+    "permalink": "/backend/sessions"
   }
 }

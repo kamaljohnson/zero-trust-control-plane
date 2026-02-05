@@ -5,7 +5,7 @@
   "source": "@site/docs/backend/telemetry.md",
   "sourceDirName": "backend",
   "slug": "/backend/telemetry",
-  "permalink": "/zero-trust-control-plane/backend/telemetry",
+  "permalink": "/backend/telemetry",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -17,10 +17,10 @@
   "sidebar": "docsSidebar",
   "previous": {
     "title": "Session lifecycle",
-    "permalink": "/zero-trust-control-plane/backend/session-lifecycle"
+    "permalink": "/backend/session-lifecycle"
   },
   "next": {
     "title": "Testing",
-    "permalink": "/zero-trust-control-plane/backend/testing"
+    "permalink": "/backend/testing"
   }
 }

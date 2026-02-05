@@ -1,156 +1,156 @@
 {
-  "/zero-trust-control-plane/__docusaurus/debug-da8": {
+  "/__docusaurus/debug-5ff": {
     "__comp": "__comp---theme-debug-config-23-a-2ff",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/__docusaurus/debug/config-aed": {
+  "/__docusaurus/debug/config-5ba": {
     "__comp": "__comp---theme-debug-config-23-a-2ff",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/__docusaurus/debug/content-cac": {
+  "/__docusaurus/debug/content-a2b": {
     "__comp": "__comp---theme-debug-contentba-8-ce7",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     },
-    "__props": "__props---zero-trust-control-plane-docusaurus-debug-contentea-7-37b"
+    "__props": "__props---docusaurus-debug-content-3-c-0-be2"
   },
-  "/zero-trust-control-plane/__docusaurus/debug/globalData-98a": {
+  "/__docusaurus/debug/globalData-c3c": {
     "__comp": "__comp---theme-debug-global-dataede-0fa",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/__docusaurus/debug/metadata-7a4": {
+  "/__docusaurus/debug/metadata-156": {
     "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/__docusaurus/debug/registry-322": {
+  "/__docusaurus/debug/registry-88c": {
     "__comp": "__comp---theme-debug-registry-679-501",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/__docusaurus/debug/routes-3e5": {
+  "/__docusaurus/debug/routes-000": {
     "__comp": "__comp---theme-debug-routes-946-699",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-docusaurus-debugb-38-714"
     }
   },
-  "/zero-trust-control-plane/-35f": {
+  "/-e5f": {
     "__comp": "__comp---site-src-pages-index-tsx-1-df-d3e",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-a-74-6fb"
     },
     "config": "config---zero-trust-control-plane-5-e-9-782"
   },
-  "/zero-trust-control-plane/-cf1": {
+  "/-aa1": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---zero-trust-control-plane-aba-322"
     }
   },
-  "/zero-trust-control-plane/-270": {
+  "/-519": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
-    "__props": "__props---zero-trust-control-plane-606-5c6"
+    "__props": "__props---22-d-307"
   },
-  "/zero-trust-control-plane/-e5b": {
+  "/-0ad": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
-  "/zero-trust-control-plane/backend/audit-3e0": {
+  "/backend/audit-01b": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-audite-3-c-f85"
   },
-  "/zero-trust-control-plane/backend/auth-547": {
+  "/backend/auth-b2f": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-autha-8-b-941"
   },
-  "/zero-trust-control-plane/backend/database-280": {
+  "/backend/database-e81": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-databasebed-a28"
   },
-  "/zero-trust-control-plane/backend/device-trust-06a": {
+  "/backend/device-trust-b3d": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-device-trust-0-d-1-cad"
   },
-  "/zero-trust-control-plane/backend/grpc-api-overview-84b": {
+  "/backend/grpc-api-overview-1f7": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-grpc-api-overviewc-6-a-d96"
   },
-  "/zero-trust-control-plane/backend/health-f0c": {
+  "/backend/health-56a": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-health-428-111"
   },
-  "/zero-trust-control-plane/backend/mfa-6fa": {
+  "/backend/mfa-9cb": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-mfa-526-b86"
   },
-  "/zero-trust-control-plane/backend/org-policy-config-313": {
+  "/backend/org-policy-config-25b": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-org-policy-config-7-b-4-da6"
   },
-  "/zero-trust-control-plane/backend/organization-membership-d83": {
+  "/backend/organization-membership-5a4": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-organization-membership-86-e-395"
   },
-  "/zero-trust-control-plane/backend/policy-engine-250": {
+  "/backend/policy-engine-73e": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-policy-engine-0-d-2-7a5"
   },
-  "/zero-trust-control-plane/backend/session-lifecycle-d8b": {
+  "/backend/session-lifecycle-f85": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-session-lifecycleaf-7-415"
   },
-  "/zero-trust-control-plane/backend/sessions-4b1": {
+  "/backend/sessions-cb4": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-sessions-79-e-c9a"
   },
-  "/zero-trust-control-plane/backend/telemetry-8d8": {
+  "/backend/telemetry-85f": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-telemetry-346-70a"
   },
-  "/zero-trust-control-plane/backend/testing-8a1": {
+  "/backend/testing-75c": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-backend-testingeed-1c1"
   },
-  "/zero-trust-control-plane/category/backend-648": {
+  "/category/backend-cc4": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zero-trust-control-plane-category-backendac-8-9ec"
+    "__props": "__props---category-backendbcf-0e4"
   },
-  "/zero-trust-control-plane/category/frontend-6e0": {
+  "/category/frontend-b3b": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zero-trust-control-plane-category-frontendb-9-e-846"
+    "__props": "__props---category-frontend-69-d-004"
   },
-  "/zero-trust-control-plane/category/operations-71b": {
+  "/category/operations-11d": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zero-trust-control-plane-category-operations-346-338"
+    "__props": "__props---category-operations-23-a-8d3"
   },
-  "/zero-trust-control-plane/contributing/pending-4f1": {
+  "/contributing/pending-948": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-contributing-pendingb-31-119"
   },
-  "/zero-trust-control-plane/frontend/architecture-107": {
+  "/frontend/architecture-4ab": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-frontend-architectureed-5-42c"
   },
-  "/zero-trust-control-plane/frontend/dashboard-c50": {
+  "/frontend/dashboard-a94": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-frontend-dashboard-611-e89"
   },
-  "/zero-trust-control-plane/frontend/user-browser-330": {
+  "/frontend/user-browser-c22": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-frontend-user-browserc-53-d78"
   },
-  "/zero-trust-control-plane/intro-19f": {
+  "/intro-4a2": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-intro-0-e-3-24e"
   },
-  "/zero-trust-control-plane/operations/deployment-75f": {
+  "/operations/deployment-161": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---zero-trust-control-plane-operations-deploymenta-07-208"
   }
