@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -14,14 +14,20 @@ import {
 } from "@/components/ui/card";
 import { ProjectShowcaseAlert } from "@/components/project-showcase-alert";
 
+const emptySubscribe = () => () => {};
+
+/**
+ * useMounted returns true only after the component has mounted on the client, false during SSR.
+ * Use to avoid hydration mismatch when rendering client-only state.
+ */
+function useMounted(): boolean {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
+
 export default function Home() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   useEffect(() => {
     if (mounted && !isLoading && isAuthenticated && user) {

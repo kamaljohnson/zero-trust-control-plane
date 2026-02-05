@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
-import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import * as authClient from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -464,6 +464,12 @@ function LoginPageContent() {
                     ? "Create organization"
                     : "Sign in"}
             </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+                Register
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
