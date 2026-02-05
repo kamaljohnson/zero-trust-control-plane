@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 /**
  * Global error boundary. Catches errors in the root layout (e.g. AuthProvider)
  * and replaces the entire document. Must define its own html and body.
@@ -43,7 +45,7 @@ export default function GlobalError({
             >
               Try again
             </button>
-            <a
+            <Link
               href="/"
               style={{
                 padding: "0.5rem 1rem",
@@ -54,7 +56,7 @@ export default function GlobalError({
               }}
             >
               Go to home
-            </a>
+            </Link>
           </div>
         </div>
       </body>

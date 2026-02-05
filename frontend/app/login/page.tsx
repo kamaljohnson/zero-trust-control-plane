@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import * as authClient from "@/lib/auth-client";
@@ -21,14 +21,14 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DEFAULT_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? "";
 const DEV_OTP_ENABLED = process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, verifyMFA, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const orgIdFromQuery = searchParams?.get("org_id") ?? "";
-  const [orgId, setOrgId] = useState(orgIdFromQuery || DEFAULT_ORG_ID);
+  // Initialize with DEFAULT_ORG_ID to avoid hydration mismatch; sync from searchParams in useEffect
+  const [orgId, setOrgId] = useState(DEFAULT_ORG_ID);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [phoneIntentId, setPhoneIntentId] = useState<string | null>(null);
@@ -372,5 +372,19 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

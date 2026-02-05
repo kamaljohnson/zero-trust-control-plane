@@ -84,6 +84,9 @@ secrets.yml
 # Local Compose overrides (use docker-compose.override.example.yml as template)
 deploy/docker-compose.override.yml
 
+# PostgreSQL SSL certificates (generate with deploy/scripts/generate-postgres-ssl.sh)
+deploy/postgres-ssl/
+
 .cursor/
 .nvmrc
 
@@ -91,3 +94,17 @@ backend/server
 backend/worker
 backend/migrate
 backend/seed
+.ssh
+
+.env.*
+# Exception: keep example template files for developers
+!.env*.example
+keys/
+nginx/
+# Exception: keep nginx config files and initial status files
+!nginx/conf.d/
+!nginx/Dockerfile
+!nginx/nginx.conf
+!nginx/status.html
+!nginx/status.json
+# Note: status.json is tracked as a template but will be overwritten at runtime via volume mount

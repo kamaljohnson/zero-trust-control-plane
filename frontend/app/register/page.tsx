@@ -42,7 +42,7 @@ function validatePassword(password: string): string | null {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, setAuthFromResponse } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

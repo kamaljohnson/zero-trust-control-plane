@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZTCP Deployment Status</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .status-section {
+            margin-bottom: 30px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .status-running {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-complete {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .step {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+        .step.active {
+            border-left-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .step.complete {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .step.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .step-title {
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 5px;
+        }
+        .step-details {
+            color: #666;
+            font-size: 13px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .refresh-info {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 ZTCP Deployment Status</h1>
+        <div class="timestamp" id="timestamp">Loading...</div>
+        
+        <div class="status-section">
+            <div class="status-badge status-running" id="status-badge">
+                <span class="spinner"></span> Deployment Running
+            </div>
+        </div>
+        
+        <div id="steps">
+            <div class="step">
+                <div class="step-title">Initializing...</div>
+                <div class="step-details">Checking deployment status</div>
+            </div>
+        </div>
+        
+        <div class="refresh-info">
+            This page auto-refreshes every 5 seconds
+        </div>
+    </div>
+    
+    <script>
+        function updateStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('timestamp').textContent = 'Last updated: ' + new Date().toLocaleString();
+                    
+                    const badge = document.getElementById('status-badge');
+                    const stepsDiv = document.getElementById('steps');
+                    
+                    // Update status badge
+                    badge.className = 'status-badge';
+                    if (data.status === 'running') {
+                        badge.className += ' status-running';
+                        badge.innerHTML = '<span class="spinner"></span> Deployment Running';
+                    } else if (data.status === 'complete') {
+                        badge.className += ' status-complete';
+                        badge.innerHTML = '✓ Deployment Complete';
+                    } else if (data.status === 'error') {
+                        badge.className += ' status-error';
+                        badge.innerHTML = '✗ Deployment Failed';
+                    }
+                    
+                    // Update steps
+                    stepsDiv.innerHTML = data.steps.map(step => {
+                        let stepClass = 'step';
+                        if (step.status === 'active') stepClass += ' active';
+                        else if (step.status === 'complete') stepClass += ' complete';
+                        else if (step.status === 'error') stepClass += ' error';
+                        
+                        return `
+                            <div class="${stepClass}">
+                                <div class="step-title">${step.title}</div>
+                                <div class="step-details">${step.details || ''}</div>
+                            </div>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error('Failed to fetch status:', err);
+                });
+        }
+        
+        // Update immediately and then every 5 seconds
+        updateStatus();
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

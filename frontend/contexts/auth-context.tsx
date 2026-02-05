@@ -92,14 +92,14 @@ const REFRESH_MARGIN_MS = 5 * 60 * 1000; // 5 minutes
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const stored = loadFromStorage();
-    setState(stored);
-    setIsLoading(false);
-  }, []);
+  // Use lazy initialization to avoid setState in useEffect
+  const [state, setState] = useState<AuthState | null>(() => {
+    if (typeof window === "undefined") return null;
+    return loadFromStorage();
+  });
+  // Initialize isLoading based on whether we're on client (loadFromStorage is synchronous)
+  // On server: true (can't load from storage), on client: false (already loaded synchronously)
+  const [isLoading] = useState(() => typeof window === "undefined");
 
   const refresh = useCallback(async () => {
     const refreshToken = state?.refreshToken;
@@ -149,7 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshAt = expiresAtMs - REFRESH_MARGIN_MS;
     const now = Date.now();
     if (refreshAt <= now) {
-      refresh();
+      // Use setTimeout with 0 delay to avoid synchronous setState in effect
+      setTimeout(() => refresh(), 0);
       return;
     }
     const delay = refreshAt - now;

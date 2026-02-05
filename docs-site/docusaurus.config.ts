@@ -5,10 +5,11 @@ const config: Config = {
   title: "Zero Trust Control Plane",
   tagline: "Documentation",
   favicon: "img/favicon.ico",
-  url: "https://your-docs-domain.com",
-  baseUrl: "/",
-  organizationName: "ztcp",
+  url: "https://kamaljohnson.github.io",
+  baseUrl: "/zero-trust-control-plane/",
+  organizationName: "kamaljohnson",
   projectName: "zero-trust-control-plane",
+  trailingSlash: false,
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
   markdown: {
@@ -24,7 +25,7 @@ const config: Config = {
       "classic",
       {
         docs: {
-          routeBasePath: "docs",
+          routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
           editUrl: undefined,
         },

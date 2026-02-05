@@ -28,6 +28,26 @@ From the **repo root**: run `make setup`, then in two terminals run `make run-ba
 
 ---
 
+## Production Deployment
+
+For deploying to production (e.g., Digital Ocean droplet), see **[PRODUCTION.md](PRODUCTION.md)** for complete instructions.
+
+The production deployment includes:
+- Production Dockerfiles for backend and frontend
+- Production docker-compose configuration (`docker-compose.prod.yml`)
+- Nginx reverse proxy with TLS/SSL support
+- Automated deployment scripts
+- Security hardening (firewall, SSL certificates, secure defaults)
+- Backup and restore procedures
+- Comprehensive monitoring setup
+
+**Quick start for production:**
+1. Follow the [PRODUCTION.md](PRODUCTION.md) guide
+2. Configure `.env.prod` from `.env.prod.example`
+3. Run `./scripts/deploy.sh` to deploy
+
+---
+
 ## Local deployment (full stack)
 
 Follow these steps to run PostgreSQL, the telemetry stack, backend, and frontend locally.
@@ -151,6 +171,11 @@ Other targets: `make env` (copy env template if .env missing), `make up` (Docker
 | `observability.yml` | Observability services: otelcol, tempo, loki, prometheus, grafana + volumes. Run alone: `docker compose -f observability.yml up -d`. |
 | `.env.example` | Single env template for local dev. Copy to `backend/.env` and optionally `frontend/.env`. |
 | `docker-compose.override.example.yml` | Example for local overrides; copy to `docker-compose.override.yml` (gitignored) and edit. |
+| `docker-compose.prod.yml` | Production Compose file with backend, frontend, nginx, and all infrastructure services. See [PRODUCTION.md](PRODUCTION.md). |
+| `.env.prod.example` | Production environment template. Copy to `.env.prod` and configure for production deployment. |
+| `PRODUCTION.md` | Complete production deployment guide for Digital Ocean. |
+| `scripts/` | Deployment automation scripts: `deploy.sh`, `setup-ssl.sh`, `setup-firewall.sh`, `generate-jwt-keys.sh`, `backup.sh`, `restore.sh`. |
+| `nginx/` | Nginx reverse proxy configuration for production (TLS, gRPC proxy). |
 | `otelcol-config.yaml` | Collector config. Use as-is with Docker Compose (endpoints use service names `loki:3100`, `tempo:4317`). For host/standalone runs, copy and set Loki to `http://localhost:3100/loki/api/v1/push` and Tempo to `localhost:4317`. |
 | `tempo.yaml` | Tempo config: OTLP gRPC/HTTP receivers, local storage, 7-day retention. |
 | `prometheus.yml` | Prometheus scrape config for the collector's metrics endpoint (`otelcol:8889`). |
@@ -242,9 +267,11 @@ If you run the collector binary (e.g. `otelcol-contrib`) on the same machine as 
 
 ---
 
-## 2. Production-grade deployment
+## Production-grade deployment
 
-Use the same Compose stack as a base and harden as follows.
+> **For complete production deployment guide**, see **[PRODUCTION.md](PRODUCTION.md)** which covers Digital Ocean deployment with TLS, security hardening, and automation.
+
+The following section provides general guidance for hardening the local Compose stack for production use. For a full production deployment with containerized backend/frontend and reverse proxy, refer to PRODUCTION.md.
 
 ### Persistence
 

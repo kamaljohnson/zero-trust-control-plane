@@ -6,19 +6,36 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ztcp
-      POSTGRES_PASSWORD: ztcp
-      POSTGRES_DB: ztcp
+      POSTGRES_USER: ${POSTGRES_USER:-ztcp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ztcp}
+      POSTGRES_DB: ${POSTGRES_DB:-ztcp}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ztcp"]
-      interval: 3s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ztcp}"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - ztcp-network
 
 volumes:
   postgres_data:
+
+# So that local docker-compose.yml (and any other compose file including this one) has ztcp-network.
+# docker-compose.prod.yml also defines it; Compose merges duplicate network definitions.
+networks:
+  ztcp-network:
+    driver: bridge

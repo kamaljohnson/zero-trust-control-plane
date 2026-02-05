@@ -36,9 +36,10 @@ type Config struct {
 	SMSLocalBaseURL string `mapstructure:"SMS_LOCAL_BASE_URL"`
 	// DefaultTrustTTLDays is the default device trust TTL in days when platform_settings has no value (e.g. 30).
 	DefaultTrustTTLDays int `mapstructure:"DEFAULT_TRUST_TTL_DAYS"`
-	// OTPReturnToClient when true enables dev OTP mode: no SMS, OTP stored for GET /dev/mfa/otp; for PoC without DLT. Must not be true when Env is production (panic at startup).
+	// OTPReturnToClient when true enables PoC OTP mode: no SMS, OTP stored for GET /dev/mfa/otp.
+	// Allowed in all environments including production for PoC purposes.
 	OTPReturnToClient bool `mapstructure:"OTP_RETURN_TO_CLIENT"`
-	// Env is the application environment (e.g. "development", "production"). Used with OTPReturnToClient to panic if dev OTP is enabled in production.
+	// Env is the application environment (e.g. "development", "production").
 	Env string `mapstructure:"APP_ENV"`
 
 	// OpenTelemetry (optional). When OTEL_EXPORTER_OTLP_ENDPOINT is set, the server exports traces, metrics, and logs via OTLP.
@@ -83,10 +84,6 @@ func Load() (*Config, error) {
 
 	if cfg.GRPCAddr == "" {
 		return nil, errors.New("config: GRPC_ADDR must be set")
-	}
-
-	if cfg.OTPReturnToClient && cfg.Env == "production" {
-		return nil, errors.New("config: OTP_RETURN_TO_CLIENT must not be true when APP_ENV=production")
 	}
 
 	if cfg.BcryptCost == 0 {

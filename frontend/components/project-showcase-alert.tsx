@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -22,7 +21,7 @@ export function ProjectShowcaseAlert() {
             <AlertDescription className="text-sm text-muted-foreground">
               A proof-of-concept zero-trust session and policy control plane with backend (Go gRPC) 
               and web client (Next.js). Features authentication, session management, policy engine, 
-              org admin dashboard, and telemetry.
+              multi-tenancy, org admin dashboard, and telemetry.
             </AlertDescription>
           </div>
           <Button

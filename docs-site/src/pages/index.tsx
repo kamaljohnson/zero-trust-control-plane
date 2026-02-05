@@ -3,14 +3,14 @@ import Link from "@docusaurus/Link";
 import Layout from "@theme/Layout";
 
 const quickLinks = [
-  { to: "/docs/backend/auth", label: "Auth", description: "Register, login, refresh, JWT flows" },
-  { to: "/docs/backend/sessions", label: "Sessions", description: "Session management, revocation, token invalidation" },
-  { to: "/docs/backend/session-lifecycle", label: "Session lifecycle", description: "Creation, heartbeats, revocation, client behavior" },
-  { to: "/docs/backend/policy-engine", label: "Policy engine", description: "OPA/Rego, policy structure, evaluation flow" },
-  { to: "/docs/backend/org-policy-config", label: "Org policy config", description: "Five sections, sync to org_mfa_settings" },
-  { to: "/docs/frontend/dashboard", label: "Web dashboard", description: "Org admin: Members, Audit, Policy, Telemetry" },
-  { to: "/docs/backend/database", label: "Database", description: "Schema, migrations, codegen" },
-  { to: "/docs/backend/telemetry", label: "Telemetry", description: "OpenTelemetry, Collector, Grafana" },
+  { to: "/backend/auth", label: "Auth", description: "Register, login, refresh, JWT flows" },
+  { to: "/backend/sessions", label: "Sessions", description: "Session management, revocation, token invalidation" },
+  { to: "/backend/session-lifecycle", label: "Session lifecycle", description: "Creation, heartbeats, revocation, client behavior" },
+  { to: "/backend/policy-engine", label: "Policy engine", description: "OPA/Rego, policy structure, evaluation flow" },
+  { to: "/backend/org-policy-config", label: "Org policy config", description: "Five sections, sync to org_mfa_settings" },
+  { to: "/frontend/dashboard", label: "Web dashboard", description: "Org admin: Members, Audit, Policy, Telemetry" },
+  { to: "/backend/database", label: "Database", description: "Schema, migrations, codegen" },
+  { to: "/backend/telemetry", label: "Telemetry", description: "OpenTelemetry, Collector, Grafana" },
 ];
 
 export default function Home(): React.ReactElement {
@@ -25,7 +25,7 @@ export default function Home(): React.ReactElement {
           <p style={{ fontSize: "1.15rem", marginBottom: "1.5rem" }}>
             This site documents a proof-of-concept <strong>zero-trust session and policy control plane</strong>: a backend (Go gRPC), web client (Next.js). Here you’ll find backend services (auth, sessions, policy engine, org policy config, database, telemetry) and the org admin dashboard.
           </p>
-          <Link to="/docs/intro" className="button button--primary button--lg">
+          <Link to="/intro" className="button button--primary button--lg">
             Get started
           </Link>
         </section>

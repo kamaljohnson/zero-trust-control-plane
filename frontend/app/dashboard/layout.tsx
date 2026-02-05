@@ -38,7 +38,6 @@ export default function DashboardLayout({
   const [orgDetails, setOrgDetails] = useState<OrgDetails | null>(null);
   const [userRole, setUserRole] = useState<MembershipRoleType | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [roleError, setRoleError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user || !accessToken) {
@@ -69,7 +68,7 @@ export default function DashboardLayout({
           const orgData = await orgRes.json();
           setOrgDetails(orgData);
         }
-      } catch (err) {
+      } catch {
         // Silently fail - we'll show IDs as fallback
       }
     };
@@ -86,7 +85,6 @@ export default function DashboardLayout({
 
     const fetchUserRole = async () => {
       setRoleLoading(true);
-      setRoleError(null);
       try {
         const res = await fetch(
           `/api/org-admin/members?org_id=${encodeURIComponent(user.org_id)}&page_size=100`,
@@ -125,8 +123,7 @@ export default function DashboardLayout({
           // User not found in members list - treat as member
           setUserRole(MembershipRole.MEMBER);
         }
-      } catch (err) {
-        setRoleError(err instanceof Error ? err.message : "Failed to check role");
+      } catch {
         // Default to member role on error to be safe
         setUserRole(MembershipRole.MEMBER);
       } finally {

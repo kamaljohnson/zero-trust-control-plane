@@ -21,20 +21,23 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "user_id required." }, { status: 400 });
   }
+  type SessionRow = {
+    id: string;
+    user_id: string;
+    org_id: string;
+    device_id?: string;
+    expires_at?: { seconds?: number; nanos?: number };
+    revoked_at?: { seconds?: number; nanos?: number };
+    last_seen_at?: { seconds?: number; nanos?: number };
+    ip_address?: string;
+    created_at?: { seconds?: number; nanos?: number };
+  };
   try {
-    // List sessions for this user
-    const res = await orgAdmin.listSessions(token, orgId, userId, 50);
-    const sessions = (res.sessions ?? []) as Array<{
-      id: string;
-      user_id: string;
-      org_id: string;
-      device_id?: string;
-      expires_at?: { seconds?: number; nanos?: number };
-      revoked_at?: { seconds?: number; nanos?: number };
-      last_seen_at?: { seconds?: number; nanos?: number };
-      ip_address?: string;
-      created_at?: { seconds?: number; nanos?: number };
-    }>;
+    // List sessions for this user (listSessions returns unknown from gRPC)
+    const res = (await orgAdmin.listSessions(token, orgId, userId, 50)) as {
+      sessions?: SessionRow[];
+    };
+    const sessions: SessionRow[] = res.sessions ?? [];
 
     // Find active session (not revoked, not expired)
     const now = Date.now() / 1000; // Convert to seconds

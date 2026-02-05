@@ -1,0 +1,265 @@
+# CI/CD: Test, build, push images, and deploy to Digital Ocean droplet
+# Trigger: push to main, or manual workflow_dispatch
+# Secrets: DROPLET_HOST, DROPLET_USER, DROPLET_SSH_KEY; for registry: DOCKER_USERNAME, DOCKER_PASSWORD (or use GHCR with GITHUB_TOKEN)
+
+name: Deploy to Digital Ocean
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: go mod download
+      - run: go test -race -covermode=atomic ./...
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      registry: ${{ steps.registry.outputs.REGISTRY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set registry
+        id: registry
+        run: |
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "REGISTRY=docker.io/${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_OUTPUT
+          else
+            echo "REGISTRY=ghcr.io/${{ github.repository }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_USERNAME != '' && 'docker.io' || 'ghcr.io' }}
+          username: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_USERNAME || github.actor }}
+          password: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata and tags
+        id: meta
+        run: |
+          REGISTRY="${{ steps.registry.outputs.REGISTRY }}"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-backend:latest" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-backend:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-frontend:latest" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-nginx:latest" >> $GITHUB_OUTPUT
+          echo "${REGISTRY}/ztcp-nginx:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-backend:latest
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-frontend:latest
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push nginx
+        uses: docker/build-push-action@v6
+        with:
+          context: ./deploy/nginx
+          file: ./deploy/nginx/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-nginx:latest
+            ${{ steps.registry.outputs.REGISTRY }}/ztcp-nginx:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Droplet
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate deployment secrets
+        run: |
+          echo "Checking secrets..."
+          if [ -z "${{ secrets.DROPLET_HOST }}" ]; then
+            echo "::error::DROPLET_HOST secret is not set or is empty"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DROPLET_USER }}" ]; then
+            echo "::error::DROPLET_USER secret is not set or is empty"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DROPLET_SSH_KEY }}" ]; then
+            echo "::error::DROPLET_SSH_KEY secret is not set or is empty"
+            exit 1
+          fi
+          echo "✓ All secrets are set"
+          echo "Host: ${{ secrets.DROPLET_HOST }}"
+          echo "User: ${{ secrets.DROPLET_USER }}"
+          echo "Port: ${{ secrets.DROPLET_PORT || 22 }}"
+          echo "Key length: $(echo -n '${{ secrets.DROPLET_SSH_KEY }}' | wc -c) characters"
+          echo "Key starts with: $(echo '${{ secrets.DROPLET_SSH_KEY }}' | head -c 30)..."
+
+      - name: Test SSH connection
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          timeout: 30s
+          debug: true
+          script: |
+            echo "SSH connection test successful!"
+            echo "Hostname: $(hostname)"
+            echo "User: $(whoami)"
+            echo "Working directory: $(pwd)"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          timeout: 30s
+          command_timeout: 10m
+          debug: true
+          script: |
+            set -e
+            REPO_DIR="${DEPLOY_REPO_DIR:-/opt/zero-trust-control-plane}"
+            DEPLOY_DIR="$REPO_DIR/deploy"
+            export IMAGE_TAG="${{ github.sha }}"
+            export DOCKER_REGISTRY="${{ needs.build-and-push.outputs.registry }}"
+            cd "$REPO_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+            cd "$DEPLOY_DIR"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+            # Start services first (postgres must be running before migrations)
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+            # Wait for postgres to be healthy before running migrations
+            # Read POSTGRES_USER from .env.prod (defaults to ztcp if not set)
+            POSTGRES_USER="ztcp"
+            if [ -f .env.prod ]; then
+              while IFS= read -r line; do
+                [[ "$line" == POSTGRES_USER=* ]] && { POSTGRES_USER="${line#POSTGRES_USER=}"; break; }
+              done < .env.prod
+            fi
+            echo "Waiting for PostgreSQL to be ready (user: ${POSTGRES_USER})..."
+            timeout=60
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+              if docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T postgres pg_isready -U "$POSTGRES_USER" >/dev/null 2>&1; then
+                echo "PostgreSQL is ready"
+                break
+              fi
+              sleep 2
+              elapsed=$((elapsed + 2))
+            done
+            if [ $elapsed -ge $timeout ]; then
+              echo "ERROR: PostgreSQL did not become ready within ${timeout}s (checked user: ${POSTGRES_USER})"
+              exit 1
+            fi
+            # Run migrations from host (DATABASE_URL with @postgres: -> @localhost: for host access)
+            # Read DATABASE_URL from file without shell expansion (avoids corrupting $ in values)
+            if [ -f .env.prod ]; then
+              DATABASE_URL=""
+              while IFS= read -r line; do
+                [[ "$line" == DATABASE_URL=* ]] && { DATABASE_URL="${line#DATABASE_URL=}"; break; }
+              done < .env.prod
+              if [ -n "$DATABASE_URL" ]; then
+                # Migrations run on host; rewrite @postgres: to @localhost: to connect to published port
+                # For host-side migrations, change sslmode=require to sslmode=disable (host doesn't have postgres SSL certs)
+                # This allows migrations to work while containers still use SSL
+                DATABASE_URL=$(echo "$DATABASE_URL" | sed 's/@postgres:/@localhost:/g' | sed 's/sslmode=require/sslmode=disable/g')
+                export DATABASE_URL
+                cd "$REPO_DIR/backend"
+                # Run migrations WITHOUT || true so failures propagate and stop deployment
+                ./scripts/migrate.sh up || {
+                  echo "ERROR: Database migrations failed"
+                  echo "Ensure DATABASE_URL uses the same user and password as POSTGRES_USER and POSTGRES_PASSWORD in .env.prod"
+                  exit 1
+                }
+                cd "$DEPLOY_DIR"
+              fi
+            fi
+            docker image prune -f
+        env:
+          # Path to repo on droplet; edit if different from /opt/zero-trust-control-plane
+          DEPLOY_REPO_DIR: /opt/zero-trust-control-plane
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          timeout: 30s
+          command_timeout: 2m
+          debug: true
+          script: |
+            set -e
+            DEPLOY_DIR="${DEPLOY_REPO_DIR:-/opt/zero-trust-control-plane}/deploy"
+            cd "$DEPLOY_DIR"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+        env:
+          # Must match DEPLOY_REPO_DIR in previous step
+          DEPLOY_REPO_DIR: /opt/zero-trust-control-plane

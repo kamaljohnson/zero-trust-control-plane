@@ -62,7 +62,7 @@ export default function BrowserLayout({
           const orgData = await orgRes.json();
           setOrgDetails(orgData);
         }
-      } catch (err) {
+      } catch {
         // Silently fail - we'll show IDs as fallback
       }
     };

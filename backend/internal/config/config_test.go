@@ -145,21 +145,21 @@ func TestLoad_BCRYPT_COSTRange(t *testing.T) {
 	}
 }
 
-func TestLoad_OTPReturnToClientProductionPanic(t *testing.T) {
+func TestLoad_OTPReturnToClientProduction(t *testing.T) {
 	os.Clearenv()
 	os.Setenv("GRPC_ADDR", ":8080")
 	os.Setenv("OTP_RETURN_TO_CLIENT", "true")
 	os.Setenv("APP_ENV", "production")
 
 	cfg, err := Load()
-	if err == nil {
-		t.Fatal("Load should return error when OTP_RETURN_TO_CLIENT=true and APP_ENV=production")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
 	}
-	if cfg != nil {
-		t.Error("Load should return nil config on error")
+	if !cfg.OTPReturnToClient {
+		t.Error("OTPReturnToClient should be true")
 	}
-	if err.Error() != "config: OTP_RETURN_TO_CLIENT must not be true when APP_ENV=production" {
-		t.Errorf("error = %q, want production panic message", err.Error())
+	if cfg.Env != "production" {
+		t.Errorf("Env = %q, want production", cfg.Env)
 	}
 }
 
