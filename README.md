@@ -9,7 +9,7 @@
 - **Live Application**: [https://ztcp.projects.xborglabs.com](https://ztcp.projects.xborglabs.com)  
   Access the web dashboard to manage organizations, members, sessions, and policies.
 
-- **Documentation**: [https://docs.projects.xborglabs.com](https://docs.projects.xborglabs.com)  
+- **Documentation**: [https://docs.ztcp.projects.xborglabs.com](https://docs.ztcp.projects.xborglabs.com)  
   Comprehensive documentation covering architecture, APIs, deployment, and more.
 
 ---
@@ -91,7 +91,7 @@ For detailed setup instructions, see [deploy/README.md](deploy/README.md).
 
 ## Documentation
 
-**Live Documentation**: [https://docs.projects.xborglabs.com](https://docs.projects.xborglabs.com)
+**Live Documentation**: [https://docs.ztcp.projects.xborglabs.com](https://docs.ztcp.projects.xborglabs.com)
 
 The Docusaurus documentation site is the primary and most comprehensive source of documentation for this project.
 
