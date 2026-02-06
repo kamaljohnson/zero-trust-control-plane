@@ -25,7 +25,7 @@ interface OrgDetails {
 }
 
 /**
- * Dashboard layout: requires auth, shows org-admin nav (Members, Audit, Telemetry).
+ * Dashboard layout: requires auth, shows org-admin nav (Members, Audit, Policy).
  */
 export default function DashboardLayout({
   children,

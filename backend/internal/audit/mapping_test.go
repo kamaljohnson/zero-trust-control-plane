@@ -124,30 +124,6 @@ func TestParseFullMethod_RevokeSession(t *testing.T) {
 	}
 }
 
-func TestParseFullMethod_EmitTelemetry(t *testing.T) {
-	fullMethod := "/ztcp.telemetry.v1.TelemetryService/EmitTelemetryEvent"
-	ar := ParseFullMethod(fullMethod)
-
-	if ar.Action != "emit" {
-		t.Errorf("action = %q, want %q", ar.Action, "emit")
-	}
-	if ar.Resource != "telemetry" {
-		t.Errorf("resource = %q, want %q", ar.Resource, "telemetry")
-	}
-}
-
-func TestParseFullMethod_BatchEmit(t *testing.T) {
-	fullMethod := "/ztcp.telemetry.v1.TelemetryService/BatchEmitTelemetry"
-	ar := ParseFullMethod(fullMethod)
-
-	if ar.Action != "emit" {
-		t.Errorf("action = %q, want %q", ar.Action, "emit")
-	}
-	if ar.Resource != "telemetry" {
-		t.Errorf("resource = %q, want %q", ar.Resource, "telemetry")
-	}
-}
-
 func TestParseFullMethod_UnknownFormat(t *testing.T) {
 	fullMethod := "invalid-format"
 	ar := ParseFullMethod(fullMethod)

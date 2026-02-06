@@ -323,7 +323,6 @@ Migrations are applied in order from [internal/db/migrations/](../../../backend/
 | Migration | Description |
 |-----------|-------------|
 | **001_schema** | Creates enums and tables: users, identities, organizations, memberships, devices, sessions, policies, audit_logs. Baseline schema. |
-| **002_drop_telemetry** | Drops the `telemetry` table if present. |
 | **003_refresh_jti** | Adds `sessions.refresh_jti` (VARCHAR, nullable). For existing DBs created before this column. |
 | **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |
 | **005_mfa_device_trust** | Adds device trust columns `devices.trusted_until`, `devices.revoked_at`; adds `users.phone`; creates `platform_settings`, `org_mfa_settings`, `mfa_challenges`; creates index `idx_mfa_challenges_expires_at`. For MFA and device-trust behavior, see [mfa.md](./mfa) and [device-trust.md](./device-trust). |

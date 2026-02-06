@@ -41,7 +41,7 @@ Web UI for the Zero Trust Control Plane. Built with Next.js 16 (App Router), Rea
 
 ## Dashboard (Org Admin)
 
-Authenticated org-admin dashboard at `/dashboard`: **Members** (list, add, remove, update role; per-member sessions and revoke one/revoke all), **Audit log** (paginated), **Policy** (five sections: Auth & MFA, Device Trust, Session Management, Access Control, Action Restrictions; load/save via `/api/org-admin/policy-config`), **Telemetry** (link to Grafana with org_id). API routes live under `app/api/org-admin/` and `app/api/users/by-email`. On **401** from any dashboard API, the app calls `handleSessionInvalid()` from the auth context (clear storage, redirect to `/login`). See the docs site: [frontend/dashboard](../docs-site/docs/frontend/dashboard.md).
+Authenticated org-admin dashboard at `/dashboard`: **Members** (list, add, remove, update role; per-member sessions and revoke one/revoke all), **Audit log** (paginated), **Policy** (five sections: Auth & MFA, Device Trust, Session Management, Access Control, Action Restrictions; load/save via `/api/org-admin/policy-config`). API routes live under `app/api/org-admin/` and `app/api/users/by-email`. On **401** from any dashboard API, the app calls `handleSessionInvalid()` from the auth context (clear storage, redirect to `/login`). See the docs site: [frontend/dashboard](../docs-site/docs/frontend/dashboard.md).
 
 ## Project Structure
 
@@ -51,7 +51,7 @@ frontend/
 │   ├── api/auth/          # BFF: register, login, verify, refresh, logout (JSON → gRPC, Zod validation)
 │   ├── api/org-admin/     # Org admin: members, audit, sessions, policy-config
 │   ├── api/users/         # User lookup (e.g. by-email for add member)
-│   ├── dashboard/         # Org admin: Members, Audit, Policy, Telemetry
+│   ├── dashboard/         # Org admin: Members, Audit, Policy
 │   ├── error.tsx          # Error boundary for app content (Try again / Go home)
 │   ├── global-error.tsx   # Error boundary for root layout
 │   ├── login/page.tsx     # Sign-in and create-org form (Tabs: Existing org ID vs Create new org with name)

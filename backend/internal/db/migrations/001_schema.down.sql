@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS telemetry;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS policies;
 DROP TABLE IF EXISTS sessions;

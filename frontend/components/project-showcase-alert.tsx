@@ -21,7 +21,7 @@ export function ProjectShowcaseAlert() {
             <AlertDescription className="text-sm text-muted-foreground">
               A proof-of-concept zero-trust session and policy control plane with backend (Go gRPC) 
               and web client (Next.js). Features authentication, session management, policy engine, 
-              multi-tenancy, org admin dashboard, and telemetry.
+              multi-tenancy, and org admin dashboard.
             </AlertDescription>
           </div>
           <Button
