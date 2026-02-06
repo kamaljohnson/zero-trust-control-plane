@@ -20,7 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DEFAULT_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID ?? "";
-const DEV_OTP_ENABLED = process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
+const DEV_OTP_ENABLED_BUILD =
+  process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" || process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
 
 function LoginPageContent() {
   const router = useRouter();
@@ -45,10 +46,29 @@ function LoginPageContent() {
   const [otp, setOtp] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // Runtime dev OTP flag from GET /api/config (so PoC can enable in prod without rebuild)
+  const [devOtpEnabled, setDevOtpEnabled] = useState(DEV_OTP_ENABLED_BUILD);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch runtime config so dev OTP can be enabled in prod via DEV_OTP_ENABLED env
+  useEffect(() => {
+    if (!mounted) return;
+    let cancelled = false;
+    fetch("/api/config")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.devOtpEnabled === "boolean") {
+          setDevOtpEnabled(data.devOtpEnabled);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted]);
 
   useEffect(() => {
     if (mounted && !isLoading && isAuthenticated) {
@@ -86,7 +106,7 @@ function LoginPageContent() {
 
   // When MFA step is shown and dev OTP is enabled, fetch OTP from GET /api/dev/mfa/otp
   useEffect(() => {
-    if (!mfaChallengeId || !DEV_OTP_ENABLED) return;
+    if (!mfaChallengeId || !devOtpEnabled) return;
     let cancelled = false;
     (async () => {
       try {

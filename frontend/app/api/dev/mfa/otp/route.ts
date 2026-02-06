@@ -3,10 +3,12 @@ import { getDevOTP } from "@/lib/grpc/dev-client";
 
 /**
  * GET /api/dev/mfa/otp?challenge_id=... — returns OTP and note for the given MFA challenge when dev OTP is enabled.
- * Guards: returns 404 when NEXT_PUBLIC_DEV_OTP_ENABLED is not set (works in all envs when enabled).
+ * Uses server-side DEV_OTP_ENABLED (runtime) so PoC can enable in prod without rebuilding; falls back to NEXT_PUBLIC_DEV_OTP_ENABLED (build-time).
  */
 export async function GET(request: NextRequest) {
   const devOtpEnabled =
+    process.env.DEV_OTP_ENABLED === "true" ||
+    process.env.DEV_OTP_ENABLED === "1" ||
     process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "true" ||
     process.env.NEXT_PUBLIC_DEV_OTP_ENABLED === "1";
   if (!devOtpEnabled) {

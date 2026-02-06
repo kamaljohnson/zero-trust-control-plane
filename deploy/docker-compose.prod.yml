@@ -77,6 +77,8 @@ services:
       - BACKEND_GRPC_URL=backend:8080
       - NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL:-}
       - NEXT_PUBLIC_DEV_OTP_ENABLED=${NEXT_PUBLIC_DEV_OTP_ENABLED:-false}
+      # Runtime flag so PoC can return OTP to client in prod without rebuilding image
+      - DEV_OTP_ENABLED=${DEV_OTP_ENABLED:-false}
     ports:
       - "127.0.0.1:3000:3000"  # Only expose on localhost for nginx
     depends_on:
