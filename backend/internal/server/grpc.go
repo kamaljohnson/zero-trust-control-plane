@@ -14,7 +14,6 @@ import (
 	orgpolicyconfigv1 "zero-trust-control-plane/backend/api/generated/orgpolicyconfig/v1"
 	policyv1 "zero-trust-control-plane/backend/api/generated/policy/v1"
 	sessionv1 "zero-trust-control-plane/backend/api/generated/session/v1"
-	telemetryv1 "zero-trust-control-plane/backend/api/generated/telemetry/v1"
 	userv1 "zero-trust-control-plane/backend/api/generated/user/v1"
 
 	adminhandler "zero-trust-control-plane/backend/internal/admin/handler"
@@ -37,8 +36,6 @@ import (
 	policyrepo "zero-trust-control-plane/backend/internal/policy/repository"
 	sessionhandler "zero-trust-control-plane/backend/internal/session/handler"
 	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
-	"zero-trust-control-plane/backend/internal/telemetry"
-	telemetryhandler "zero-trust-control-plane/backend/internal/telemetry/handler"
 	userhandler "zero-trust-control-plane/backend/internal/user/handler"
 	userrepo "zero-trust-control-plane/backend/internal/user/repository"
 )
@@ -59,8 +56,6 @@ type Deps struct {
 	HealthPolicyChecker healthhandler.PolicyChecker
 	// DevOTPHandler is the dev-only DevService (GetOTP). If nil, DevService is not registered. Set only when dev OTP is enabled and not production.
 	DevOTPHandler devv1.DevServiceServer
-	// TelemetryEmitter emits telemetry events (e.g. via OTel Logs). If nil, TelemetryService Emit RPCs no-op.
-	TelemetryEmitter telemetry.EventEmitter
 	// MembershipRepo is used by MembershipService. If nil, membership RPCs return Unimplemented.
 	MembershipRepo membershiprepo.Repository
 	// SessionRepo is used by SessionService. If nil, session RPCs return Unimplemented.
@@ -88,7 +83,6 @@ type Deps struct {
 //   - MembershipService  → internal/membership/handler
 //   - PolicyService      → internal/policy/handler
 //   - SessionService     → internal/session/handler
-//   - TelemetryService   → internal/telemetry/handler
 //   - AuditService       → internal/audit/handler
 //   - HealthService      → internal/health/handler
 func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
@@ -105,7 +99,6 @@ func RegisterServices(s grpc.ServiceRegistrar, deps Deps) {
 	policyv1.RegisterPolicyServiceServer(s, policyhandler.NewServer(deps.PolicyRepo))
 	orgpolicyconfigv1.RegisterOrgPolicyConfigServiceServer(s, orgpolicyconfighandler.NewServer(deps.OrgPolicyConfigRepo, deps.MembershipRepo, deps.OrgMFASettingsRepo))
 	sessionv1.RegisterSessionServiceServer(s, sessionhandler.NewServer(deps.SessionRepo, deps.MembershipRepo, deps.AuditLogger))
-	telemetryv1.RegisterTelemetryServiceServer(s, telemetryhandler.NewServer(deps.TelemetryEmitter))
 	auditv1.RegisterAuditServiceServer(s, audithandler.NewServer(deps.AuditRepo, deps.MembershipRepo))
 	healthv1.RegisterHealthServiceServer(s, healthhandler.NewServer(deps.HealthPinger, deps.HealthPolicyChecker))
 	if deps.DevOTPHandler != nil {

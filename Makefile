@@ -3,23 +3,21 @@
 # Then start backend and frontend in separate terminals: `make run-backend`, `make run-frontend`.
 # See deploy/README.md for details.
 
-.PHONY: setup up down env ensure-env wait-postgres wait-grafana configure-grafana migrate seed run-backend run-frontend run-docs install-frontend install-docs
+.PHONY: setup up down env ensure-env wait-postgres migrate seed run-backend run-frontend run-docs install-frontend install-docs
 
 BACKEND_DIR  := backend
 DEPLOY_DIR   := deploy
 DOCS_DIR     := docs-site
 FRONTEND_DIR := frontend
 
-# Default target: full local setup in one go (env, Docker up, wait for Postgres, migrate, optional seed, configure Grafana).
+# Default target: full local setup in one go (env, Docker up, wait for Postgres, migrate, optional seed).
 setup: ensure-env up wait-postgres migrate
 	@[ "$(SKIP_SEED)" = "1" ] || $(MAKE) seed
-	@$(MAKE) configure-grafana
 	@echo ""
 	@echo "--- Local setup complete ---"
 	@echo "Start the backend in one terminal:  make run-backend"
 	@echo "Start the frontend in another:      make run-frontend"
 	@echo "Then open http://localhost:3000"
-	@echo "Grafana (dashboards + datasources): http://localhost:3002"
 	@echo "---"
 
 # Copy deploy/.env.example to backend/.env and frontend/.env if missing (no overwrite).
@@ -37,7 +35,7 @@ ensure-env:
 	fi
 	@if [ ! -f $(FRONTEND_DIR)/.env ]; then cp $(DEPLOY_DIR)/.env.example $(FRONTEND_DIR)/.env; echo "Created $(FRONTEND_DIR)/.env from deploy/.env.example"; fi
 
-# Start PostgreSQL and telemetry stack (Docker Compose).
+# Start PostgreSQL (Docker Compose).
 up:
 	cd $(DEPLOY_DIR) && docker compose up -d
 	@echo "Waiting for Postgres..."
@@ -54,18 +52,6 @@ wait-postgres:
 		sleep 2; \
 	done
 	@echo "Postgres is ready"
-
-# Wait for Grafana to be ready (used by configure-grafana).
-wait-grafana:
-	@max=30; i=0; until curl -s -o /dev/null -w "%{http_code}" http://localhost:3002/api/health 2>/dev/null | grep -q 200; do \
-		i=$$((i+1)); [ $$i -ge $$max ] && { echo "Grafana not ready in time (optional)" >&2; exit 0; }; \
-		sleep 2; \
-	done
-	@echo "Grafana is ready"
-
-# Ensure Grafana is up and has loaded provisioned datasources and ZTCP Telemetry dashboard. Run after up (e.g. from setup).
-configure-grafana: wait-grafana
-	@echo "Grafana configured (datasources and ZTCP Telemetry dashboard provisioned at http://localhost:3002)"
 
 # Run database migrations. Requires backend/.env with DATABASE_URL.
 migrate: ensure-env

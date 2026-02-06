@@ -210,11 +210,6 @@ OTP_RETURN_TO_CLIENT=false
 
 # Docs run on the droplet at https://<DOMAIN>/docs. Set NEXT_PUBLIC_DOCS_URL so the frontend "Docs" header link points there.
 NEXT_PUBLIC_DOCS_URL=https://yourdomain.com/docs
-
-# Grafana admin password
-GF_SECURITY_ADMIN_PASSWORD=<strong-secure-password>
-GF_AUTH_ANONYMOUS_ENABLED=false
-GF_AUTH_DISABLE_LOGIN_FORM=false
 ```
 
 ### 3. Secure Environment File
@@ -295,24 +290,6 @@ docker compose -f ../deploy/docker-compose.prod.yml --env-file ../deploy/.env.pr
 ```
 
 **Warning**: The seed script creates development users. Remove or modify for production.
-
-### 2. Access Grafana
-
-1. Navigate to `https://yourdomain.com:3002` (or configure nginx to proxy Grafana)
-2. Login with admin credentials from `.env.prod`
-3. Verify datasources are configured:
-   - Prometheus: `http://prometheus:9090`
-   - Loki: `http://loki:3100`
-   - Tempo: `http://tempo:3200`
-
-### 3. Configure Monitoring Alerts
-
-Set up alerts in Grafana for:
-- High error rates
-- Database connection failures
-- Service downtime
-- Disk space usage
-- Memory/CPU usage
 
 ## Backup and Restore
 
@@ -476,8 +453,6 @@ sudo netstat -tulpn | grep -E ':(80|443|5432|8080|3000)'
 - [ ] Strong database passwords set
 - [ ] JWT keys generated and secured (permissions 600)
 - [ ] `.env.prod` file permissions set to 600
-- [ ] Grafana anonymous auth disabled
-- [ ] Grafana admin password set
 - [ ] SSL certificates configured and auto-renewal enabled
 - [ ] Regular backups configured
 - [ ] System updates applied
@@ -562,9 +537,8 @@ Configure these in **Settings → Secrets and variables → Actions**:
 | `DEPLOY_REPO_DIR` | Path to the repo on the droplet (default: `/opt/zero-trust-control-plane`) |
 | `NEXT_PUBLIC_DEV_OTP_ENABLED` | When `true`, BFF returns OTP in response for MFA (no SMS). Set to match `.env.prod`; default in CI is `false` if unset. |
 | `NEXT_PUBLIC_DOCS_URL` | Docs base URL for the frontend "Docs" link (e.g. `https://yourdomain.com/docs`). Baked into the frontend image at build time. |
-| `NEXT_PUBLIC_GRAFANA_URL` | Grafana base URL for the dashboard "Open Grafana" telemetry link (e.g. `https://yourdomain.com/grafana`). Baked into the frontend image at build time. |
 
-Set in **Settings → Secrets and variables → Actions → Variables**. If you deploy via CI (pull from registry), set `NEXT_PUBLIC_DOCS_URL` and `NEXT_PUBLIC_GRAFANA_URL` so the frontend build gets these values; otherwise the telemetry page will show the "Set NEXT_PUBLIC_GRAFANA_URL" placeholder.
+Set in **Settings → Secrets and variables → Actions → Variables**. If you deploy via CI (pull from registry), set `NEXT_PUBLIC_DOCS_URL` so the frontend build gets this value.
 
 ### Manual deployment trigger
 

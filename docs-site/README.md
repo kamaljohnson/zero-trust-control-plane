@@ -19,4 +19,4 @@ npm run serve    # serve production build
 
 - **docs/** — Markdown source (intro, backend/*, contributing/*).
 - **sidebars.ts** — Sidebar order and categories (Getting started, Backend, Contributing).
-- **static/** — Static assets (e.g. Grafana dashboard JSON).
+- **static/** — Static assets.

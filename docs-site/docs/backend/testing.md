@@ -19,7 +19,6 @@ The backend test suite consists of **32 test files** covering:
 - **RBAC utilities** - Authorization helper tests
 - **Security utilities** - Token, hashing, keys, and refresh token hash tests
 - **Policy engine** - OPA/Rego evaluation tests
-- **Telemetry** - OTel adapter and async emission tests
 - **MFA utilities** - OTP generation, SMS client, and dev OTP store tests
 - **Audit utilities** - Mapping and logger tests
 - **Configuration** - Config loading and validation tests
@@ -45,10 +44,6 @@ backend/
 │   │   ├── mapping_test.go
 │   │   └── logger_test.go
 │   ├── orgpolicyconfig/handler/grpc_test.go
-│   ├── telemetry/
-│   │   ├── handler/grpc_test.go
-│   │   ├── async_test.go
-│   │   └── otel/adapter_test.go
 │   ├── health/handler/grpc_test.go
 │   ├── devotp/
 │   │   ├── handler/grpc_test.go
@@ -243,22 +238,6 @@ Handler tests verify the gRPC API layer, including request validation, error map
 
 **Dependencies**: `mockOrgPolicyConfigRepo`, `mockMembershipRepoForOrgPolicyConfig`, `mockOrgMFASettingsRepo`
 
-#### Telemetry Handler Tests
-**File**: [`backend/internal/telemetry/handler/grpc_test.go`](../../../backend/internal/telemetry/handler/grpc_test.go)
-
-**Purpose**: Tests the TelemetryService gRPC handler for telemetry event emission.
-
-**Test Scenarios**:
-- `EmitTelemetryEvent`: Nil request handling, nil emitter (no-op), valid request with all fields
-- `BatchEmitTelemetry`: Nil request, nil emitter, nil events in batch, batch truncation (maxBatchSize=500)
-
-**Key Test Cases**:
-- Graceful nil handling (no-op behavior)
-- Batch size enforcement
-- Event field validation
-
-**Dependencies**: `mockEmitter` with channel-based event capture
-
 #### Health Handler Tests
 **File**: [`backend/internal/health/handler/grpc_test.go`](../../../backend/internal/health/handler/grpc_test.go)
 
@@ -366,22 +345,18 @@ Handler tests verify the gRPC API layer, including request validation, error map
 #### Audit Logger Tests
 **File**: [`backend/internal/audit/logger_test.go`](../../../backend/internal/audit/logger_test.go)
 
-**Purpose**: Tests audit logger for event persistence and telemetry emission.
+**Purpose**: Tests audit logger for event persistence.
 
 **Test Scenarios**:
-- `Logger.LogEvent`: Success, nil repo (no-op), IP extraction, sentinel org_id, telemetry emission, repository error handling
-- `auditActionToEventType`: Mapping for login_success, login_failure, logout, session_created, unknown action
+- `Logger.LogEvent`: Success, nil repo (no-op), IP extraction, sentinel org_id, repository error handling
 
 **Key Test Cases**:
 - Audit log entry creation with all fields
 - IP extractor integration
 - Sentinel org_id for events without org
-- Telemetry event emission (async)
 - Error resilience (repository errors don't fail caller)
-- Action to event type mapping
-- Non-mapped actions (no telemetry emission)
 
-**Dependencies**: Mock `auditrepo.Repository`, mock `IPExtractor`, mock `telemetry.EventEmitter`
+**Dependencies**: Mock `auditrepo.Repository`, mock `IPExtractor`
 
 ### Interceptor Tests (Middleware)
 
@@ -644,43 +619,6 @@ Handler tests verify the gRPC API layer, including request validation, error map
 
 **Dependencies**: OPA evaluator (can be nil for health check)
 
-### Telemetry Tests
-
-#### OTel Adapter Tests
-**File**: [`backend/internal/telemetry/otel/adapter_test.go`](../../../backend/internal/telemetry/otel/adapter_test.go)
-
-**Purpose**: Tests the OpenTelemetry adapter for telemetry event emission.
-
-**Test Scenarios**:
-- `NewEventEmitter`: Nil provider returns noop emitter
-- `Emit`: Nil event handling, attribute mapping, body mapping (metadata), empty metadata handling
-
-**Key Test Cases**:
-- Noop emitter for nil provider
-- Event attribute mapping (org_id, user_id, device_id, session_id, event_type, source)
-- Body mapping from metadata bytes
-- Empty metadata handling
-
-**Dependencies**: OpenTelemetry SDK (`sdklog.NewLoggerProvider`), `recordCapture` helper
-
-#### Telemetry Async Tests
-**File**: [`backend/internal/telemetry/async_test.go`](../../../backend/internal/telemetry/async_test.go)
-
-**Purpose**: Tests asynchronous telemetry event emission.
-
-**Test Scenarios**:
-- `EmitAsync`: Nil emitter (no-op), nil event (no-op), successful emit, timeout handling, error handling (logged, doesn't panic)
-
-**Key Test Cases**:
-- No-op behavior for nil inputs
-- Goroutine-based async execution
-- Context.Background() usage (not request context)
-- Timeout handling
-- Error logging without panicking
-- Concurrent access safety
-
-**Dependencies**: Mock `EventEmitter` with mutex-protected event capture
-
 ## Testing Patterns
 
 ### Mock Repositories
@@ -829,7 +767,6 @@ The test suite covers:
 - **RBAC**: Authorization utilities
 - **Security**: Token provider, password hashing, key parsing, and refresh token hashing
 - **Policy Engine**: OPA evaluator health check
-- **Telemetry**: OTel adapter and async emission
 - **MFA**: OTP generation, SMS client, and dev OTP store
 - **Audit**: Mapping functions and logger
 - **Configuration**: Config loading and validation

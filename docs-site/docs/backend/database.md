@@ -322,7 +322,7 @@ Migrations are applied in order from [internal/db/migrations/](../../../backend/
 
 | Migration | Description |
 |-----------|-------------|
-| **001_schema** | Creates enums and tables: users, identities, organizations, memberships, devices, sessions, policies, audit_logs, telemetry. Baseline schema. |
+| **001_schema** | Creates enums and tables: users, identities, organizations, memberships, devices, sessions, policies, audit_logs. Baseline schema. |
 | **002_drop_telemetry** | Drops the `telemetry` table if present. |
 | **003_refresh_jti** | Adds `sessions.refresh_jti` (VARCHAR, nullable). For existing DBs created before this column. |
 | **004_refresh_token_hash** | Adds `sessions.refresh_token_hash` (VARCHAR, nullable). For existing DBs created before this column. |

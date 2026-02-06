@@ -112,10 +112,6 @@ restore_volumes() {
     local volume_prefix="${COMPOSE_PROJECT_NAME:-$(basename "$DEPLOY_DIR")}"
     local volumes=(
         "${volume_prefix}_postgres_data"
-        "${volume_prefix}_prometheus_data"
-        "${volume_prefix}_grafana_data"
-        "${volume_prefix}_tempo_data"
-        "${volume_prefix}_loki_data"
     )
     
     for volume in "${volumes[@]}"; do

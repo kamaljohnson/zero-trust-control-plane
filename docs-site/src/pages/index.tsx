@@ -8,22 +8,21 @@ const quickLinks = [
   { to: "/backend/session-lifecycle", label: "Session lifecycle", description: "Creation, heartbeats, revocation, client behavior" },
   { to: "/backend/policy-engine", label: "Policy engine", description: "OPA/Rego, policy structure, evaluation flow" },
   { to: "/backend/org-policy-config", label: "Org policy config", description: "Five sections, sync to org_mfa_settings" },
-  { to: "/frontend/dashboard", label: "Web dashboard", description: "Org admin: Members, Audit, Policy, Telemetry" },
+  { to: "/frontend/dashboard", label: "Web dashboard", description: "Org admin: Members, Audit, Policy" },
   { to: "/backend/database", label: "Database", description: "Schema, migrations, codegen" },
-  { to: "/backend/telemetry", label: "Telemetry", description: "OpenTelemetry, Collector, Grafana" },
 ];
 
 export default function Home(): React.ReactElement {
   return (
     <Layout
       title="Zero Trust Control Plane — Documentation"
-      description="Documentation for the zero-trust session and policy control plane: backend (Go gRPC) and web client (Next.js). Auth, sessions, policy engine, org admin dashboard, database, and telemetry."
+      description="Documentation for the zero-trust session and policy control plane: backend (Go gRPC) and web client (Next.js). Auth, sessions, policy engine, org admin dashboard, database."
     >
       <main style={{ padding: "2rem 1rem", maxWidth: 900, margin: "0 auto" }}>
         <section style={{ textAlign: "center", marginBottom: "3rem" }}>
           <h1>Zero Trust Control Plane — Documentation</h1>
           <p style={{ fontSize: "1.15rem", marginBottom: "1.5rem" }}>
-            This site documents a proof-of-concept <strong>zero-trust session and policy control plane</strong>: a backend (Go gRPC), web client (Next.js). Here you’ll find backend services (auth, sessions, policy engine, org policy config, database, telemetry) and the org admin dashboard.
+            This site documents a proof-of-concept <strong>zero-trust session and policy control plane</strong>: a backend (Go gRPC), web client (Next.js). Here you’ll find backend services (auth, sessions, policy engine, org policy config, database) and the org admin dashboard.
           </p>
           <Link to="/intro" className="button button--primary button--lg">
             Get started
@@ -34,10 +33,10 @@ export default function Home(): React.ReactElement {
           <h2>What's in the docs</h2>
           <ul style={{ paddingLeft: "1.25rem" }}>
             <li>
-              <strong>Backend</strong> — Authentication (register, login, refresh, MFA), session management and lifecycle, policy engine (OPA/Rego for device-trust/MFA), org policy config (five sections), database schema, audit, health, and telemetry (OpenTelemetry → Collector → Loki / Prometheus / Tempo → Grafana).
+              <strong>Backend</strong> — Authentication (register, login, refresh, MFA), session management and lifecycle, policy engine (OPA/Rego for device-trust/MFA), org policy config (five sections), database schema, audit, health.
             </li>
             <li>
-              <strong>Frontend</strong> — Org admin dashboard (Members, Audit log, Policy, Telemetry); how it uses the backend and handles 401 / session invalidation.
+              <strong>Frontend</strong> — Org admin dashboard (Members, Audit log, Policy); how it uses the backend and handles 401 / session invalidation.
             </li>
             <li>
               <strong>Contributing</strong> — Planned documentation and how to extend the docs (see the sidebar).

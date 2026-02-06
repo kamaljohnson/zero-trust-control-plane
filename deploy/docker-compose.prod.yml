@@ -1,5 +1,5 @@
 # Production deployment for ZTCP on Digital Ocean
-# Includes: PostgreSQL, Observability stack, Backend, Frontend, and Nginx reverse proxy
+# Includes: PostgreSQL, Backend, Frontend, and Nginx reverse proxy
 #
 # Usage:
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
@@ -20,7 +20,6 @@
 
 include:
   - postgres.yml
-  - observability.yml
 
 services:
   backend:
@@ -34,9 +33,6 @@ services:
     # Secrets (DATABASE_URL, JWT keys) come from env_file only to avoid Compose ${VAR} expansion corrupting $ in values.
     environment:
       - GRPC_ADDR=:8080
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otelcol:4317
-      - OTEL_SERVICE_NAME=ztcp-grpc
-      - OTEL_EXPORTER_OTLP_INSECURE=false
     volumes:
       # Mount keys so JWT_PRIVATE_KEY=keys/jwt_private.pem and JWT_PUBLIC_KEY=keys/jwt_public.pem resolve in container
       - ./keys:/app/keys:ro
@@ -45,8 +41,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      otelcol:
-        condition: service_started
     networks:
       - ztcp-network
     restart: unless-stopped
@@ -75,7 +69,6 @@ services:
       args:
         NEXT_PUBLIC_DEV_OTP_ENABLED: ${NEXT_PUBLIC_DEV_OTP_ENABLED:-false}
         NEXT_PUBLIC_DOCS_URL: ${NEXT_PUBLIC_DOCS_URL:-}
-        NEXT_PUBLIC_GRAFANA_URL: ${NEXT_PUBLIC_GRAFANA_URL:-}
     container_name: ztcp-frontend
     env_file:
       - .env.prod
@@ -84,7 +77,6 @@ services:
       - BACKEND_GRPC_URL=backend:8080
       - NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL:-}
       - NEXT_PUBLIC_DEV_OTP_ENABLED=${NEXT_PUBLIC_DEV_OTP_ENABLED:-false}
-      - NEXT_PUBLIC_GRAFANA_URL=${NEXT_PUBLIC_GRAFANA_URL:-}
     ports:
       - "127.0.0.1:3000:3000"  # Only expose on localhost for nginx
     depends_on:
@@ -151,15 +143,6 @@ services:
 networks:
   ztcp-network:
     driver: bridge
-
-# Override observability services with production settings
-x-observability-overrides: &observability-overrides
-  deploy:
-    resources:
-      limits:
-        memory: 512M
-        cpus: "0.5"
-  restart: unless-stopped
 
 # Override postgres with production settings
 x-postgres-overrides: &postgres-overrides

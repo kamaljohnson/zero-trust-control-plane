@@ -5,7 +5,7 @@ sidebar_label: Deployment
 
 # Deployment and Operations
 
-This document describes how to **run the backend and frontend** (locally and in production), environment variables, and optional observability. For the full local Docker Compose stack (PostgreSQL, OpenTelemetry Collector, Loki, Tempo, Prometheus, Grafana), see [deploy/README.md](../../../deploy/README.md).
+This document describes how to **run the backend and frontend** (locally and in production), environment variables. For the full local Docker Compose stack (PostgreSQL), see [deploy/README.md](../../../deploy/README.md).
 
 **Audience**: Operators and developers setting up or deploying the zero-trust control plane.
 
@@ -13,7 +13,6 @@ This document describes how to **run the backend and frontend** (locally and in 
 
 - **Backend**: Go gRPC server ([cmd/server](../../../backend/cmd/server)); requires PostgreSQL and (for auth) JWT keys.
 - **Frontend**: Next.js app (BFF); calls backend gRPC via env-configured URL.
-- **Optional**: Observability stack (OTLP collector, Loki, Tempo, Prometheus, Grafana) via [deploy/docker-compose.yml](../../../deploy/docker-compose.yml).
 
 ## Local development (Makefile)
 
@@ -32,11 +31,10 @@ make setup
 This runs in order:
 
 1. **ensure-env** — Creates `backend/.env` and `frontend/.env` from [deploy/.env.example](../../../deploy/.env.example) if missing; if `backend/.env` exists but `DATABASE_URL` uses user `root`, it is replaced with the local deploy default (`ztcp`/`ztcp`).
-2. **up** — Starts the Docker stack (PostgreSQL + observability) from `deploy/`.
+2. **up** — Starts the Docker stack (PostgreSQL) from `deploy/`.
 3. **wait-postgres** — Waits for Postgres to be ready (up to 30s).
 4. **migrate** — Runs `backend/scripts/migrate.sh up` (requires `DATABASE_URL` in `backend/.env`).
 5. **seed** — Runs `backend/scripts/seed.sh` (inserts dev users, e.g. `dev@example.com`). Skip with `SKIP_SEED=1 make setup`.
-6. **configure-grafana** — Waits for Grafana and notes that datasources and the ZTCP Telemetry dashboard are provisioned at http://localhost:3002.
 
 ### Starting the app after setup
 
@@ -48,14 +46,12 @@ To stop the Docker stack later: `make down`.
 
 | Target | Description |
 |--------|-------------|
-| `setup` | Full local setup (ensure-env, up, wait-postgres, migrate, seed, configure-grafana). |
+| `setup` | Full local setup (ensure-env, up, wait-postgres, migrate, seed). |
 | `env` | Copy [deploy/.env.example](../../../deploy/.env.example) to `backend/.env` and `frontend/.env` if missing (no overwrite). |
 | `ensure-env` | Same as `env` plus fix `DATABASE_URL` when it uses user `root`. |
 | `up` | Start Docker stack from `deploy/`. |
 | `down` | Stop Docker stack. |
 | `wait-postgres` | Block until Postgres is ready. |
-| `wait-grafana` | Block until Grafana health responds (optional). |
-| `configure-grafana` | Ensure Grafana is ready; used by `setup`. |
 | `migrate` | Run backend migrations (`ensure-env` then `backend/scripts/migrate.sh up`). |
 | `seed` | Run backend seed script (`ensure-env` then `backend/scripts/seed.sh`). |
 | `run-backend` | Run backend gRPC server (`go run ./cmd/server` in backend). |
@@ -103,7 +99,6 @@ Or from repo root: `make run-frontend`. The app is served at **http://localhost:
 | `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL` | No | e.g. 15m, 168h |
 | `SMS_LOCAL_*` | For SMS OTP | PoC MFA |
 | `APP_ENV`, `OTP_RETURN_TO_CLIENT` | No | Dev OTP; must not be production when OTP_RETURN_TO_CLIENT=true |
-| `OTEL_EXPORTER_OTLP_*` | No | Optional OTLP export |
 
 ### Frontend ([frontend/.env.example](../../../frontend/.env.example))
 
@@ -120,4 +115,4 @@ Local one-shot setup: from repo root run `make setup` (creates `.env` from [depl
 - **Environment**: Set `APP_ENV=production`; do **not** set `OTP_RETURN_TO_CLIENT=true`. Use strong `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` and a secure `DATABASE_URL`.
 - **Migrations**: Run migrations before or during deployment (e.g. `backend/scripts/migrate.sh up`).
 - **TLS**: For production, expose the gRPC server behind TLS (e.g. reverse proxy or server-side TLS). Configure `BACKEND_GRPC_URL` on the frontend to use the correct scheme and host.
-- **Docker/Kubernetes**: Use [deploy/docker-compose.yml](../../../deploy/docker-compose.yml) as a reference for Postgres and observability; the backend and frontend can be run in containers or on VMs with the same env and migration steps.
+- **Docker/Kubernetes**: Use [deploy/docker-compose.yml](../../../deploy/docker-compose.yml) as a reference for Postgres; the backend and frontend can be run in containers or on VMs with the same env and migration steps.

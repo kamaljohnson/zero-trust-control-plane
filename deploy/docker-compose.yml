@@ -1,11 +1,9 @@
-# Local deployment for ZTCP: PostgreSQL + observability (OpenTelemetry Collector, Loki, Tempo, Prometheus, Grafana).
-# The gRPC server uses Postgres (DATABASE_URL) and sends OTLP to the collector.
+# Local deployment for ZTCP: PostgreSQL.
+# The gRPC server uses Postgres (DATABASE_URL).
 #
 # From deploy/: docker compose up -d
 # Then: migrate, optional seed, start backend (go run ./cmd/server), start frontend (npm run dev).
-# Set DATABASE_URL=postgres://ztcp:ztcp@localhost:5432/ztcp?sslmode=disable and
-# OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 when running the ZTCP server.
+# Set DATABASE_URL=postgres://ztcp:ztcp@localhost:5432/ztcp?sslmode=disable when running the ZTCP server.
 
 include:
   - postgres.yml
-  - observability.yml

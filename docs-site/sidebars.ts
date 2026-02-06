@@ -9,7 +9,7 @@ const sidebars: SidebarsConfig = {
       link: {
         type: "generated-index",
         title: "Backend",
-        description: "Backend services, auth, database, and observability.",
+        description: "Backend services, auth, and database.",
       },
       items: [
         "backend/grpc-api-overview",
@@ -24,7 +24,6 @@ const sidebars: SidebarsConfig = {
         "backend/policy-engine",
         "backend/sessions",
         "backend/session-lifecycle",
-        "backend/telemetry",
         "backend/testing",
       ],
     },

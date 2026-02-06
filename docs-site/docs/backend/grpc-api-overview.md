@@ -12,7 +12,7 @@ This document summarizes the **gRPC API** of the zero-trust control plane: a sin
 ## Overview
 
 - **Server**: One gRPC server (default port **8080**). Wired in [internal/server/grpc.go](../../../backend/internal/server/grpc.go); entry point [cmd/server/main.go](../../../backend/cmd/server/main.go).
-- **Protos**: [backend/proto/](../../../backend/proto/) — one directory per service (admin, auth, user, organization, membership, device, session, policy, telemetry, audit, health, orgpolicyconfig, dev, common). Generated Go stubs in [backend/api/generated/](../../../backend/api/generated/).
+- **Protos**: [backend/proto/](../../../backend/proto/) — one directory per service (admin, auth, user, organization, membership, device, session, policy, audit, health, orgpolicyconfig, dev, common). Generated Go stubs in [backend/api/generated/](../../../backend/api/generated/).
 
 ## Services and RPCs
 
@@ -27,12 +27,11 @@ This document summarizes the **gRPC API** of the zero-trust control plane: a sin
 | **SessionService** | Sessions | RevokeSession, ListSessions, GetSession, RevokeAllSessionsForUser |
 | **PolicyService** | Rego policies (device-trust/MFA) | CreatePolicy, UpdatePolicy, DeletePolicy, ListPolicies |
 | **OrgPolicyConfigService** | Org policy config (MFA, device, session, access control) | GetOrgPolicyConfig, UpdateOrgPolicyConfig, GetBrowserPolicy, CheckUrlAccess |
-| **TelemetryService** | Telemetry events | EmitTelemetryEvent, BatchEmitTelemetry |
 | **AuditService** | Audit logs | ListAuditLogs |
 | **HealthService** | Readiness/liveness | HealthCheck |
 | **DevService** | Dev-only (e.g. OTP) | GetOTP |
 
-Details: [auth](./auth), [sessions](./sessions), [session-lifecycle](./session-lifecycle), [mfa](./mfa), [device-trust](./device-trust), [policy-engine](./policy-engine), [org-policy-config](./org-policy-config), [audit](./audit), [organization-membership](./organization-membership), [health](./health), [telemetry](./telemetry).
+Details: [auth](./auth), [sessions](./sessions), [session-lifecycle](./session-lifecycle), [mfa](./mfa), [device-trust](./device-trust), [policy-engine](./policy-engine), [org-policy-config](./org-policy-config), [audit](./audit), [organization-membership](./organization-membership), [health](./health).
 
 **Public Endpoints**: Most RPCs require a Bearer access token (obtained via Login or Refresh). Public endpoints that do not require authentication include:
 - `AuthService.Register`, `AuthService.Login`, `AuthService.VerifyCredentials`, `AuthService.VerifyMFA`, `AuthService.SubmitPhoneAndRequestMFA`, `AuthService.Refresh`

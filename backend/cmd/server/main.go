@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/stats"
 
 	authv1 "zero-trust-control-plane/backend/api/generated/auth/v1"
 	devv1 "zero-trust-control-plane/backend/api/generated/dev/v1"
@@ -39,11 +38,7 @@ import (
 	"zero-trust-control-plane/backend/internal/server"
 	"zero-trust-control-plane/backend/internal/server/interceptors"
 	sessionrepo "zero-trust-control-plane/backend/internal/session/repository"
-	"zero-trust-control-plane/backend/internal/telemetry"
-	"zero-trust-control-plane/backend/internal/telemetry/otel"
 	userrepo "zero-trust-control-plane/backend/internal/user/repository"
-
-	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 func main() {
@@ -61,15 +56,6 @@ func main() {
 	var s *grpc.Server
 	var tokens *security.TokenProvider
 	deps := server.Deps{}
-
-	// OpenTelemetry: TracerProvider, MeterProvider, LoggerProvider (OTLP to Collector). When endpoint is empty, no-op providers are used.
-	otelCtx := context.Background()
-	otelProviders, err := otel.NewProviders(otelCtx, cfg.OTELExporterOTLPEndpoint, cfg.OTELServiceName, cfg.OTELExporterOTLPInsecure)
-	if err != nil {
-		log.Fatalf("telemetry: otel setup: %v", err)
-	}
-	otelProviders.SetGlobal()
-	deps.TelemetryEmitter = otel.NewEventEmitter(otelProviders.LoggerProvider)
 
 	authEnabled := cfg.DatabaseURL != "" && cfg.JWTPrivateKey != "" && cfg.JWTPublicKey != ""
 	if !authEnabled {
@@ -134,7 +120,7 @@ func main() {
 		}
 		auditRepo := auditrepo.NewPostgresRepository(database)
 		deps.AuditRepo = auditRepo
-		auditLogger := audit.NewLogger(auditRepo, interceptors.ClientIP, deps.TelemetryEmitter)
+		auditLogger := audit.NewLogger(auditRepo, interceptors.ClientIP)
 		authService := identityservice.NewAuthService(
 			userRepo,
 			identityRepo,
@@ -188,10 +174,6 @@ func main() {
 		auditSkipMethods := map[string]bool{
 			healthv1.HealthService_HealthCheck_FullMethodName: true,
 		}
-		telemetrySkipMethods := map[string]bool{
-			healthv1.HealthService_HealthCheck_FullMethodName: true,
-			devv1.DevService_GetOTP_FullMethodName:            true,
-		}
 		var sessionValidator interceptors.SessionValidator
 		if deps.SessionRepo != nil {
 			sessionValidator = func(ctx context.Context, sessionID string) (bool, error) {
@@ -203,27 +185,13 @@ func main() {
 			}
 		}
 		s = grpc.NewServer(
-			grpc.StatsHandler(otelgrpc.NewServerHandler(
-				otelgrpc.WithTracerProvider(otelProviders.TracerProvider),
-				otelgrpc.WithMeterProvider(otelProviders.MeterProvider),
-				otelgrpc.WithFilter(func(info *stats.RPCTagInfo) bool { return !telemetrySkipMethods[info.FullMethodName] }),
-			)),
 			grpc.ChainUnaryInterceptor(
 				interceptors.AuthUnary(tokens, publicMethods, sessionValidator),
 				interceptors.AuditUnary(deps.AuditRepo, auditSkipMethods),
 			),
 		)
 	} else {
-		telemetrySkipMethods := map[string]bool{
-			healthv1.HealthService_HealthCheck_FullMethodName: true,
-		}
-		s = grpc.NewServer(
-			grpc.StatsHandler(otelgrpc.NewServerHandler(
-				otelgrpc.WithTracerProvider(otelProviders.TracerProvider),
-				otelgrpc.WithMeterProvider(otelProviders.MeterProvider),
-				otelgrpc.WithFilter(func(info *stats.RPCTagInfo) bool { return !telemetrySkipMethods[info.FullMethodName] }),
-			)),
-		)
+		s = grpc.NewServer()
 	}
 
 	server.RegisterServices(s, deps)
@@ -241,10 +209,5 @@ func main() {
 
 	log.Println("shutting down gRPC server...")
 	s.GracefulStop()
-	log.Println("draining in-flight telemetry emits...")
-	time.Sleep(telemetry.ShutdownDrainDuration)
-	if err := otelProviders.Shutdown(context.Background()); err != nil {
-		log.Printf("telemetry: otel shutdown: %v", err)
-	}
 	log.Println("gRPC server stopped")
 }
