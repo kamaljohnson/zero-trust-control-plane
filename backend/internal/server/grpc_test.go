@@ -31,8 +31,8 @@ func TestRegisterServices_AllServicesRegistered(t *testing.T) {
 
 	RegisterServices(mockReg, deps)
 
-	// Should register 12 services (11 always + 0 DevService when nil)
-	expectedCount := 12
+	// Should register 11 services (11 always + 0 DevService when nil)
+	expectedCount := 11
 	if mockReg.callCount != expectedCount {
 		t.Errorf("RegisterService called %d times, want %d", mockReg.callCount, expectedCount)
 	}
@@ -47,8 +47,8 @@ func TestRegisterServices_DevServiceNotRegisteredWhenNil(t *testing.T) {
 
 	RegisterServices(mockReg, deps)
 
-	// Should register 12 services (11 always + 0 DevService)
-	expectedCount := 12
+	// Should register 11 services (11 always + 0 DevService)
+	expectedCount := 11
 	if mockReg.callCount != expectedCount {
 		t.Errorf("RegisterService called %d times, want %d (DevService should not be registered)", mockReg.callCount, expectedCount)
 	}
@@ -64,8 +64,8 @@ func TestRegisterServices_DevServiceRegisteredWhenProvided(t *testing.T) {
 
 	RegisterServices(mockReg, deps)
 
-	// Should register 13 services (11 always + 1 DevService)
-	expectedCount := 13
+	// Should register 12 services (11 always + 1 DevService)
+	expectedCount := 12
 	if mockReg.callCount != expectedCount {
 		t.Errorf("RegisterService called %d times, want %d (DevService should be registered)", mockReg.callCount, expectedCount)
 	}
@@ -79,7 +79,7 @@ func TestRegisterServices_NilDependencies(t *testing.T) {
 	RegisterServices(mockReg, deps)
 
 	// Should still register all services (they handle nil dependencies internally)
-	expectedCount := 12
+	expectedCount := 11
 	if mockReg.callCount != expectedCount {
 		t.Errorf("RegisterService called %d times, want %d (services should be registered even with nil deps)", mockReg.callCount, expectedCount)
 	}
